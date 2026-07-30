@@ -1,0 +1,4 @@
+/leanreview
+/dist/
+*.log
+.DS_Store
