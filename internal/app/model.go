@@ -60,8 +60,13 @@ type Model struct {
 
 	mode      Mode
 	selAnchor int // -1 when no selection is active
-	pending   pendingCommand
-	keymap    Keymap
+
+	// activeSide selects which side of a both-sided split row the cursor
+	// targets (h/l). Meaningful only in split layout; unified rows derive
+	// their side from the line kind.
+	activeSide diff.Side
+	pending    pendingCommand
+	keymap     Keymap
 
 	// listCursor is the selection index for the files / comments overlays.
 	listCursor int
@@ -129,6 +134,7 @@ func New(cfg Config) *Model {
 		title:       cfg.Title,
 		headOID:     cfg.HeadOID,
 		mode:        ModeNormal,
+		activeSide:  diff.SideRight,
 		ctx:         context.Background(),
 		pr:          cfg.PR,
 	}

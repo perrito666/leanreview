@@ -16,6 +16,7 @@ func HelpText() string {
 
  View
    t             toggle unified / split
+   h / l         target left / right side (split view)
    \             toggle changed-files sidebar
    za            fold / unfold current hunk
    zR / zM       expand / collapse all hunks

@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/editor"
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/review"
@@ -109,6 +110,10 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.scrollLeft()
 	case "scroll-right":
 		m.scrollRight()
+	case "side-left":
+		m.setActiveSide(diff.SideLeft)
+	case "side-right":
+		m.setActiveSide(diff.SideRight)
 	case "toggle-layout":
 		m.toggleLayout()
 	case "sidebar":

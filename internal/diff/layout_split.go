@@ -28,9 +28,10 @@ func RenderSplit(f *FileDiff) []DisplayRow {
 			if lines[i].Kind == LineContext {
 				l := &lines[i]
 				rows = append(rows, DisplayRow{
-					Left:   &DisplayCell{LineNumber: l.OldLine, Kind: LineContext, Text: l.Text},
-					Right:  &DisplayCell{LineNumber: l.NewLine, Kind: LineContext, Text: l.Text},
-					Source: rowSource(f, SideRight, l, hi, i),
+					Left:      &DisplayCell{LineNumber: l.OldLine, Kind: LineContext, Text: l.Text},
+					Right:     &DisplayCell{LineNumber: l.NewLine, Kind: LineContext, Text: l.Text},
+					Source:    rowSource(f, SideRight, l, hi, i),
+					AltSource: rowSource(f, SideLeft, l, hi, i),
 				})
 				i++
 				continue
@@ -65,7 +66,9 @@ func RenderSplit(f *FileDiff) []DisplayRow {
 				if k < len(adds) {
 					a := adds[k]
 					row.Right = &DisplayCell{LineNumber: a.line.NewLine, Kind: LineAddition, Text: a.line.Text}
-					// An addition anchors the right side; prefer it as the source.
+					// An addition anchors the right side; when the row also
+					// carries a deletion, keep it reachable via AltSource.
+					row.AltSource = row.Source
 					row.Source = rowSource(f, SideRight, a.line, hi, a.idx)
 				}
 				rows = append(rows, row)

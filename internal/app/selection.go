@@ -39,17 +39,18 @@ func (m *Model) buildLocation() (diff.Location, string, error) {
 	)
 	for i := lo; i <= hi && i < len(rows); i++ {
 		r := &rows[i]
-		if r.Source == nil {
+		src := m.sourceForRow(r)
+		if src == nil {
 			continue // header / blank filler: skip, don't fail
 		}
 		if !haveSide {
-			side = r.Source.Side
+			side = src.Side
 			haveSide = true
-			anchor = r.Source
-		} else if r.Source.Side != side {
+			anchor = src
+		} else if src.Side != side {
 			return diff.Location{}, "", errors.New("cannot comment on this selection: it crosses both deleted and added sides")
 		}
-		nums = append(nums, r.Source.StartLine)
+		nums = append(nums, src.StartLine)
 		snippets = append(snippets, rowText(r, side))
 	}
 
@@ -68,6 +69,29 @@ func (m *Model) buildLocation() (diff.Location, string, error) {
 	loc.EndLine = sorted[len(sorted)-1]
 	loc.CommitOID = m.headOID
 	return loc, strings.Join(snippets, "\n"), nil
+}
+
+// sourceForRow resolves which side's location a row contributes: in split
+// layout with the left side active, a both-sided row yields its AltSource
+// (the old side); otherwise the primary Source.
+func (m *Model) sourceForRow(r *diff.DisplayRow) *diff.Location {
+	if r == nil {
+		return nil
+	}
+	if m.layout == LayoutSplit && m.activeSide == diff.SideLeft && r.AltSource != nil {
+		return r.AltSource
+	}
+	return r.Source
+}
+
+// setActiveSide switches the split-view side the cursor targets.
+func (m *Model) setActiveSide(side diff.Side) {
+	if m.layout != LayoutSplit {
+		m.setStatus("side selection applies to split view (press t)")
+		return
+	}
+	m.activeSide = side
+	m.setStatus("targeting %s side", side)
 }
 
 // rowText returns the text of the row on the given side.
@@ -96,11 +120,20 @@ func lineRefString(loc diff.Location) string {
 	return fmt.Sprintf("L%d-%d", loc.StartLine, loc.EndLine)
 }
 
-// commentIDsAt returns the draft comment ids anchored to the row at index i.
+// commentIDsAt returns the draft comment ids anchored to the row at index i,
+// checking both sides of a both-sided split row so left-side comments keep
+// their markers.
 func (m *Model) commentIDsAt(i int) []string {
 	r := m.rowAt(i)
-	if r == nil || r.Source == nil {
+	if r == nil {
 		return nil
 	}
-	return m.draft.CommentsForLine(r.Source.Path, r.Source.Side, r.Source.StartLine)
+	var ids []string
+	if r.Source != nil {
+		ids = append(ids, m.draft.CommentsForLine(r.Source.Path, r.Source.Side, r.Source.StartLine)...)
+	}
+	if r.AltSource != nil {
+		ids = append(ids, m.draft.CommentsForLine(r.AltSource.Path, r.AltSource.Side, r.AltSource.StartLine)...)
+	}
+	return ids
 }

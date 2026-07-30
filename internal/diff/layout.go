@@ -19,8 +19,14 @@ type DisplayRow struct {
 	Right *DisplayCell
 
 	// Source is the semantic location of this row (start line = end line here);
-	// nil for rows that cannot be commented on (e.g. blank filler in split view).
+	// nil for rows that cannot be commented on (e.g. hunk headers). For split
+	// rows carrying both sides it points at the right/new side.
 	Source *Location
+
+	// AltSource is the location of the opposite (left/old) side when a split
+	// row carries both sides — a paired deletion/addition or a context line —
+	// so the cursor can select either side. Nil elsewhere.
+	AltSource *Location
 }
 
 // binaryPlaceholder returns a one-row informational rendering for binary files
