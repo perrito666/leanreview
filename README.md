@@ -46,11 +46,16 @@ leanreview --export out.md change.diff
 | `gg` / `G` | first / last line |
 | `Ctrl-d` / `Ctrl-u` | half page |
 | `t` | toggle unified / split |
+| `za` / `zR` / `zM` | fold current hunk / expand all / collapse all |
+| `/`, `n`, `N` | search diff text, next/previous match |
 | `f` | file picker |
 | `C` / `Enter` | comment list |
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
+| `e` | edit draft comment under cursor |
 | `dd` | delete comment under cursor |
+| `r` | reply to thread under cursor (PR mode) |
+| `s` | submit review (PR mode) |
 | `:w` | save drafts |
 | `:export FILE` | export comments as Markdown |
 | `:q` / `q` | quit |
@@ -60,9 +65,17 @@ Comments open your editor (`LEANREVIEW_EDITOR` → `GIT_EDITOR` → `VISUAL` →
 `EDITOR` → `git var GIT_EDITOR` → `vi`). A selection must map onto one continuous
 range on one side (GitHub semantics); cross-side selections are rejected.
 
-Drafts persist under `$XDG_STATE_HOME/leanreview/drafts/` and reload on the next
-run of the same source. Logs go to `$XDG_STATE_HOME/leanreview/leanreview.log`
-(never stdout, which the TUI owns). `NO_COLOR` is honored.
+Source is syntax-highlighted in the unified view (Chroma). Drafts persist under
+`$XDG_STATE_HOME/leanreview/drafts/` and reload on the next run of the same
+source. Logs go to `$XDG_STATE_HOME/leanreview/leanreview.log` (never stdout,
+which the TUI owns).
+
+Environment:
+
+- `LEANREVIEW_EDITOR` — editor override (highest precedence).
+- `LEANREVIEW_SYNTAX=0` — disable syntax highlighting.
+- `NO_COLOR` — disable all color (highlighting and styling).
+- `LEANREVIEW_LOG` — log file path.
 
 ## Export format
 
@@ -108,8 +121,10 @@ reposition.
   draft comments via `$EDITOR`, persistence, Markdown export.
 - **M3 (done)** — GitHub PR mode (via `gh`): canonical PR diff, threads, replies,
   atomic review submission, and context-based comment relocation on head change.
-- **M2 / M4** — comment-panel and navigation polish, side panels, file sidebar,
-  search, collapsible context, syntax highlighting, config & themes.
+- **Ergonomics (done)** — edit drafts (`e`), in-diff search (`/`, `n`, `N`),
+  collapsible hunks (`za`/`zR`/`zM`), and Chroma syntax highlighting.
+- **Remaining polish** — persistent side panels / file sidebar, configurable
+  keys & themes.
 - **M5** — other forges (GitLab/Forgejo) behind the same `Forge` seam.
 
 ## Architecture
