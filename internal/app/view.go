@@ -102,6 +102,9 @@ func (m *Model) statusBar() string {
 		return m.theme.Error.Width(m.width).Render(clip("error: "+m.err.Error(), m.width))
 	}
 	mode := m.mode.String()
+	if m.layout == LayoutSplit {
+		mode += fmt.Sprintf(" [%s]", m.activeSide)
+	}
 	msg := m.status
 	if msg == "" {
 		msg = fmt.Sprintf("%d comment(s)   ? help   : command", len(m.draft.Comments))
