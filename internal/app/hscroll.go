@@ -45,6 +45,8 @@ func (m *Model) maxHScroll() int {
 	return 0
 }
 
+// scrollLeft shifts the view one hscrollStep back toward column zero,
+// clamping at the left edge.
 func (m *Model) scrollLeft() {
 	m.hscroll -= hscrollStep
 	if m.hscroll < 0 {
@@ -52,6 +54,8 @@ func (m *Model) scrollLeft() {
 	}
 }
 
+// scrollRight shifts the view one hscrollStep further right, clamped to
+// maxHScroll so scrolling stops once the longest line is fully in view.
 func (m *Model) scrollRight() {
 	m.hscroll += hscrollStep
 	if max := m.maxHScroll(); m.hscroll > max {
@@ -59,8 +63,12 @@ func (m *Model) scrollRight() {
 	}
 }
 
+// lineStart snaps the horizontal scroll back to column zero.
 func (m *Model) lineStart() { m.hscroll = 0 }
-func (m *Model) lineEnd()   { m.hscroll = m.maxHScroll() }
+
+// lineEnd scrolls all the way right, so the tail of the longest visible line
+// is in view (the horizontal counterpart of lastLine).
+func (m *Model) lineEnd() { m.hscroll = m.maxHScroll() }
 
 // hcut drops the first m.hscroll display columns of s, ANSI-aware so it works on
 // both plain and syntax-highlighted text. The number gutter is added separately

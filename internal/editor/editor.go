@@ -94,7 +94,10 @@ func (s *Session) Result() (string, error) {
 	return CleanTemplate(string(body)), nil
 }
 
-// Close removes the temporary directory.
+// Close removes the whole temporary directory, not just the file: the
+// directory is per-session, and some editors drop swap/backup files next to
+// the buffer that would otherwise be left behind. Safe to call on a
+// zero-value Session.
 func (s *Session) Close() error {
 	if s.dir == "" {
 		return nil
@@ -116,6 +119,10 @@ func Edit(ctx context.Context, e Editor, initial, name string) (string, error) {
 	return s.Result()
 }
 
+// gitVarEditor asks `git var GIT_EDITOR` for git's own editor resolution,
+// which folds in core.editor from git config — a source the environment
+// checks above cannot see. Errors (git missing, not installed) yield "" so
+// the chain simply moves on to the platform fallback.
 func gitVarEditor() string {
 	out, err := exec.Command("git", "var", "GIT_EDITOR").Output()
 	if err != nil {
@@ -124,6 +131,9 @@ func gitVarEditor() string {
 	return strings.TrimSpace(string(out))
 }
 
+// platformFallback is the editor of last resort when nothing is configured
+// anywhere: the same defaults git itself assumes, chosen for being present
+// on a stock install (vi on Unix, notepad on Windows).
 func platformFallback() string {
 	if runtime.GOOS == "windows" {
 		return "notepad"
@@ -131,6 +141,11 @@ func platformFallback() string {
 	return "vi"
 }
 
+// sanitizeFilename makes a session name safe to use as a single file name.
+// Names are built from review context ("file.go-L10:12"), so path separators,
+// Windows-reserved punctuation, and spaces are flattened to '-' — the name
+// only exists to make the editor's title bar informative, so lossy
+// replacement is fine.
 func sanitizeFilename(name string) string {
 	if name == "" {
 		return "comment"

@@ -128,6 +128,10 @@ func Load() Config {
 	return c
 }
 
+// configPath locates the config file per the XDG base-directory spec:
+// $XDG_CONFIG_HOME/leanreview/config.json, defaulting to ~/.config. An empty
+// return (no resolvable home) makes readFile treat the file as absent, so a
+// homeless environment still starts with built-in defaults.
 func configPath() string {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {
@@ -140,6 +144,9 @@ func configPath() string {
 	return filepath.Join(base, "leanreview", "config.json")
 }
 
+// readFile parses the JSON config at path. The config file is optional, so
+// every failure (no path, unreadable, malformed JSON) reports ok=false and
+// the caller silently proceeds with defaults rather than aborting startup.
 func readFile(path string) (fileConfig, bool) {
 	if path == "" {
 		return fileConfig{}, false
@@ -155,6 +162,11 @@ func readFile(path string) (fileConfig, bool) {
 	return fc, true
 }
 
+// logPath picks the default diagnostic log location: LEANREVIEW_LOG if set,
+// else $XDG_STATE_HOME/leanreview/leanreview.log (state, not config, since
+// logs are machine-generated data), defaulting to ~/.local/state and falling
+// back to the OS temp dir when no home directory is resolvable — logging must
+// always have somewhere to go because the TUI cannot use stderr.
 func logPath() string {
 	if p := os.Getenv("LEANREVIEW_LOG"); p != "" {
 		return p

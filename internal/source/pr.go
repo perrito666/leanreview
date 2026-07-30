@@ -72,16 +72,24 @@ func (s *PRSource) Threads(ctx context.Context) ([]forge.Thread, error) {
 // Forge returns the underlying forge (for replies and submission).
 func (s *PRSource) Forge() forge.Forge { return s.forge }
 
-// Ref returns the pull-request reference.
+// Ref returns the pull-request reference; the TUI's PR context passes it back
+// on every forge call (threads, replies, review submission).
 func (s *PRSource) Ref() forge.PullRequestRef { return s.ref }
 
-// PullRequest returns the fetched metadata.
+// PullRequest returns the metadata fetched at construction; the TUI uses it
+// for the PR-info overlay (title, description, author) without another
+// network round-trip.
 func (s *PRSource) PullRequest() *forge.PullRequest { return s.pr }
 
+// Title is the string shown in the title bar: "owner/repo#N: <PR title>", so
+// the reviewer can tell at a glance which PR the session is about.
 func (s *PRSource) Title() string {
 	return fmt.Sprintf("%s/%s#%d: %s", s.ref.Owner, s.ref.Repo, s.ref.Number, s.pr.Title)
 }
 
+// Key seeds the draft store's filename, so it must be stable across sessions
+// and filesystem-safe: the host is made explicit (an empty host means
+// github.com) and any "/" in the owner (GitLab nested groups) is flattened.
 func (s *PRSource) Key() string {
 	host := s.ref.Host
 	if host == "" {
@@ -91,6 +99,9 @@ func (s *PRSource) Key() string {
 	return fmt.Sprintf("gh-%s-%s-%s-pr%d", host, owner, s.ref.Repo, s.ref.Number)
 }
 
+// HeadOID returns the PR head commit captured at construction. It is recorded
+// in the draft so that, on the next session, a changed head triggers comment
+// relocation against the new diff.
 func (s *PRSource) HeadOID(context.Context) string {
 	if s.pr == nil {
 		return ""

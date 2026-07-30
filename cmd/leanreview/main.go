@@ -50,6 +50,8 @@ import (
 // -ldflags "-X main.version=...".
 var version = "dev"
 
+// main is a thin shim over run so all error paths funnel through a single
+// exit point with a consistent "leanreview:" prefix on stderr.
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "leanreview:", err)
@@ -57,6 +59,9 @@ func main() {
 	}
 }
 
+// options is the result of parseArgs: flag values plus the remaining
+// positionals. contextSet distinguishes an explicit -U from the default so
+// the config file's context value only applies when the flag was absent.
 type options struct {
 	base       string
 	staged     bool
@@ -68,6 +73,11 @@ type options struct {
 	args       []string
 }
 
+// run is the real entry point, returning errors instead of exiting so main
+// stays testable and cleanup (deferred log file close) runs. It wires the
+// whole pipeline: parse flags, load config, resolve the review source,
+// load/relocate the persisted draft, then either handle a non-interactive
+// mode (--list piped, --discard, --export) or start the TUI.
 func run(argv []string) error {
 	// Strip an optional leading "review" verb for ergonomic invocation.
 	if len(argv) > 0 && argv[0] == "review" {
@@ -253,6 +263,10 @@ func resolveSource(ctx context.Context, opts options) (source.ReviewSource, *sou
 	return src, nil, err
 }
 
+// fileExists reports whether p is an existing regular file (not a directory).
+// It disambiguates the single-argument case in resolveSource: a real file on
+// disk is always treated as a patch, even if its name would also parse as a
+// PR reference.
 func fileExists(p string) bool {
 	info, err := os.Stat(p)
 	return err == nil && !info.IsDir()
@@ -427,6 +441,9 @@ func parseArgs(argv []string) (options, error) {
 	return o, nil
 }
 
+// errHelp and errVersion are sentinels from parseArgs: they signal "print and
+// exit 0" rather than a failure, so run intercepts them before generic error
+// handling would turn them into a nonzero exit.
 var errHelp = fmt.Errorf("help requested")
 var errVersion = fmt.Errorf("version requested")
 
@@ -461,6 +478,9 @@ Flags:
 In the TUI, press ? for the key reference.
 `
 
+// next consumes the value following a flag in argv, advancing the caller's
+// loop index past it so value-taking flags work in the hand-rolled parser.
+// flag is only used to name the offender in the error.
 func next(argv []string, i *int, flag string) (string, error) {
 	if *i+1 >= len(argv) {
 		return "", fmt.Errorf("%s requires a value", flag)
@@ -469,6 +489,9 @@ func next(argv []string, i *int, flag string) (string, error) {
 	return argv[*i], nil
 }
 
+// atoi parses a non-negative decimal integer, rejecting anything strconv.Atoi
+// would tolerate that makes no sense for a context-line count ("+3", "-1",
+// whitespace). Digits-only keeps the -U error message simple and uniform.
 func atoi(s string) (int, error) {
 	n := 0
 	for _, r := range s {
@@ -480,6 +503,10 @@ func atoi(s string) (int, error) {
 	return n, nil
 }
 
+// setupLogging redirects the standard logger to an append-only file at path,
+// because the TUI owns the terminal and any log output to stdout/stderr would
+// corrupt the alternate screen. Failures are swallowed (returning nil): losing
+// diagnostics is preferable to refusing to start over an unwritable log path.
 func setupLogging(path string) *os.File {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil

@@ -77,6 +77,9 @@ func (c *Client) List(ctx context.Context, filter string) ([]forge.ListedRequest
 	return res, nil
 }
 
+// splitOwnerRepo splits a "nameWithOwner" string at its last "/" into owner
+// and repo; ok is false when either side would be empty. It only backs up
+// ParseRef when a search result's URL has an unexpected shape.
 func splitOwnerRepo(s string) (owner, repo string, ok bool) {
 	i := strings.LastIndex(s, "/")
 	if i <= 0 || i == len(s)-1 {

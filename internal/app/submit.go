@@ -70,6 +70,9 @@ type submitCounts struct {
 	Orphaned    int // non-reply comments with no valid location; not submitted
 }
 
+// submitCounts tallies the draft's comments by how doSubmit will treat them:
+// replies posted individually, orphaned drafts skipped, the rest submitted as
+// new review comments.
 func (m *Model) submitCounts() submitCounts {
 	var c submitCounts
 	for i := range m.draft.Comments {

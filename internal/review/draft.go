@@ -24,6 +24,9 @@ const (
 	DraftOrphaned
 )
 
+// String returns the lowercase state label shown next to a comment in the
+// annotation list and the Markdown export, flagging drafts that need attention
+// before submission.
 func (s DraftState) String() string {
 	switch s {
 	case DraftStale:
@@ -117,6 +120,11 @@ func (d *DraftReview) CommentsForLine(path string, side diff.Side, line int) []s
 	return ids
 }
 
+// newLocalID returns a random 16-hex-digit id. Drafts exist before the host
+// knows about them, so comments need an identity of their own that survives
+// persistence and relocation; randomness (rather than a counter) keeps ids
+// unique even across separately edited draft files. rand.Read is documented
+// never to fail, hence the ignored error.
 func newLocalID() string {
 	var b [8]byte
 	_, _ = rand.Read(b[:])

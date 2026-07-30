@@ -87,6 +87,10 @@ func contextMatches(a, b ContextAnchor) bool {
 	return tailEqual(a.Before, b.Before) && headEqual(a.After, b.After)
 }
 
+// tailEqual reports whether a and b agree over their overlapping tail (the
+// lines nearest the anchor). Only min(len) lines are compared: a shorter
+// context, truncated at a hunk edge, is missing information rather than a
+// conflict.
 func tailEqual(a, b []string) bool {
 	n := min(len(a), len(b))
 	for i := 1; i <= n; i++ {
@@ -97,6 +101,8 @@ func tailEqual(a, b []string) bool {
 	return true
 }
 
+// headEqual is tailEqual's mirror for After context: the lines nearest the
+// anchor come first, so the overlap is compared from the head.
 func headEqual(a, b []string) bool {
 	n := min(len(a), len(b))
 	for i := 0; i < n; i++ {

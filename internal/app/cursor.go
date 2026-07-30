@@ -58,9 +58,12 @@ func (m *Model) fullPage(sign int) {
 	m.moveLine(sign * m.contentHeight())
 }
 
-// firstLine / lastLine jump to the extremes.
+// firstLine jumps the cursor to the first row of the file.
 func (m *Model) firstLine() { m.cursor = 0; m.clampCursor() }
-func (m *Model) lastLine()  { m.cursor = len(m.rows()) - 1; m.clampCursor() }
+
+// lastLine jumps the cursor to the last row of the file, mirroring firstLine;
+// the clampCursor call is what actually scrolls the viewport to the tail.
+func (m *Model) lastLine() { m.cursor = len(m.rows()) - 1; m.clampCursor() }
 
 // nextChange moves to the next row that is an addition or deletion.
 func (m *Model) nextChange(n int) {
@@ -76,6 +79,9 @@ func (m *Model) nextChange(n int) {
 	m.clampCursor()
 }
 
+// prevChange moves to the previous added/deleted row, mirroring nextChange;
+// n repeats the motion for count-prefixed keys. When no earlier change exists
+// the cursor simply stays put.
 func (m *Model) prevChange(n int) {
 	rows := m.rows()
 	for ; n > 0; n-- {
@@ -89,7 +95,8 @@ func (m *Model) prevChange(n int) {
 	m.clampCursor()
 }
 
-// nextHunk / prevHunk move to hunk-header rows.
+// nextHunk moves to the next hunk-header row, then settles on the first
+// content row after it (see skipToContent).
 func (m *Model) nextHunk(n int) {
 	rows := m.rows()
 	for ; n > 0; n-- {
@@ -105,6 +112,9 @@ func (m *Model) nextHunk(n int) {
 	m.clampCursor()
 }
 
+// prevHunk mirrors nextHunk backwards: it lands on the previous hunk header,
+// then settles on the first content row after it so the cursor rests on a
+// commentable line rather than the header itself.
 func (m *Model) prevHunk(n int) {
 	rows := m.rows()
 	for ; n > 0; n-- {
@@ -131,7 +141,8 @@ func (m *Model) skipToContent(dir int) {
 	}
 }
 
-// nextFile / prevFile switch files, resetting cursor and scroll.
+// nextFile advances n files, clamping at the last one; onFileChange resets
+// the per-file view state.
 func (m *Model) nextFile(n int) {
 	if len(m.files) == 0 {
 		return
@@ -143,6 +154,8 @@ func (m *Model) nextFile(n int) {
 	m.onFileChange()
 }
 
+// prevFile mirrors nextFile in the other direction, clamping at the first
+// file rather than wrapping.
 func (m *Model) prevFile(n int) {
 	if len(m.files) == 0 {
 		return
@@ -154,6 +167,8 @@ func (m *Model) prevFile(n int) {
 	m.onFileChange()
 }
 
+// gotoFile jumps straight to file idx (used by the file list and comment
+// jumps). Out-of-range indices are ignored so stale list cursors are harmless.
 func (m *Model) gotoFile(idx int) {
 	if idx < 0 || idx >= len(m.files) {
 		return
@@ -162,6 +177,9 @@ func (m *Model) gotoFile(idx int) {
 	m.onFileChange()
 }
 
+// onFileChange resets all per-file view state (scroll, selection, mode) after
+// any file switch, so the new file always opens at its first commentable row
+// with nothing carried over from the previous one.
 func (m *Model) onFileChange() {
 	m.top = 0
 	m.hscroll = 0
@@ -171,6 +189,9 @@ func (m *Model) onFileChange() {
 	m.clampCursor()
 }
 
+// isChange reports whether a row is actual changed content (an addition or
+// deletion). Headers and display-only rows carry no Source and never count,
+// which is what lets the change motions skip them.
 func isChange(r *diff.DisplayRow) bool {
 	if r.Source == nil {
 		return false
@@ -179,6 +200,9 @@ func isChange(r *diff.DisplayRow) bool {
 	return k == diff.LineAddition || k == diff.LineDeletion
 }
 
+// isHeader identifies hunk-header rows: metadata carried in the Left cell with
+// no Source. The Annotation check matters because inline comment previews also
+// lack a Source and must not be mistaken for headers.
 func isHeader(r *diff.DisplayRow) bool {
 	return !r.Annotation && r.Source == nil && r.Left != nil && r.Left.Kind == diff.LineMetadata
 }

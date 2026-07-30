@@ -26,6 +26,9 @@ type reviewCommentJSON struct {
 	Position     *int                   `json:"position"`
 }
 
+// comment adapts the GitHub payload into the forge-neutral Comment; the
+// position fields are handled separately by location, since replies carry
+// them too but only thread roots need one.
 func (rc reviewCommentJSON) comment() forge.Comment {
 	return forge.Comment{
 		ID:        rc.ID,
@@ -36,6 +39,10 @@ func (rc reviewCommentJSON) comment() forge.Comment {
 	}
 }
 
+// location maps the comment's diff anchor to our Location, or nil for
+// comments not attached to a file. GitHub nulls `line` when the comment no
+// longer maps onto the current diff, so `original_line` is the fallback —
+// that lets outdated threads still be listed at their historical position.
 func (rc reviewCommentJSON) location() *diff.Location {
 	if rc.Path == "" {
 		return nil

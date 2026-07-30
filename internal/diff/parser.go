@@ -32,6 +32,11 @@ func ParsePatchBytes(b []byte) ([]FileDiff, error) {
 	return ParsePatch(strings.NewReader(string(b)))
 }
 
+// convertFile adapts one go-gitdiff file into our FileDiff, doing the
+// bookkeeping the library leaves to callers: per-line old/new numbers are
+// derived by walking each fragment from its start positions, and every line
+// gets a GitHub-style patch position so comments can later be expressed in
+// host API terms without re-deriving offsets.
 func convertFile(f *gitdiff.File) FileDiff {
 	fd := FileDiff{
 		OldPath:   f.OldName,
@@ -116,6 +121,10 @@ func expandTabs(s string, tab int) string {
 	return b.String()
 }
 
+// statusOf collapses go-gitdiff's independent boolean flags into our single
+// FileStatus. The case order encodes precedence: binary wins over everything
+// (there is no textual diff to classify further), and add/delete win over
+// rename/copy.
 func statusOf(f *gitdiff.File) FileStatus {
 	switch {
 	case f.IsBinary:

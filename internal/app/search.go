@@ -69,6 +69,9 @@ func (m *Model) nextMatch(dir int) {
 	}
 }
 
+// matchCount counts the matching rows for the status line. It scans the
+// current file's visible rows only, so matches in other files or inside folded
+// hunks are not included in the reported total.
 func (m *Model) matchCount() int {
 	c := 0
 	for _, r := range m.rows() {

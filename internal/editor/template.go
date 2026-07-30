@@ -35,6 +35,9 @@ func BuildTemplate(ctx TemplateContext, body string) string {
 	return h.String()
 }
 
+// writeField appends one "Label: value" header line, skipping blank values so
+// the template only shows fields that apply (e.g. no "Pull request:" line in
+// local mode).
 func writeField(b *strings.Builder, label, value string) {
 	if strings.TrimSpace(value) != "" {
 		fmt.Fprintf(b, "%s: %s\n", label, value)
