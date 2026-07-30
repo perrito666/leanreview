@@ -149,8 +149,12 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.mode = ModeHelp
 	case "delete-comment":
 		m.deleteCommentUnderCursor()
-	case "toggle-fold", "expand-all":
-		m.setStatus("folding arrives in a later milestone")
+	case "toggle-fold":
+		m.toggleFold()
+	case "expand-all":
+		m.expandAll()
+	case "collapse-all":
+		m.collapseAll()
 	case "escape":
 		m.clearSelection()
 		m.clearSearch()

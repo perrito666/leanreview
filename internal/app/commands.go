@@ -38,6 +38,7 @@ var twoKey = map[string]string{
 	"dd": "delete-comment",
 	"za": "toggle-fold",
 	"zR": "expand-all",
+	"zM": "collapse-all",
 }
 
 // Feed consumes one key. It returns (cmd, true) when a command is ready, or

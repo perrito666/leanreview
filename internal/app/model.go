@@ -35,6 +35,9 @@ type Model struct {
 
 	rowCache map[string][]diff.DisplayRow
 
+	// folded records collapsed hunks, keyed by "fileIdx/hunkIdx".
+	folded map[string]bool
+
 	cursor int // index into the current file's rows
 	top    int // first visible row (scroll offset)
 
@@ -98,6 +101,7 @@ func New(cfg Config) *Model {
 		files:     cfg.Files,
 		layout:    LayoutUnified,
 		rowCache:  map[string][]diff.DisplayRow{},
+		folded:    map[string]bool{},
 		selAnchor: -1,
 		draft:     cfg.Draft,
 		store:     cfg.Store,
@@ -120,8 +124,9 @@ func New(cfg Config) *Model {
 // Init implements tea.Model.
 func (m *Model) Init() tea.Cmd { return nil }
 
-// rows returns the display rows for the current file and layout, cached.
-func (m *Model) rows() []diff.DisplayRow {
+// rawRows returns the unfolded display rows for the current file and layout,
+// cached. Folding is applied on top by rows().
+func (m *Model) rawRows() []diff.DisplayRow {
 	if len(m.files) == 0 {
 		return nil
 	}

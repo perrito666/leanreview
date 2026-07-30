@@ -14,6 +14,8 @@ func HelpText() string {
 
  View
    t             toggle unified / split
+   za            fold / unfold current hunk
+   zR / zM       expand / collapse all hunks
    /             search diff text
    n / N         next / previous match
    f             file picker
