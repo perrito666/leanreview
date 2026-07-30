@@ -32,6 +32,11 @@ type Config struct {
 	// ListFilter is the default discovery filter for --list; empty applies the
 	// engine's built-in default.
 	ListFilter string
+	// Wrap enables wrapping of long diff lines and comment previews.
+	Wrap bool
+	// WrapWidth caps the wrap point in the unified layout (split layouts wrap
+	// at the side panel width).
+	WrapWidth int
 	// LogPath is where diagnostic logs are written (never stdout).
 	LogPath string
 }
@@ -48,6 +53,8 @@ type fileConfig struct {
 	Keys        map[string]string `json:"keys"`
 	ListEngine  *string           `json:"list_engine"`
 	ListFilter  *string           `json:"list_filter"`
+	Wrap        *bool             `json:"wrap"`
+	WrapWidth   *int              `json:"wrap_width"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -59,6 +66,8 @@ func Load() Config {
 		TabWidth:    4,
 		Context:     3,
 		ListEngine:  "gh",
+		Wrap:        true,
+		WrapWidth:   120,
 		LogPath:     logPath(),
 	}
 
@@ -89,6 +98,12 @@ func Load() Config {
 		}
 		if fc.ListFilter != nil {
 			c.ListFilter = *fc.ListFilter
+		}
+		if fc.Wrap != nil {
+			c.Wrap = *fc.Wrap
+		}
+		if fc.WrapWidth != nil && *fc.WrapWidth > 0 {
+			c.WrapWidth = *fc.WrapWidth
 		}
 	}
 

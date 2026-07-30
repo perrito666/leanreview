@@ -63,6 +63,18 @@ func TestNoColorDisablesSyntax(t *testing.T) {
 	}
 }
 
+func TestWrapConfig(t *testing.T) {
+	withConfig(t, "")
+	if c := Load(); !c.Wrap || c.WrapWidth != 120 {
+		t.Errorf("wrap defaults = %v / %d, want true / 120", c.Wrap, c.WrapWidth)
+	}
+	withConfig(t, `{"wrap":false,"wrap_width":100}`)
+	c := Load()
+	if c.Wrap || c.WrapWidth != 100 {
+		t.Errorf("wrap config not applied: %v / %d", c.Wrap, c.WrapWidth)
+	}
+}
+
 func TestListConfig(t *testing.T) {
 	withConfig(t, "")
 	if c := Load(); c.ListEngine != "gh" || c.ListFilter != "" {

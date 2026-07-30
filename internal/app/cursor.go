@@ -37,12 +37,13 @@ func (m *Model) moveLine(delta int) {
 		dir = -1
 	}
 	rows := m.rows()
-	for m.cursor >= 0 && m.cursor < len(rows) && rows[m.cursor].Annotation {
+	skip := func(i int) bool { return rows[i].Annotation || rows[i].Continuation }
+	for m.cursor >= 0 && m.cursor < len(rows) && skip(m.cursor) {
 		m.cursor += dir
 	}
 	m.clampCursor()
-	// If clamping landed on an annotation (file edge), back off the other way.
-	for m.cursor > 0 && m.cursor < len(rows) && rows[m.cursor].Annotation {
+	// If clamping landed on a display-only row (file edge), back off the other way.
+	for m.cursor > 0 && m.cursor < len(rows) && skip(m.cursor) {
 		m.cursor -= dir
 	}
 }

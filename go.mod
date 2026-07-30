@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/mattn/go-isatty v0.0.20
+	github.com/muesli/reflow v0.3.0
 )
 
 require (

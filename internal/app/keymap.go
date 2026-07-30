@@ -27,6 +27,7 @@ func DefaultKeymap() Keymap {
 		"pgdown": "page-down",
 		"t":      "toggle-layout",
 		"i":      "toggle-inline",
+		"w":      "toggle-wrap",
 		"\\":     "sidebar",
 		"v":      "select",
 		"V":      "select-block",

@@ -203,6 +203,8 @@ func run(argv []string) error {
 		Theme:       ui.ThemeByName(cfg.Theme),
 		Highlighter: ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
 		Keys:        cfg.Keys,
+		Wrap:        cfg.Wrap,
+		WrapWidth:   cfg.WrapWidth,
 		PR:          prCtx,
 	})
 

@@ -200,6 +200,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `h` / `l`, `←` / `→` | scroll long lines (unified) / target side (split) |
 | `0` / `$` | scroll to line start / end |
 | `t` | toggle unified / split |
+| `w` | toggle wrapping of long lines and comment previews |
 | `i` | toggle inline comment previews |
 | `\` | toggle changed-files sidebar |
 | `za` / `zR` / `zM` | fold current hunk / expand all / collapse all |
@@ -263,6 +264,11 @@ environment → command-line flags. The config file lives at
   numeric counts are fixed.
 - `list_engine` / `list_filter` — defaults for `--list`: the discovery engine
   (`gh` or `glab`) and its search filter.
+- `wrap` / `wrap_width` — wrapping of long diff lines and comment previews
+  (default on, `w` toggles). Code wraps hard at the column edge, comments at
+  word boundaries; in unified layout the wrap point is
+  `min(wrap_width, view)` (default 120), in split layout the side panel's
+  width. With wrapping off, long lines clip and `h`/`l` scroll them.
 
 Environment: `LEANREVIEW_EDITOR`, `LEANREVIEW_SYNTAX=0` (disable
 highlighting), `NO_COLOR` (disable all color), `LEANREVIEW_LOG` (log path).

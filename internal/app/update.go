@@ -138,6 +138,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.toggleSidebar()
 	case "toggle-inline":
 		m.toggleInlineComments()
+	case "toggle-wrap":
+		m.toggleWrap()
 	case "cmdline":
 		m.cmdlineActive = true
 		m.cmdline = ":"

@@ -31,6 +31,11 @@ type Config struct {
 
 	// Keys overrides individual normal-mode key bindings (key -> action).
 	Keys map[string]string
+
+	// Wrap enables line/comment wrapping at start (default true when built via
+	// the CLI); WrapWidth caps the unified wrap point (0 means the default).
+	Wrap      bool
+	WrapWidth int
 }
 
 // Model is the root Bubble Tea model.
@@ -49,6 +54,11 @@ type Model struct {
 
 	// inlineComments shows comment previews under annotated lines (default on).
 	inlineComments bool
+
+	// wrapText wraps long diff lines and comment previews (w toggles);
+	// wrapWidth caps the unified wrap point (split wraps at the panel width).
+	wrapText  bool
+	wrapWidth int
 
 	// highlighter renders source syntax; hlCache memoizes per (path,text).
 	highlighter *ui.Highlighter
@@ -139,6 +149,8 @@ func New(cfg Config) *Model {
 		mode:           ModeNormal,
 		activeSide:     diff.SideRight,
 		inlineComments: true,
+		wrapText:       cfg.Wrap,
+		wrapWidth:      cfg.WrapWidth,
 		ctx:            context.Background(),
 		pr:             cfg.PR,
 	}
@@ -147,6 +159,9 @@ func New(cfg Config) *Model {
 	}
 	if m.highlighter == nil {
 		m.highlighter = ui.NewHighlighterFromEnv()
+	}
+	if m.wrapWidth == 0 {
+		m.wrapWidth = 120
 	}
 	m.keymap = DefaultKeymap()
 	m.keymap.apply(cfg.Keys)

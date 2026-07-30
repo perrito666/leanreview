@@ -224,7 +224,11 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw, width int) string {
 		path = f.Path()
 	}
 	gutter := m.theme.Gutter.Render(fmt.Sprintf("%s %s ", numStr(r.Left.LineNumber, nw), numStr(r.Right.LineNumber, nw)))
-	sign := m.styleFor(r.Left.Kind).Render(signFor(r.Left.Kind) + " ")
+	signCh := signFor(r.Left.Kind)
+	if r.Continuation {
+		signCh = " "
+	}
+	sign := m.styleFor(r.Left.Kind).Render(signCh + " ")
 
 	avail := width - lipgloss.Width(gutter) - lipgloss.Width(sign)
 	if avail < 1 {
@@ -238,6 +242,9 @@ func (m *Model) plainUnified(r *diff.DisplayRow, nw int) string {
 	oldN := numStr(r.Left.LineNumber, nw)
 	newN := numStr(r.Right.LineNumber, nw)
 	sign := signFor(r.Left.Kind)
+	if r.Continuation {
+		sign = " " // wrapped overflow: keep the color, drop the +/- repeat
+	}
 	return fmt.Sprintf("%s %s %s %s", oldN, newN, sign, m.hcut(r.Left.Text))
 }
 

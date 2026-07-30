@@ -32,6 +32,11 @@ type DisplayRow struct {
 	// inline comment preview). Annotation rows carry no Source, are skipped by
 	// navigation, and are not hunk headers.
 	Annotation bool
+
+	// Continuation marks the overflow of a wrapped diff line: it renders with
+	// the line's own styling but carries no line numbers or Source, so
+	// navigation and selection treat the logical line as one unit.
+	Continuation bool
 }
 
 // binaryPlaceholder returns a one-row informational rendering for binary files
