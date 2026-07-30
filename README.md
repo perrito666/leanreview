@@ -326,6 +326,20 @@ locations. Comments anchor to a semantic `diff.Location` (path, side, line
 range, surrounding context) that survives resize, folding, unified↔split
 toggles — and head-commit changes, via context-based relocation.
 
+## Continuous integration & releases
+
+Two GitHub Actions workflows live in `.github/workflows/`:
+
+- **CI** (`ci.yml`) runs on every pull request and push to `main`: gofmt check,
+  `go vet`, build, and `go test -race`.
+- **Release** (`release.yml`) runs when a PR is merged to `main`. It bumps the
+  version (patch by default; include `#minor` or `#major` in the merge commit
+  to bump those instead), cross-compiles binaries for Linux/macOS/Windows
+  (amd64 + arm64), and publishes a tagged GitHub Release with checksums and
+  auto-generated notes. Include `[skip release]` in the merge commit to skip.
+
+Released binaries report their version via `leanreview --version`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
