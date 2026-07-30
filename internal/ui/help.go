@@ -5,18 +5,18 @@ func HelpText() string {
 	return `leanreview — keys
 
  Navigation
-   j / k         down / up one line
+   j / k, ↓ / ↑  down / up one line
    J / K         next / previous change
    ]c / [c       next / previous hunk
    ]f / [f       next / previous file
    gg / G        first / last line
    Ctrl-d/u      half page down / up
-   ← / →         scroll left / right
+   PgDn / PgUp   full page down / up
+   h / l, ← / →  scroll (unified) or target side (split)
    0 / $         scroll to line start / end
 
  View
    t             toggle unified / split
-   h / l         target left / right side (split view)
    \             toggle changed-files sidebar
    za            fold / unfold current hunk
    zR / zM       expand / collapse all hunks

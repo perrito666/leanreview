@@ -17,10 +17,14 @@ func DefaultKeymap() Keymap {
 		"G":      "last-line",
 		"0":      "line-start",
 		"$":      "line-end",
-		"left":   "scroll-left",
-		"right":  "scroll-right",
-		"h":      "side-left",
-		"l":      "side-right",
+		"up":     "up",
+		"down":   "down",
+		"left":   "motion-left",
+		"right":  "motion-right",
+		"h":      "motion-left",
+		"l":      "motion-right",
+		"pgup":   "page-up",
+		"pgdown": "page-down",
 		"t":      "toggle-layout",
 		"\\":     "sidebar",
 		"v":      "select",
@@ -44,16 +48,23 @@ func DefaultKeymap() Keymap {
 	}
 }
 
+// extraActions are valid binding targets that no default key maps to: the
+// split-only and scroll-only halves of the combined motion actions.
+var extraActions = []string{"side-left", "side-right", "scroll-left", "scroll-right"}
+
 // knownActions is the set of action names a binding may target — the union of
-// the default single-key actions and the two-key sequence actions — so a user
-// may bind a single key to any action (e.g. "next-hunk" or "delete-comment").
-// Overrides naming anything else are ignored.
+// the default single-key actions, the two-key sequence actions, and the extra
+// actions — so a user may bind a single key to any action (e.g. "next-hunk" or
+// "scroll-left"). Overrides naming anything else are ignored.
 var knownActions = func() map[string]bool {
 	m := map[string]bool{}
 	for _, a := range DefaultKeymap() {
 		m[a] = true
 	}
 	for _, a := range twoKey {
+		m[a] = true
+	}
+	for _, a := range extraActions {
 		m[a] = true
 	}
 	return m

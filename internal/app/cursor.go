@@ -39,6 +39,11 @@ func (m *Model) halfPage(sign int) {
 	m.moveLine(sign * (m.contentHeight() / 2))
 }
 
+// fullPage moves the cursor by a full visible page.
+func (m *Model) fullPage(sign int) {
+	m.moveLine(sign * m.contentHeight())
+}
+
 // firstLine / lastLine jump to the extremes.
 func (m *Model) firstLine() { m.cursor = 0; m.clampCursor() }
 func (m *Model) lastLine()  { m.cursor = len(m.rows()) - 1; m.clampCursor() }

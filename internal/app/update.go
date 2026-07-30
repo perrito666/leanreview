@@ -114,6 +114,24 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.setActiveSide(diff.SideLeft)
 	case "side-right":
 		m.setActiveSide(diff.SideRight)
+	case "motion-left":
+		// Arrows and h/l share one motion: side targeting where sides exist
+		// (split view), horizontal scroll otherwise.
+		if m.layout == LayoutSplit {
+			m.setActiveSide(diff.SideLeft)
+		} else {
+			m.scrollLeft()
+		}
+	case "motion-right":
+		if m.layout == LayoutSplit {
+			m.setActiveSide(diff.SideRight)
+		} else {
+			m.scrollRight()
+		}
+	case "page-down":
+		m.fullPage(1)
+	case "page-up":
+		m.fullPage(-1)
 	case "toggle-layout":
 		m.toggleLayout()
 	case "sidebar":

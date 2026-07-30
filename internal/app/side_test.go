@@ -63,11 +63,18 @@ func TestSplitCursorCarriesSide(t *testing.T) {
 	}
 }
 
-func TestSideKeysHintInUnified(t *testing.T) {
+func TestMotionKeysInUnifiedScroll(t *testing.T) {
 	m := testModel(t) // unified layout
+	// In unified view h/l (and arrows) scroll horizontally, not change side.
+	m = key(m, "l")
+	m = key(m, "l")
+	scrolled := m.hscroll
 	m = key(m, "h")
-	if !strings.Contains(m.status, "split view") {
-		t.Errorf("h in unified mode should hint at split view, status=%q", m.status)
+	if m.hscroll >= scrolled && scrolled > 0 {
+		t.Errorf("h did not scroll back (was %d, now %d)", scrolled, m.hscroll)
+	}
+	if m.activeSide != diff.SideRight {
+		t.Errorf("unified motion keys must not change the active side")
 	}
 	// And the side must not silently change behavior in unified mode.
 	loc, _, err := m.buildLocation()
