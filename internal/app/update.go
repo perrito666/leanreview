@@ -616,15 +616,18 @@ func (m *Model) jumpToComment(idx int) {
 	}
 	c := m.draft.Comments[idx]
 	m.mode = ModeNormal
-	// Find the file and row for the comment's location.
+	// Find the file and row for the comment's location. A missing file (an
+	// orphaned draft after a head change) must not fall through to reanchor,
+	// which would silently land on an unrelated row of the current file.
 	for fi := range m.files {
 		if m.files[fi].Path() == c.Location.Path {
 			m.gotoFile(fi)
-			break
+			m.reanchor(c.Location.Side, c.Location.StartLine)
+			m.clampCursor()
+			return
 		}
 	}
-	m.reanchor(c.Location.Side, c.Location.StartLine)
-	m.clampCursor()
+	m.setStatus("%s is not in this diff — comment kept as a draft", c.Location.Path)
 }
 
 // deleteCommentFromList removes the comment selected in the overlay and

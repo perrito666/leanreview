@@ -63,7 +63,17 @@ func (m *Model) firstLine() { m.cursor = 0; m.clampCursor() }
 
 // lastLine jumps the cursor to the last row of the file, mirroring firstLine;
 // the clampCursor call is what actually scrolls the viewport to the tail.
-func (m *Model) lastLine() { m.cursor = len(m.rows()) - 1; m.clampCursor() }
+// Display-only rows (annotation boxes, wrapped continuations) at the tail are
+// skipped so G rests on a real line, as every other motion guarantees.
+func (m *Model) lastLine() {
+	rows := m.rows()
+	i := len(rows) - 1
+	for i > 0 && (rows[i].Annotation || rows[i].Continuation) {
+		i--
+	}
+	m.cursor = i
+	m.clampCursor()
+}
 
 // nextChange moves to the next row that is an addition or deletion.
 func (m *Model) nextChange(n int) {

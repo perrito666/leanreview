@@ -58,7 +58,9 @@ func (m *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "G":
-			m.cursor = len(m.entries) - 1
+			if len(m.entries) > 0 {
+				m.cursor = len(m.entries) - 1
+			}
 		case "enter":
 			m.choice = m.cursor
 			return m, tea.Quit

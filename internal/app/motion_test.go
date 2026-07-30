@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/perrito666/leanreview/internal/diff"
@@ -48,5 +49,47 @@ func TestPageKeys(t *testing.T) {
 	m = key(m, "pgup")
 	if m.cursor != start && m.cursor != 0 {
 		t.Errorf("pgup did not return (cursor %d)", m.cursor)
+	}
+}
+
+// TestLastLineSkipsTrailingDisplayRows: with a comment on the file's final
+// changed line, its annotation box is the tail of the row list — G must rest
+// on the last real line, not inside the box.
+func TestLastLineSkipsTrailingDisplayRows(t *testing.T) {
+	m := testModel(t)
+	rows := m.rows()
+	var lastSrc int
+	for i := range rows {
+		if rows[i].Source != nil {
+			lastSrc = i
+		}
+	}
+	m.cursor = lastSrc
+	loc, snip, err := m.buildLocation()
+	if err != nil {
+		t.Fatalf("buildLocation: %v", err)
+	}
+	m.draft.Add(loc, "tail note", snip)
+
+	m.lastLine()
+	r := m.rowAt(m.cursor)
+	if r == nil || r.Annotation || r.Continuation {
+		t.Errorf("G rested on a display-only row: %+v", r)
+	}
+}
+
+// TestJumpToCommentMissingFileKeepsCursor: jumping to a draft whose file left
+// the diff must not reanchor inside the current file.
+func TestJumpToCommentMissingFileKeepsCursor(t *testing.T) {
+	m := testModel(t)
+	m.draft.Add(diff.Location{Path: "gone/away.go", Side: diff.SideRight, StartLine: 72, EndLine: 72}, "orphan", "x")
+	m.cursor = m.firstContentRow()
+	before := m.cursor
+	m.jumpToComment(0)
+	if m.cursor != before {
+		t.Errorf("cursor moved to %d for a comment in a missing file", m.cursor)
+	}
+	if !strings.Contains(m.status, "not in this diff") {
+		t.Errorf("status = %q, want a missing-file hint", m.status)
 	}
 }
