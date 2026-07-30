@@ -50,6 +50,7 @@ func (*fakeErr) Error() string { return "boom" }
 
 func prModel(t *testing.T, f forge.Forge, threads []forge.Thread) *Model {
 	t.Helper()
+	t.Setenv("LEANREVIEW_SYNTAX", "0")
 	m := New(Config{
 		Files: loadAppFixture(t),
 		Title: "o/r#7",

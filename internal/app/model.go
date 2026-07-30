@@ -38,6 +38,10 @@ type Model struct {
 	// folded records collapsed hunks, keyed by "fileIdx/hunkIdx".
 	folded map[string]bool
 
+	// highlighter renders source syntax; hlCache memoizes per (path,text).
+	highlighter *ui.Highlighter
+	hlCache     map[string]string
+
 	cursor int // index into the current file's rows
 	top    int // first visible row (scroll offset)
 
@@ -98,20 +102,22 @@ type pendingEdit struct {
 // New builds the initial model.
 func New(cfg Config) *Model {
 	m := &Model{
-		files:     cfg.Files,
-		layout:    LayoutUnified,
-		rowCache:  map[string][]diff.DisplayRow{},
-		folded:    map[string]bool{},
-		selAnchor: -1,
-		draft:     cfg.Draft,
-		store:     cfg.Store,
-		editor:    cfg.Editor,
-		theme:     cfg.Theme,
-		title:     cfg.Title,
-		headOID:   cfg.HeadOID,
-		mode:      ModeNormal,
-		ctx:       context.Background(),
-		pr:        cfg.PR,
+		files:       cfg.Files,
+		layout:      LayoutUnified,
+		rowCache:    map[string][]diff.DisplayRow{},
+		folded:      map[string]bool{},
+		highlighter: ui.NewHighlighter(),
+		hlCache:     map[string]string{},
+		selAnchor:   -1,
+		draft:       cfg.Draft,
+		store:       cfg.Store,
+		editor:      cfg.Editor,
+		theme:       cfg.Theme,
+		title:       cfg.Title,
+		headOID:     cfg.HeadOID,
+		mode:        ModeNormal,
+		ctx:         context.Background(),
+		pr:          cfg.PR,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
@@ -197,4 +203,18 @@ func (m *Model) setError(err error) {
 // invalidateRows drops the row cache (after a layout or file mutation).
 func (m *Model) invalidateRows() {
 	m.rowCache = map[string][]diff.DisplayRow{}
+}
+
+// highlight returns the syntax-highlighted form of a source line, memoized.
+func (m *Model) highlight(path, text string) string {
+	if !m.highlighter.Enabled() || text == "" {
+		return text
+	}
+	key := path + "\x00" + text
+	if v, ok := m.hlCache[key]; ok {
+		return v
+	}
+	v := m.highlighter.Line(path, text)
+	m.hlCache[key] = v
+	return v
 }

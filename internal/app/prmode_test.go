@@ -26,6 +26,7 @@ func loadAppFixture(t *testing.T) []diff.FileDiff {
 
 func prTestModel(t *testing.T, threads []forge.Thread) *Model {
 	t.Helper()
+	t.Setenv("LEANREVIEW_SYNTAX", "0")
 	files := loadAppFixture(t)
 	m := New(Config{
 		Files: files,

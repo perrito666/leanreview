@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
@@ -177,9 +178,34 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 		return m.theme.Select.Render(plain)
 	case m.search != "" && m.rowMatches(r):
 		return m.theme.Search.Render(plain)
+	case m.layout == LayoutUnified && m.highlighter.Enabled():
+		return m.renderHighlighted(r, nw, marker)
 	default:
 		return m.styleFor(kindOf(r)).Render(plain)
 	}
+}
+
+// renderHighlighted draws a unified content row with a dim number gutter, a
+// diff-colored sign, and syntax-highlighted source text. This is the order the
+// design calls for: source text → syntax spans → horizontal clip → assembly.
+func (m *Model) renderHighlighted(r *diff.DisplayRow, nw int, marker string) string {
+	path := ""
+	if f := m.currentFile(); f != nil {
+		path = f.Path()
+	}
+	gutter := m.theme.Gutter.Render(fmt.Sprintf("%s %s ", numStr(r.Left.LineNumber, nw), numStr(r.Right.LineNumber, nw)))
+	sign := m.styleFor(r.Left.Kind).Render(signFor(r.Left.Kind) + " ")
+
+	avail := m.width - lipgloss.Width(gutter) - lipgloss.Width(sign) - lipgloss.Width(marker)
+	if avail < 1 {
+		avail = 1
+	}
+	text := ansi.Truncate(m.highlight(path, r.Left.Text), avail, "")
+	line := gutter + sign + text
+	if marker != "" {
+		line += m.theme.Marker.Render(marker)
+	}
+	return pad(line, m.width)
 }
 
 func (m *Model) plainUnified(r *diff.DisplayRow, nw int, marker string) string {

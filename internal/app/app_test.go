@@ -13,6 +13,8 @@ import (
 
 func testModel(t *testing.T) *Model {
 	t.Helper()
+	// Keep rendered output plain so assertions can match source substrings.
+	t.Setenv("LEANREVIEW_SYNTAX", "0")
 	data, err := os.ReadFile(filepath.Join("..", "diff", "testdata", "simple.diff"))
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
