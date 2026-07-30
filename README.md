@@ -78,24 +78,45 @@ result, err := calculate(input)
 > This ignores the error from calculate().
 ````
 
+## GitHub pull-request mode
+
+Point leanreview at a pull request and it fetches the canonical diff through
+`gh`:
+
+```bash
+leanreview 418                                   # infers owner/repo from origin
+leanreview owner/repo#418
+leanreview https://github.com/owner/repo/pull/418
+```
+
+Existing review threads are marked on the diff (`◆N`) and listed in the comment
+overlay. Press `r` on a line to reply, and `s` (or `:comment` / `:approve` /
+`:request`) to open the submission screen — your draft line comments are sent as
+one atomic review and staged replies are posted. Nothing is sent until you
+confirm. Requires the [`gh` CLI](https://cli.github.com/) to be installed and
+authenticated (`gh auth login`); enterprise hosts are supported.
+
 ## Milestones
 
 - **M1 (done)** — shared diff core, patch/local viewer, unified/split layouts,
   draft comments via `$EDITOR`, persistence, Markdown export.
-- **M2** — in-diff comment markers polish, side panels, file sidebar.
-- **M3** — GitHub PR mode (via `gh`): threads, replies, atomic review submission,
-  head-commit change detection and comment relocation.
-- **M4** — search, collapsible context, syntax highlighting, config & themes.
+- **M3 (done)** — GitHub PR mode (via `gh`): canonical PR diff, threads, replies,
+  atomic review submission, and stale-comment detection on head change.
+- **M2 / M4** — comment-panel and navigation polish, side panels, file sidebar,
+  search, collapsible context, syntax highlighting, config & themes.
 - **M5** — other forges (GitLab/Forgejo) behind the same `Forge` seam.
+- **Later** — full comment relocation when the PR head moves (currently
+  stale comments are flagged and warned about at submission).
 
 ## Architecture
 
 ```
 cmd/leanreview      CLI entrypoint, logging, tea.Program wiring
 internal/diff       canonical diff model, parser, unified/split projections, Location
-internal/source     resolve args -> ReviewSource (patch file, stdin, local git)
-internal/git        wrapper over the git executable
-internal/forge      host-agnostic Forge seam + PR-ref parsing (impls land in M3)
+internal/source     resolve args -> ReviewSource (patch file, stdin, local git, PR)
+internal/git        wrapper over the git executable (incl. origin inference)
+internal/forge      host-agnostic Forge seam + PR-ref parsing
+internal/forge/ghcli  gh-backed Forge implementation (PR, diff, threads, reviews)
 internal/review     draft comments, XDG persistence, Markdown export
 internal/editor     $EDITOR resolution/launch, temp file, template stripping
 internal/app        Bubble Tea model/update/view, key grammar, selection
