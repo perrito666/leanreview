@@ -38,6 +38,9 @@ type Model struct {
 	// folded records collapsed hunks, keyed by "fileIdx/hunkIdx".
 	folded map[string]bool
 
+	// sidebar toggles the persistent changed-files list.
+	sidebar bool
+
 	// highlighter renders source syntax; hlCache memoizes per (path,text).
 	highlighter *ui.Highlighter
 	hlCache     map[string]string

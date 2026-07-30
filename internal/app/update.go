@@ -79,6 +79,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.searchActive = true
 		m.searchInput = "/"
 		return m, nil
+	case "\\":
+		m.toggleSidebar()
+		return m, nil
 	case "n":
 		m.nextMatch(1)
 		return m, nil

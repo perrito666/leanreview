@@ -14,6 +14,7 @@ func HelpText() string {
 
  View
    t             toggle unified / split
+   \             toggle changed-files sidebar
    za            fold / unfold current hunk
    zR / zM       expand / collapse all hunks
    /             search diff text

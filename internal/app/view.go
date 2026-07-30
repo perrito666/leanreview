@@ -37,13 +37,19 @@ func (m *Model) View() string {
 		return m.frame("No changes to review.")
 	}
 
-	var b strings.Builder
-	b.WriteString(m.titleBar())
-	b.WriteByte('\n')
-	b.WriteString(m.diffBody())
-	b.WriteByte('\n')
-	b.WriteString(m.statusBar())
-	return b.String()
+	body := m.diffLines()
+	if m.effSidebar() {
+		side := m.sidebarLines(len(body))
+		sep := m.theme.Faint.Render("│")
+		for i := range body {
+			s := ""
+			if i < len(side) {
+				s = side[i]
+			}
+			body[i] = s + sep + body[i]
+		}
+	}
+	return m.titleBar() + "\n" + strings.Join(body, "\n") + "\n" + m.statusBar()
 }
 
 // frame wraps overlay content between the title and status bars.
@@ -102,21 +108,23 @@ func (m *Model) statusBar() string {
 	return m.theme.Status.Width(m.width).Render(clip(line, m.width))
 }
 
-func (m *Model) diffBody() string {
+// diffLines renders exactly contentHeight rows of the diff at the content width
+// (which excludes the sidebar when it is shown).
+func (m *Model) diffLines() []string {
 	rows := m.rows()
 	h := m.contentHeight()
 	nw := m.numWidth()
 	lo, hi := m.selectionRange()
 
-	var out []string
+	out := make([]string, 0, h)
 	for i := m.top; i < m.top+h; i++ {
 		if i >= len(rows) {
-			out = append(out, pad("", m.width))
+			out = append(out, pad("", m.contentWidth()))
 			continue
 		}
 		out = append(out, m.renderRow(i, &rows[i], nw, i >= lo && i <= hi))
 	}
-	return strings.Join(out, "\n")
+	return out
 }
 
 // numWidth returns the gutter width needed for line numbers in the current file.
@@ -145,14 +153,15 @@ func (m *Model) numWidth() int {
 func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) string {
 	isCursor := idx == m.cursor
 	selected := inSel && m.mode == ModeVisual && m.selAnchor >= 0
+	cw := m.contentWidth()
 
-	// Hunk header rows span the full width.
+	// Hunk header rows span the full content width.
 	if isHeader(r) {
-		text := clip(r.Left.Text, m.width)
+		text := clip(r.Left.Text, cw)
 		if isCursor {
-			return m.theme.Cursor.Width(m.width).Render(text)
+			return m.theme.Cursor.Width(cw).Render(text)
 		}
-		return m.theme.Metadata.Width(m.width).Render(pad(text, m.width))
+		return m.theme.Metadata.Width(cw).Render(pad(text, cw))
 	}
 
 	marker := ""
@@ -169,7 +178,7 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 	} else {
 		plain = m.plainUnified(r, nw, marker)
 	}
-	plain = pad(clip(plain, m.width), m.width)
+	plain = pad(clip(plain, cw), cw)
 
 	switch {
 	case isCursor:
@@ -196,7 +205,8 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw int, marker string) str
 	gutter := m.theme.Gutter.Render(fmt.Sprintf("%s %s ", numStr(r.Left.LineNumber, nw), numStr(r.Right.LineNumber, nw)))
 	sign := m.styleFor(r.Left.Kind).Render(signFor(r.Left.Kind) + " ")
 
-	avail := m.width - lipgloss.Width(gutter) - lipgloss.Width(sign) - lipgloss.Width(marker)
+	cw := m.contentWidth()
+	avail := cw - lipgloss.Width(gutter) - lipgloss.Width(sign) - lipgloss.Width(marker)
 	if avail < 1 {
 		avail = 1
 	}
@@ -205,7 +215,7 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw int, marker string) str
 	if marker != "" {
 		line += m.theme.Marker.Render(marker)
 	}
-	return pad(line, m.width)
+	return pad(line, cw)
 }
 
 func (m *Model) plainUnified(r *diff.DisplayRow, nw int, marker string) string {
@@ -216,7 +226,7 @@ func (m *Model) plainUnified(r *diff.DisplayRow, nw int, marker string) string {
 }
 
 func (m *Model) plainSplit(r *diff.DisplayRow, nw int, marker string) string {
-	half := (m.width - (nw * 2) - 6) / 2
+	half := (m.contentWidth() - (nw * 2) - 6) / 2
 	if half < 4 {
 		half = 4
 	}
