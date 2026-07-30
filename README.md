@@ -20,8 +20,11 @@ comment (`●1`), and an existing review thread (`◆1`).*
 ```bash
 go install github.com/perrito666/leanreview/cmd/leanreview@latest
 # or, from a checkout:
-go build -o leanreview ./cmd/leanreview
+make            # builds ./leanreview
+make install    # installs into GOBIN
 ```
+
+Other Make targets: `test`, `race`, `vet`, `fmt`, `clean`.
 
 Optional, per mode: [`gh`](https://cli.github.com/) (`gh auth login`) for
 GitHub, [`glab`](https://gitlab.com/gitlab-org/cli) (`glab auth login`) for
