@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/perrito666/leanreview/internal/diff"
+	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/ui"
 )
 
@@ -27,6 +28,8 @@ func (m *Model) View() string {
 		return m.frame(m.filesView())
 	case ModeComments:
 		return m.frame(m.commentsView())
+	case ModeConfirm:
+		return m.frame(m.confirmView())
 	}
 
 	if len(m.files) == 0 {
@@ -279,6 +282,33 @@ func (m *Model) commentsView() string {
 		}
 	}
 	return b.String()
+}
+
+func (m *Model) confirmView() string {
+	c := m.submitCounts()
+	var b strings.Builder
+	b.WriteString("Submit review\n\n")
+	if m.prActive() {
+		b.WriteString(fmt.Sprintf("  Pull request: %s/%s#%d\n", m.pr.Ref.Owner, m.pr.Ref.Repo, m.pr.Ref.Number))
+	}
+	b.WriteString(fmt.Sprintf("  %d new comment(s), %d repl(y/ies)\n", c.NewComments, c.Replies))
+	if c.Stale > 0 {
+		b.WriteString(fmt.Sprintf("  ⚠ %d comment(s) may be stale (the PR head changed); they could be rejected\n", c.Stale))
+	}
+	b.WriteString("\n  Event:\n")
+	b.WriteString(eventLine("c", "Comment", m.pendingEvent == forge.EventComment))
+	b.WriteString(eventLine("a", "Approve", m.pendingEvent == forge.EventApprove))
+	b.WriteString(eventLine("R", "Request changes", m.pendingEvent == forge.EventRequestChanges))
+	b.WriteString("\n  Press y to submit, c/a/R to change the event, esc to cancel.\n")
+	return b.String()
+}
+
+func eventLine(key, label string, selected bool) string {
+	mark := "[ ]"
+	if selected {
+		mark = "[x]"
+	}
+	return fmt.Sprintf("    %s %s  (%s)\n", mark, label, key)
 }
 
 func (m *Model) commentCountForPath(path string) int {

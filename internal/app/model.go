@@ -8,6 +8,7 @@ import (
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/editor"
+	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/review"
 	"github.com/perrito666/leanreview/internal/ui"
 )
@@ -64,6 +65,11 @@ type Model struct {
 	// pr and threadIndex are populated in pull-request mode.
 	pr          *PRContext
 	threadIndex map[string][]int
+
+	// pendingEvent is the review event awaiting confirmation; submitting is set
+	// while a submission is in flight.
+	pendingEvent forge.ReviewEvent
+	submitting   bool
 
 	// inflight carries the location/snippet while the external editor is open.
 	inflight *pendingEdit

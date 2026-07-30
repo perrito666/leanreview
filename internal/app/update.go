@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/perrito666/leanreview/internal/editor"
+	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/review"
 )
 
@@ -25,6 +26,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case editorFinishedMsg:
 		return m, m.onEditorFinished(msg)
+
+	case submitResultMsg:
+		m.onSubmitResult(msg)
+		return m, nil
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)
@@ -57,6 +62,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.handleFilesKey(key)
 	case ModeComments:
 		return m, m.handleCommentsKey(key)
+	case ModeConfirm:
+		return m, m.handleConfirmKey(key)
 	}
 
 	switch key {
@@ -71,8 +78,11 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.halfPage(-1)
 		return m, nil
 	case "r":
-		// Reply is a PR-mode verb; acknowledge until Milestone 3.
-		m.setStatus("replies arrive with pull-request mode (Milestone 3)")
+		return m, m.startReplyUnderCursor()
+	case "s":
+		if m.prActive() {
+			m.beginSubmit(m.draft.Event)
+		}
 		return m, nil
 	}
 
@@ -271,8 +281,15 @@ func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 		}
 		m.setStatus("comment updated")
 	} else {
-		m.draft.Add(pe.loc, body, pe.snippet)
-		m.setStatus("comment added at %s %s", pe.loc.Path, lineRefString(pe.loc))
+		id := m.draft.Add(pe.loc, body, pe.snippet)
+		if pe.replyTo != nil {
+			if c := m.draft.Get(id); c != nil {
+				c.ReplyTo = pe.replyTo
+			}
+			m.setStatus("reply staged at %s %s", pe.loc.Path, lineRefString(pe.loc))
+		} else {
+			m.setStatus("comment added at %s %s", pe.loc.Path, lineRefString(pe.loc))
+		}
 	}
 	m.clearSelection()
 	m.saveDraft()
@@ -340,8 +357,14 @@ func (m *Model) runCmdline(line string) tea.Cmd {
 		m.exportMarkdown(path)
 	case "help":
 		m.mode = ModeHelp
-	case "approve", "request", "comment":
-		m.setStatus("review submission arrives with pull-request mode (Milestone 3)")
+	case "comment":
+		m.beginSubmit(forge.EventComment)
+	case "approve":
+		m.beginSubmit(forge.EventApprove)
+	case "request":
+		m.beginSubmit(forge.EventRequestChanges)
+	case "submit":
+		m.beginSubmit(m.draft.Event)
 	default:
 		m.setError(fmt.Errorf("unknown command: %s", fields[0]))
 	}
@@ -404,6 +427,26 @@ func (m *Model) handleCommentsKey(key string) tea.Cmd {
 		m.jumpToComment(m.listCursor)
 	case "d":
 		m.deleteCommentFromList(m.listCursor)
+	}
+	return nil
+}
+
+func (m *Model) handleConfirmKey(key string) tea.Cmd {
+	switch key {
+	case "y", "enter":
+		return m.doSubmit()
+	case "a":
+		m.pendingEvent = forge.EventApprove
+		m.draft.Event = forge.EventApprove
+	case "c":
+		m.pendingEvent = forge.EventComment
+		m.draft.Event = forge.EventComment
+	case "R":
+		m.pendingEvent = forge.EventRequestChanges
+		m.draft.Event = forge.EventRequestChanges
+	case "esc", "n", "q":
+		m.mode = ModeNormal
+		m.setStatus("submission cancelled")
 	}
 	return nil
 }
