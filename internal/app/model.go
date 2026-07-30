@@ -21,6 +21,9 @@ type Config struct {
 	Store   *review.Store
 	Editor  editor.Editor
 	Theme   ui.Theme
+
+	// PR is set in pull-request mode; nil for local/patch review.
+	PR *PRContext
 }
 
 // Model is the root Bubble Tea model.
@@ -58,6 +61,10 @@ type Model struct {
 	status  string
 	err     error
 
+	// pr and threadIndex are populated in pull-request mode.
+	pr          *PRContext
+	threadIndex map[string][]int
+
 	// inflight carries the location/snippet while the external editor is open.
 	inflight *pendingEdit
 
@@ -88,10 +95,12 @@ func New(cfg Config) *Model {
 		headOID:   cfg.HeadOID,
 		mode:      ModeNormal,
 		ctx:       context.Background(),
+		pr:        cfg.PR,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
 	}
+	m.buildThreadIndex()
 	m.cursor = m.firstContentRow()
 	return m
 }

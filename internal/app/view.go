@@ -152,6 +152,9 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 	if n := len(m.commentIDsAt(idx)); n > 0 {
 		marker = fmt.Sprintf(" ●%d", n)
 	}
+	if t := len(m.threadsAt(idx)); t > 0 {
+		marker += fmt.Sprintf(" ◆%d", t)
+	}
 
 	var plain string
 	if m.layout == LayoutSplit {
@@ -238,16 +241,42 @@ func (m *Model) commentsView() string {
 	var b strings.Builder
 	b.WriteString("Comments (enter to jump, d to delete, esc to close)\n\n")
 	if len(m.draft.Comments) == 0 {
-		b.WriteString("  (none yet — press c on a line to add one)\n")
-		return b.String()
+		b.WriteString("  (no drafts yet — press c on a line to add one)\n")
 	}
 	for i, c := range m.draft.Comments {
 		cursor := "  "
 		if i == m.listCursor {
 			cursor = "▶ "
 		}
+		reply := ""
+		if c.ReplyTo != nil {
+			reply = "↳ "
+		}
+		state := ""
+		if c.State != 0 { // non-active
+			state = " [" + c.State.String() + "]"
+		}
 		first := firstLine(c.Body)
-		b.WriteString(fmt.Sprintf("%s%s %s (%s)  %s\n", cursor, c.Location.Path, lineRefString(c.Location), c.Location.Side, first))
+		b.WriteString(fmt.Sprintf("%s%s%s %s (%s)%s  %s\n", cursor, reply, c.Location.Path, lineRefString(c.Location), c.Location.Side, state, first))
+	}
+
+	// Existing review threads (read-only here; reply with r on the diff line).
+	if m.prActive() && len(m.pr.Threads) > 0 {
+		b.WriteString("\nExisting threads ◆\n")
+		for _, th := range m.pr.Threads {
+			loc := "general"
+			if th.Location != nil {
+				loc = fmt.Sprintf("%s %s", th.Location.Path, lineRefString(*th.Location))
+			}
+			flags := ""
+			if th.Outdated {
+				flags = " (outdated)"
+			}
+			b.WriteString(fmt.Sprintf("  %s — @%s: %s%s\n", loc, th.Root.Author, firstLine(th.Root.Body), flags))
+			for _, rep := range th.Replies {
+				b.WriteString(fmt.Sprintf("      ↳ @%s: %s\n", rep.Author, firstLine(rep.Body)))
+			}
+		}
 	}
 	return b.String()
 }

@@ -83,7 +83,6 @@ func run(argv []string) error {
 	if err != nil {
 		return err
 	}
-	_ = prSrc // wired into the TUI in the next milestone step
 
 	files, err := src.Files(ctx)
 	if err != nil {
@@ -132,6 +131,20 @@ func run(argv []string) error {
 		return err
 	}
 
+	var prCtx *app.PRContext
+	if prSrc != nil {
+		threads, err := prSrc.Threads(ctx)
+		if err != nil {
+			log.Printf("fetch threads: %v", err)
+		}
+		prCtx = &app.PRContext{
+			Forge:   prSrc.Forge(),
+			Ref:     prSrc.Ref(),
+			PR:      prSrc.PullRequest(),
+			Threads: threads,
+		}
+	}
+
 	model := app.New(app.Config{
 		Files:   files,
 		Title:   src.Title(),
@@ -140,6 +153,7 @@ func run(argv []string) error {
 		Store:   store,
 		Editor:  ed,
 		Theme:   ui.DefaultTheme(),
+		PR:      prCtx,
 	})
 
 	prog := tea.NewProgram(model, tea.WithAltScreen())
