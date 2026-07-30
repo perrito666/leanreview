@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -106,5 +107,17 @@ func TestInvalidFileIgnored(t *testing.T) {
 	c := Load()
 	if !c.Syntax || c.TabWidth != 4 {
 		t.Errorf("invalid config should fall back to defaults: %+v", c)
+	}
+	// The typo must be surfaced, not silently swallowed — an ignored config
+	// file is the failure users cannot diagnose otherwise.
+	if c.Warning == "" || !strings.Contains(c.Warning, "malformed") {
+		t.Errorf("expected a malformed-config warning, got %q", c.Warning)
+	}
+}
+
+func TestValidFileHasNoWarning(t *testing.T) {
+	withConfig(t, `{"tab_width": 8}`)
+	if c := Load(); c.Warning != "" {
+		t.Errorf("valid config should carry no warning, got %q", c.Warning)
 	}
 }

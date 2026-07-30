@@ -5,6 +5,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -42,6 +43,10 @@ type Config struct {
 	WrapWidth int
 	// LogPath is where diagnostic logs are written (never stdout).
 	LogPath string
+	// Warning carries a non-fatal startup problem (e.g. a malformed config
+	// file that was ignored) for main to surface; the config itself falls
+	// back to defaults so startup never aborts over it.
+	Warning string
 }
 
 // fileConfig mirrors the on-disk JSON, using pointers so absent keys are
@@ -75,7 +80,9 @@ func Load() Config {
 		LogPath:     logPath(),
 	}
 
-	if fc, ok := readFile(configPath()); ok {
+	fc, ok, warn := readFile(configPath())
+	c.Warning = warn
+	if ok {
 		if fc.Editor != nil {
 			c.Editor = *fc.Editor
 		}
@@ -121,9 +128,7 @@ func Load() Config {
 	if os.Getenv("LEANREVIEW_SYNTAX") == "0" || os.Getenv("NO_COLOR") != "" {
 		c.Syntax = false
 	}
-	if v := os.Getenv("LEANREVIEW_LOG"); v != "" {
-		c.LogPath = v
-	}
+	// LEANREVIEW_LOG is already honoured by logPath(); no second read needed.
 
 	return c
 }
@@ -144,22 +149,23 @@ func configPath() string {
 	return filepath.Join(base, "leanreview", "config.json")
 }
 
-// readFile parses the JSON config at path. The config file is optional, so
-// every failure (no path, unreadable, malformed JSON) reports ok=false and
-// the caller silently proceeds with defaults rather than aborting startup.
-func readFile(path string) (fileConfig, bool) {
+// readFile parses the JSON config at path. The config file is optional, so an
+// absent or unreadable file reports ok=false and the caller proceeds with
+// defaults. A file that exists but does not parse also reports ok=false, but
+// returns a warning: a typo silently reverting every setting to defaults is
+// exactly the failure users cannot diagnose without a message.
+func readFile(path string) (fc fileConfig, ok bool, warn string) {
 	if path == "" {
-		return fileConfig{}, false
+		return fileConfig{}, false, ""
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fileConfig{}, false
+		return fileConfig{}, false, ""
 	}
-	var fc fileConfig
 	if err := json.Unmarshal(data, &fc); err != nil {
-		return fileConfig{}, false
+		return fileConfig{}, false, fmt.Sprintf("config file %s ignored (malformed): %v", path, err)
 	}
-	return fc, true
+	return fc, true, ""
 }
 
 // logPath picks the default diagnostic log location: LEANREVIEW_LOG if set,

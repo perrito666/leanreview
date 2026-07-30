@@ -25,6 +25,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -98,6 +99,11 @@ func run(argv []string) error {
 	}
 
 	cfg := config.Load()
+	if cfg.Warning != "" {
+		// Before the TUI takes the terminal, so it survives on the original
+		// screen after exit — otherwise a config typo is silently defaults.
+		fmt.Fprintln(os.Stderr, "leanreview: "+cfg.Warning)
+	}
 	logFile := setupLogging(cfg.LogPath)
 	if logFile != nil {
 		defer logFile.Close()
@@ -493,6 +499,9 @@ func next(argv []string, i *int, flag string) (string, error) {
 // would tolerate that makes no sense for a context-line count ("+3", "-1",
 // whitespace). Digits-only keeps the -U error message simple and uniform.
 func atoi(s string) (int, error) {
+	if s == "" {
+		return 0, fmt.Errorf("not a number: %q", s)
+	}
 	n := 0
 	for _, r := range s {
 		if r < '0' || r > '9' {
@@ -505,16 +514,23 @@ func atoi(s string) (int, error) {
 
 // setupLogging redirects the standard logger to an append-only file at path,
 // because the TUI owns the terminal and any log output to stdout/stderr would
-// corrupt the alternate screen. Failures are swallowed (returning nil): losing
-// diagnostics is preferable to refusing to start over an unwritable log path.
+// corrupt the alternate screen. Failures are swallowed (returning nil) but
+// still silence the logger: losing diagnostics is preferable to refusing to
+// start — or to log.Print scribbling over the alternate screen via stderr.
 func setupLogging(path string) *os.File {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return nil
-	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	f, err := openLogFile(path)
 	if err != nil {
+		log.SetOutput(io.Discard)
 		return nil
 	}
 	log.SetOutput(f)
 	return f
+}
+
+// openLogFile creates the log directory and opens the file for appending.
+func openLogFile(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, err
+	}
+	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 }
