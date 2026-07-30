@@ -93,6 +93,28 @@ Drafts persist automatically (`:w` forces a save, quitting saves too) and
 reload the next time you open the same source. `leanreview --discard <target>`
 deletes a saved draft.
 
+## Discovering what to review
+
+`--list` finds open requests and lets you pick one:
+
+```bash
+leanreview --list                        # your review queue (default engine + filter)
+leanreview --list gh "author:alice"      # explicit engine and search filter
+leanreview --list "repo:owner/name"      # filter only; engine from config
+leanreview --list | cat                  # piped: prints a plain table instead
+```
+
+On a terminal the results open a small picker — `Enter` reviews the selected
+request immediately, `q` dismisses. Filters are engine-specific: a GitHub
+search query for `gh` (default `is:open review-requested:@me`), a REST query
+string for `glab` (default `state=opened&reviewer_username=@me`, with `@me`
+resolved to your username). Both the default engine and the default filter are
+configurable:
+
+```json
+{ "list_engine": "gh", "list_filter": "is:open review-requested:@me org:mycorp" }
+```
+
 ## Reviewing a pull request (GitHub)
 
 ```bash
@@ -162,6 +184,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `-U, --context N` | unified context lines (default 3, configurable) |
 | `--export FILE` | write draft comments as Markdown and exit |
 | `--discard` | delete the saved draft for this source and exit |
+| `--list [engine] [filter]` | discover open PRs/MRs and pick one to review (table when piped) |
 
 ### Keys
 
@@ -238,6 +261,8 @@ environment → command-line flags. The config file lives at
   action unbinds a key; single keys may bind two-key actions (`next-hunk`,
   `delete-comment`, …). Two-key sequences themselves (`gg`, `]c`, …) and
   numeric counts are fixed.
+- `list_engine` / `list_filter` — defaults for `--list`: the discovery engine
+  (`gh` or `glab`) and its search filter.
 
 Environment: `LEANREVIEW_EDITOR`, `LEANREVIEW_SYNTAX=0` (disable
 highlighting), `NO_COLOR` (disable all color), `LEANREVIEW_LOG` (log path).
