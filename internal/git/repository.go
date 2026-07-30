@@ -42,6 +42,11 @@ func (r *Repository) git(ctx context.Context, args ...string) ([]byte, error) {
 	return run(ctx, r.Root, args...)
 }
 
+// run executes git with args in dir (or the process CWD when dir is empty,
+// which Open needs before a root is known) and returns stdout. Stderr is
+// captured separately and folded into the error, because that is where git
+// puts its human-readable diagnostics and a bare exit status is useless to
+// the user.
 func run(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	if dir != "" {
@@ -60,6 +65,8 @@ func run(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	return stdout.Bytes(), nil
 }
 
+// dirOrCWD names dir for error messages, substituting "current directory"
+// for the empty string so "not a git repository ()" never reaches the user.
 func dirOrCWD(dir string) string {
 	if dir == "" {
 		return "current directory"

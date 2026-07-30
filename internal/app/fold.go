@@ -6,10 +6,14 @@ import (
 	"github.com/perrito666/leanreview/internal/diff"
 )
 
+// foldKey builds the m.folded map key for one hunk. Folds are keyed by file
+// and hunk index so a hunk stays folded while the user moves between files.
 func foldKey(fileIdx, hunkIdx int) string {
 	return fmt.Sprintf("%d/%d", fileIdx, hunkIdx)
 }
 
+// isFolded reports whether the given hunk of the current file is folded;
+// absent keys read as false, so hunks start out expanded.
 func (m *Model) isFolded(hunkIdx int) bool {
 	return m.folded[foldKey(m.fileIdx, hunkIdx)]
 }

@@ -1,9 +1,8 @@
 // Package forge defines the seam between the review UI and a code-hosting
-// service (GitHub, later GitLab/Forgejo). The TUI depends only on the Forge
-// interface and the value types here; concrete adapters (e.g. one that shells
-// out to `gh`) live in subpackages and are wired in from cmd. In Milestone 1
-// no adapter exists yet — only the seam and pull-request reference parsing,
-// which the source resolver uses to recognise (and politely decline) PR refs.
+// service. The TUI depends only on the Forge interface and the value types
+// here; the concrete adapters — ghcli shelling out to `gh`, glabcli to
+// `glab` — live in subpackages and are wired in from cmd, keeping the UI
+// ignorant of which host (or API style) it is talking to.
 package forge
 
 import (
@@ -26,6 +25,15 @@ const (
 	KindGitLab
 )
 
+// String returns the short forge name, matching the discovery engine names
+// ("gh", "glab") so the UI badge and the --list engine filter agree.
+func (k Kind) String() string {
+	if k == KindGitLab {
+		return "glab"
+	}
+	return "gh"
+}
+
 // KindForHost guesses the forge kind from a host name. gitlab.com and any host
 // containing "gitlab" (the common self-hosted convention) map to GitLab;
 // everything else — including GitHub Enterprise hosts and an empty host —
@@ -47,6 +55,10 @@ type PullRequestRef struct {
 	Number int
 }
 
+// String renders the canonical short form "host/owner/repo#N" — with GitLab's
+// "!" separator when the host looks like a GitLab instance — as used in error
+// messages and the discovery picker. An empty host prints as github.com,
+// matching ParseRef's default.
 func (r PullRequestRef) String() string {
 	host := r.Host
 	if host == "" {
@@ -59,11 +71,26 @@ func (r PullRequestRef) String() string {
 	return fmt.Sprintf("%s/%s/%s%s%d", host, r.Owner, r.Repo, sep, r.Number)
 }
 
+// WebURL returns the browsable page for the pull request on its host, used as
+// a fallback when the adapter did not report one.
+func (r PullRequestRef) WebURL() string {
+	host := r.Host
+	if host == "" {
+		host = "github.com"
+	}
+	if KindForHost(host) == KindGitLab {
+		return fmt.Sprintf("https://%s/%s/%s/-/merge_requests/%d", host, r.Owner, r.Repo, r.Number)
+	}
+	return fmt.Sprintf("https://%s/%s/%s/pull/%d", host, r.Owner, r.Repo, r.Number)
+}
+
 // PullRequest is the metadata the UI needs about a PR.
 type PullRequest struct {
 	Ref     PullRequestRef
 	Title   string
+	Body    string // description, as Markdown
 	Author  string
+	URL     string // browsable page; empty when the adapter did not report one
 	HeadOID string
 	BaseRef string
 	HeadRef string

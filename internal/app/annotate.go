@@ -43,12 +43,24 @@ func (m *Model) rows() []diff.DisplayRow {
 func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 	var rows []diff.DisplayRow
 	add := func(text string) {
+		// Each preview renders as a bordered box: an edge row above and below
+		// the wrapped text rows (see renderAnnotation for the drawing).
+		rows = append(rows, diff.DisplayRow{
+			Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
+			Annotation: true,
+			Edge:       diff.EdgeTop,
+		})
 		for _, line := range m.wrapAnnotation(text) {
 			rows = append(rows, diff.DisplayRow{
 				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
 				Annotation: true,
 			})
 		}
+		rows = append(rows, diff.DisplayRow{
+			Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
+			Annotation: true,
+			Edge:       diff.EdgeBottom,
+		})
 	}
 	body := func(s string) string {
 		if m.wrapText {
@@ -88,19 +100,42 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 	return rows
 }
 
-// wrapAnnotation word-wraps a comment preview to the layout's wrap point,
+// annotationLayout returns the left indent and inner text width of the comment
+// box: under the text column in unified layout, over the right panel in split.
+func (m *Model) annotationLayout() (indent, inner int) {
+	cw := m.contentWidth()
+	if m.layout == LayoutSplit {
+		indent = 2 + m.numWidth() + 1 + m.splitPanelWidth() + 3
+		inner = m.splitPanelWidth()
+	} else {
+		indent = 3
+		inner = m.unifiedTextWidth()
+	}
+	// The box frame ("│ " + text + " │") must fit the content width.
+	if indent+inner+4 > cw {
+		inner = cw - indent - 4
+	}
+	if inner < 4 {
+		inner = 4
+		if indent > cw-inner-4 {
+			indent = cw - inner - 4
+		}
+		if indent < 0 {
+			indent = 0
+		}
+	}
+	return indent, inner
+}
+
+// wrapAnnotation word-wraps a comment preview to the box's inner width,
 // indenting continuation lines under the text of the first. Prose wraps at
-// word boundaries (unlike code, which wraps hard at the column).
+// word boundaries (unlike code, which wraps hard at the column). With wrapping
+// off, the single line is clipped by the box instead.
 func (m *Model) wrapAnnotation(text string) []string {
 	if !m.wrapText {
 		return []string{text}
 	}
-	var width int
-	if m.layout == LayoutSplit {
-		width = m.splitPanelWidth()
-	} else {
-		width = m.unifiedTextWidth()
-	}
+	_, width := m.annotationLayout()
 	if width <= 2 {
 		return []string{text}
 	}
@@ -114,6 +149,31 @@ func (m *Model) wrapAnnotation(text string) []string {
 	return lines
 }
 
+// renderAnnotation draws one row of a boxed comment preview: a border edge or
+// a text row framed by the box sides.
+func (m *Model) renderAnnotation(r *diff.DisplayRow, isCursor bool) string {
+	indent, inner := m.annotationLayout()
+	cw := m.contentWidth()
+	pre := strings.Repeat(" ", indent)
+
+	if isCursor {
+		// The cursor never rests here, but stay defensive and legible.
+		return m.theme.Cursor.Render(pad(pre+clip(r.Left.Text, cw-indent), cw))
+	}
+	switch r.Edge {
+	case diff.EdgeTop:
+		return pad(pre+m.theme.Faint.Render("╭"+strings.Repeat("─", inner+2)+"╮"), cw)
+	case diff.EdgeBottom:
+		return pad(pre+m.theme.Faint.Render("╰"+strings.Repeat("─", inner+2)+"╯"), cw)
+	default:
+		side := m.theme.Faint.Render("│")
+		text := m.theme.Comment.Render(pad(clip(r.Left.Text, inner), inner))
+		return pad(pre+side+" "+text+" "+side, cw)
+	}
+}
+
+// plural picks the singular or plural form for a count, keeping preview text
+// like "+2 replies" grammatical without pulling in a pluralisation library.
 func plural(n int, one, many string) string {
 	if n == 1 {
 		return one

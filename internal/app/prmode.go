@@ -36,6 +36,9 @@ func (m *Model) buildThreadIndex() {
 	}
 }
 
+// locKey canonicalises a comment anchor (path, side, start line) into the
+// string key shared by everything that writes or reads threadIndex, so lookups
+// from diff rows and thread locations always agree.
 func locKey(path string, side diff.Side, line int) string {
 	return fmt.Sprintf("%s|%d|%d", path, side, line)
 }
@@ -107,6 +110,9 @@ func (m *Model) threadReaderView() string {
 	return b.String()
 }
 
+// writeThreadComment appends one comment to the thread reader: an author line
+// (with timestamp when known) and the body indented beneath it. Roots and
+// replies go through the same helper so they format identically.
 func writeThreadComment(b *strings.Builder, c forge.Comment) {
 	when := ""
 	if !c.CreatedAt.IsZero() {

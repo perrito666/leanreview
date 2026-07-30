@@ -37,8 +37,12 @@ func PickRequest(entries []forge.ListedRequest, theme ui.Theme) (int, error) {
 	return res.(*pickerModel).choice, nil
 }
 
+// Init implements tea.Model; the picker needs no startup command and simply
+// waits for the initial WindowSizeMsg before rendering anything real.
 func (m *pickerModel) Init() tea.Cmd { return nil }
 
+// Update handles resize and vim-style list navigation: enter records the
+// selection and quits, q/esc quit leaving choice at -1 (dismissed).
 func (m *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -54,7 +58,9 @@ func (m *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "G":
-			m.cursor = len(m.entries) - 1
+			if len(m.entries) > 0 {
+				m.cursor = len(m.entries) - 1
+			}
 		case "enter":
 			m.choice = m.cursor
 			return m, tea.Quit
@@ -67,6 +73,8 @@ func (m *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// scroll keeps the cursor inside the visible window after every key, the same
+// clamp the main model's clampCursor applies to the diff view.
 func (m *pickerModel) scroll() {
 	h := m.listHeight()
 	if m.cursor < m.top {
@@ -77,6 +85,9 @@ func (m *pickerModel) scroll() {
 	}
 }
 
+// listHeight is the number of rows available for entries once the title and
+// status lines are subtracted, floored at 1 so the render loop always
+// makes progress.
 func (m *pickerModel) listHeight() int {
 	h := m.height - 2
 	if h < 1 {
@@ -85,6 +96,9 @@ func (m *pickerModel) listHeight() int {
 	return h
 }
 
+// View renders the title bar, the windowed entry list padded with blank rows
+// to a stable height, and a key-hint footer. Until the first WindowSizeMsg
+// arrives (width 0) it shows a placeholder instead of guessing a layout.
 func (m *pickerModel) View() string {
 	if m.width == 0 {
 		return "loading…"

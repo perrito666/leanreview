@@ -116,7 +116,7 @@ func TestCommentPreviewWordWraps(t *testing.T) {
 
 	var annRows []string
 	for _, r := range m.rows() {
-		if r.Annotation {
+		if r.Annotation && r.Edge == diff.EdgeNone {
 			annRows = append(annRows, r.Left.Text)
 		}
 	}
@@ -130,16 +130,17 @@ func TestCommentPreviewWordWraps(t *testing.T) {
 		t.Errorf("wrapped preview lost body text:\n%s", joined)
 	}
 
-	// With wrap off, the preview collapses to a single truncated row.
+	// With wrap off, the preview collapses to a single truncated text row
+	// (plus the two box border rows).
 	m = key(m, "w")
 	ann := 0
 	for _, r := range m.rows() {
-		if r.Annotation {
+		if r.Annotation && r.Edge == diff.EdgeNone {
 			ann++
 		}
 	}
 	if ann != 1 {
-		t.Errorf("wrap off should show one preview row, got %d", ann)
+		t.Errorf("wrap off should show one preview text row, got %d", ann)
 	}
 }
 

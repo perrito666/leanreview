@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -17,7 +18,9 @@ import (
 // editorFinishedMsg is delivered after the external editor process exits.
 type editorFinishedMsg struct{ err error }
 
-// Update implements tea.Model.
+// Update implements tea.Model. It handles the async messages (window resize,
+// external-editor exit, submission result) directly and funnels every
+// keystroke through handleKey, which owns all mode-dependent dispatch.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -38,6 +41,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// handleKey routes a keystroke in strict priority order: text inputs
+// (cmdline/search) first so typed characters are never interpreted as
+// bindings, then the global ctrl+c quit, then the active overlay's own
+// handler, and only in normal/visual mode the count-and-prefix grammar that
+// resolves keys into commands for execute.
 func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 
@@ -71,6 +79,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.handleConfirmKey(key)
 	case ModeThread:
 		return m, m.handleThreadKey(key)
+	case ModePR:
+		m.handlePRKey(key)
+		return m, nil
 	}
 
 	cmd, ready := m.pending.Feed(key, m.keymap)
@@ -80,6 +91,10 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, m.execute(cmd)
 }
 
+// execute performs a resolved normal-mode command, applying its numeric count
+// to the motions that repeat. Most actions mutate the model in place; only the
+// ones that must leave the TUI (spawning the external editor, quitting) return
+// a tea.Cmd.
 func (m *Model) execute(cmd command) tea.Cmd {
 	switch cmd.name {
 	case "down":
@@ -174,6 +189,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.openComments()
 	case "help":
 		m.mode = ModeHelp
+	case "pr-info":
+		m.openPRInfo()
 	case "delete-comment":
 		m.deleteCommentUnderCursor()
 	case "toggle-fold":
@@ -198,6 +215,10 @@ func (m *Model) execute(cmd command) tea.Cmd {
 	return nil
 }
 
+// toggleLayout switches between unified and split rendering. Row indices are
+// projection-specific, so it captures the semantic (side, line) under the
+// cursor and reanchors to the matching row afterwards; the selection is
+// dropped because its anchor index would be meaningless in the new layout.
 func (m *Model) toggleLayout() {
 	// Preserve the semantic anchor across the toggle by remembering the line.
 	anchor := m.rowAt(m.cursor)
@@ -215,16 +236,18 @@ func (m *Model) toggleLayout() {
 }
 
 // reanchor moves the cursor to the row matching side+line in the current layout.
-func (m *Model) reanchor(side interface{ String() string }, line int) {
+func (m *Model) reanchor(side diff.Side, line int) {
 	rows := m.rows()
 	for i, r := range rows {
-		if r.Source != nil && r.Source.Side.String() == side.String() && r.Source.StartLine == line {
+		if r.Source != nil && r.Source.Side == side && r.Source.StartLine == line {
 			m.cursor = i
 			return
 		}
 	}
 }
 
+// toggleSelect starts a visual selection anchored at the cursor, or cancels
+// the one in progress — v acts as its own off switch.
 func (m *Model) toggleSelect() {
 	if m.mode == ModeVisual {
 		m.clearSelection()
@@ -255,11 +278,17 @@ func (m *Model) selectBlock() {
 	m.clampCursor()
 }
 
+// clearSelection returns to normal mode and drops the selection anchor
+// (-1 is the "no selection" sentinel selectionRange keys off).
 func (m *Model) clearSelection() {
 	m.mode = ModeNormal
 	m.selAnchor = -1
 }
 
+// deleteCommentUnderCursor removes a draft comment anchored at the cursor row
+// and persists the draft. When several comments share the line the most
+// recently added one is deleted, so repeated dd peels them off in reverse
+// order of creation.
 func (m *Model) deleteCommentUnderCursor() {
 	ids := m.commentIDsAt(m.cursor)
 	if len(ids) == 0 {
@@ -337,6 +366,11 @@ func (m *Model) startEdit(localID string) tea.Cmd {
 	return tea.ExecProcess(cc, func(err error) tea.Msg { return editorFinishedMsg{err} })
 }
 
+// onEditorFinished consumes the pending edit captured before the external
+// editor was spawned: an editor error or an empty body discards it, otherwise
+// the text updates the draft being edited or lands as a new comment/reply at
+// the location recorded at spawn time (the cursor may have moved since). The
+// temp session is always closed and the draft persisted on success.
 func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 	pe := m.inflight
 	m.inflight = nil
@@ -394,6 +428,10 @@ func (m *Model) saveDraft() {
 
 // --- command line (:...) ---
 
+// handleCmdlineKey edits the ":" command line one key at a time: printable
+// keys append (named keys like arrows are ignored), enter strips the prompt
+// and runs the command, and esc — or backspacing past the ":" — cancels, like
+// Vim's command line.
 func (m *Model) handleCmdlineKey(key string) tea.Cmd {
 	switch key {
 	case "esc":
@@ -405,20 +443,26 @@ func (m *Model) handleCmdlineKey(key string) tea.Cmd {
 		m.cmdline = ""
 		return m.runCmdline(strings.TrimSpace(line))
 	case "backspace":
-		if len(m.cmdline) > 1 {
-			m.cmdline = m.cmdline[:len(m.cmdline)-1]
+		if r := []rune(m.cmdline); len(r) > 1 {
+			m.cmdline = string(r[:len(r)-1])
 		} else {
 			m.cmdlineActive = false
 			m.cmdline = ""
 		}
 	default:
-		if len(key) == 1 {
+		// One rune = typed text (multi-rune strings are named keys like "up").
+		// Counting runes rather than bytes keeps non-ASCII input typable.
+		if utf8.RuneCountInString(key) == 1 {
 			m.cmdline += key
 		}
 	}
 	return nil
 }
 
+// runCmdline executes an ex-style command. Beyond quit/save it is the only
+// place a review event can be chosen explicitly (:approve, :request,
+// :comment) and the entry point for markdown export, so infrequent actions
+// don't need key bindings.
 func (m *Model) runCmdline(line string) tea.Cmd {
 	fields := strings.Fields(line)
 	if len(fields) == 0 {
@@ -443,6 +487,8 @@ func (m *Model) runCmdline(line string) tea.Cmd {
 		m.exportMarkdown(path)
 	case "help":
 		m.mode = ModeHelp
+	case "pr":
+		m.openPRInfo()
 	case "comment":
 		m.beginSubmit(forge.EventComment)
 	case "approve":
@@ -457,6 +503,9 @@ func (m *Model) runCmdline(line string) tea.Cmd {
 	return nil
 }
 
+// exportMarkdown writes the draft review to path as markdown, echoing the
+// absolute path in the status bar so the user can find a file created from a
+// relative :export argument.
 func (m *Model) exportMarkdown(path string) {
 	md := review.ExportMarkdown(m.draft)
 	if err := os.WriteFile(path, []byte(md), 0o644); err != nil {
@@ -469,11 +518,17 @@ func (m *Model) exportMarkdown(path string) {
 
 // --- overlays ---
 
+// openFiles opens the file picker with the list cursor preselecting the file
+// currently under review, so enter without movement is a no-op jump.
 func (m *Model) openFiles() {
 	m.mode = ModeFiles
 	m.listCursor = m.fileIdx
 }
 
+// handleFilesKey drives the file picker: j/k or arrows move, enter jumps to
+// the selected file (gotoFile resets to normal mode, closing the overlay),
+// and esc/q/f dismiss it — f matching the opening key so it behaves as a
+// toggle.
 func (m *Model) handleFilesKey(key string) tea.Cmd {
 	switch key {
 	case "esc", "q", "f":
@@ -492,11 +547,17 @@ func (m *Model) handleFilesKey(key string) tea.Cmd {
 	return nil
 }
 
+// openComments opens the comment list at the top; the list is not stable
+// across additions and deletions, so no previous position is restored.
 func (m *Model) openComments() {
 	m.mode = ModeComments
 	m.listCursor = 0
 }
 
+// handleCommentsKey drives the comment list: enter jumps to the selected
+// comment's diff location, e reopens it in the editor (dropping back to
+// normal mode first so the editor returns to the diff), d deletes it, and
+// esc/q/C close — C matching the opening key.
 func (m *Model) handleCommentsKey(key string) tea.Cmd {
 	switch key {
 	case "esc", "q", "C":
@@ -523,6 +584,9 @@ func (m *Model) handleCommentsKey(key string) tea.Cmd {
 	return nil
 }
 
+// handleConfirmKey drives the submission confirmation: y/enter submits,
+// c/a/R re-pick the review event without leaving the screen (mirrored into
+// the draft so the choice survives a cancel), and esc/n/q abort.
 func (m *Model) handleConfirmKey(key string) tea.Cmd {
 	switch key {
 	case "y", "enter":
@@ -543,23 +607,32 @@ func (m *Model) handleConfirmKey(key string) tea.Cmd {
 	return nil
 }
 
+// jumpToComment closes the overlay and moves the cursor to the comment's
+// anchor. It must switch files before reanchoring because row indices only
+// have meaning within the current file's projection.
 func (m *Model) jumpToComment(idx int) {
 	if idx < 0 || idx >= len(m.draft.Comments) {
 		return
 	}
 	c := m.draft.Comments[idx]
 	m.mode = ModeNormal
-	// Find the file and row for the comment's location.
+	// Find the file and row for the comment's location. A missing file (an
+	// orphaned draft after a head change) must not fall through to reanchor,
+	// which would silently land on an unrelated row of the current file.
 	for fi := range m.files {
 		if m.files[fi].Path() == c.Location.Path {
 			m.gotoFile(fi)
-			break
+			m.reanchor(c.Location.Side, c.Location.StartLine)
+			m.clampCursor()
+			return
 		}
 	}
-	m.reanchor(c.Location.Side, c.Location.StartLine)
-	m.clampCursor()
+	m.setStatus("%s is not in this diff — comment kept as a draft", c.Location.Path)
 }
 
+// deleteCommentFromList removes the comment selected in the overlay and
+// persists the draft, pulling the list cursor back when it would otherwise
+// point past the shortened list.
 func (m *Model) deleteCommentFromList(idx int) {
 	if idx < 0 || idx >= len(m.draft.Comments) {
 		return

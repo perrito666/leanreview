@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/perrito666/leanreview/internal/forge"
 )
@@ -41,7 +42,7 @@ func (c *Client) List(ctx context.Context, filter string) ([]forge.ListedRequest
 		filter = DefaultListFilter
 	}
 	args := []string{"search", "prs"}
-	args = append(args, strings.Fields(filter)...)
+	args = append(args, splitQuery(filter)...)
 	args = append(args,
 		"--json", "number,title,author,repository,updatedAt,url",
 		"--limit", fmt.Sprint(listLimit),
@@ -77,6 +78,37 @@ func (c *Client) List(ctx context.Context, filter string) ([]forge.ListedRequest
 	return res, nil
 }
 
+// splitQuery splits a search filter into arguments at whitespace while
+// keeping double-quoted spans intact — label:"needs review" stays one
+// argument, quotes included — so gh reassembles the query exactly as the user
+// wrote it. strings.Fields would break the quoted phrase into separate terms.
+func splitQuery(s string) []string {
+	var args []string
+	var b strings.Builder
+	inQuote := false
+	for _, r := range s {
+		switch {
+		case r == '"':
+			inQuote = !inQuote
+			b.WriteRune(r)
+		case !inQuote && unicode.IsSpace(r):
+			if b.Len() > 0 {
+				args = append(args, b.String())
+				b.Reset()
+			}
+		default:
+			b.WriteRune(r)
+		}
+	}
+	if b.Len() > 0 {
+		args = append(args, b.String())
+	}
+	return args
+}
+
+// splitOwnerRepo splits a "nameWithOwner" string at its last "/" into owner
+// and repo; ok is false when either side would be empty. It only backs up
+// ParseRef when a search result's URL has an unexpected shape.
 func splitOwnerRepo(s string) (owner, repo string, ok bool) {
 	i := strings.LastIndex(s, "/")
 	if i <= 0 || i == len(s)-1 {

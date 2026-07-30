@@ -47,7 +47,7 @@ func TestSidebarRendersAndPreservesWidth(t *testing.T) {
 	}
 	// Every body line must still be exactly the full terminal width.
 	lines := strings.Split(out, "\n")
-	for i := 1; i < len(lines)-1; i++ { // skip title (0) and status (last)
+	for i := 2; i < len(lines)-1; i++ { // skip title (0-1) and status (last)
 		if w := lipgloss.Width(lines[i]); w != 100 {
 			t.Fatalf("body line %d width = %d, want 100\nline: %q", i, w, lines[i])
 		}

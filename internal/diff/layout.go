@@ -33,11 +33,25 @@ type DisplayRow struct {
 	// navigation, and are not hunk headers.
 	Annotation bool
 
+	// Edge marks the horizontal border rows of a boxed annotation; text rows
+	// keep EdgeNone. Meaningful only when Annotation is set.
+	Edge AnnotationEdge
+
 	// Continuation marks the overflow of a wrapped diff line: it renders with
 	// the line's own styling but carries no line numbers or Source, so
 	// navigation and selection treat the logical line as one unit.
 	Continuation bool
 }
+
+// AnnotationEdge distinguishes the border rows of a boxed annotation from its
+// text rows.
+type AnnotationEdge uint8
+
+const (
+	EdgeNone AnnotationEdge = iota
+	EdgeTop
+	EdgeBottom
+)
 
 // binaryPlaceholder returns a one-row informational rendering for binary files
 // (which have no hunks and would otherwise draw a blank body), or nil for text

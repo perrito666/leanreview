@@ -216,7 +216,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `j` / `k`, `↓` / `↑` | down / up a line (counts work: `3j`) |
 | `J` / `K` | next / previous change |
 | `]c` / `[c` | next / previous hunk |
-| `]f` / `[f` | next / previous file |
+| `Tab` / `Shift-Tab`, `]f` / `[f` | next / previous file |
 | `gg` / `G` | first / last line |
 | `Ctrl-d` / `Ctrl-u` | half page |
 | `PgDn` / `PgUp` | full page |
@@ -235,6 +235,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
 | `dd` | delete comment under cursor |
+| `p` | PR details: title, description, link (PR mode) |
 | `r` | reply to thread under cursor (PR mode) |
 | `s` | submit review (PR mode) |
 | `:w` | save drafts |

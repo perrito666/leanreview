@@ -1,7 +1,8 @@
 // Package source resolves command-line arguments into a ReviewSource: something
 // that yields a parsed set of file diffs, a human title, and a stable key for
 // draft persistence. It unifies the patch-file / stdin path with the local-git
-// path, and recognises (but, in Milestone 1, declines) GitHub PR references.
+// path; pull-request references are resolved by the CLI layer into a PRSource
+// before Resolve is consulted.
 package source
 
 import (
@@ -70,19 +71,27 @@ func Resolve(ctx context.Context, opts Options) (ReviewSource, error) {
 		return newPatchFileSource(arg)
 	}
 
-	// Otherwise, a recognised PR reference is (for now) declined.
+	// PR references are handled by the CLI's PR path before Resolve is
+	// called; reaching this branch means that path was bypassed, so name the
+	// mistake rather than pretending the argument is unrecognisable.
 	if ref, ok := forge.ParseRef(arg); ok {
-		return nil, fmt.Errorf("pull-request review (%s) is not available yet — it lands in Milestone 3; for now pass a patch file, \".\", or --base <ref>", ref)
+		return nil, fmt.Errorf("%s is a pull-request reference — it is reviewed through the forge, not the local resolver", ref)
 	}
 
 	return nil, fmt.Errorf("could not resolve %q: not a file, \".\", or a pull-request reference", arg)
 }
 
+// fileExists reports whether p is an existing regular file. It is the test
+// that decides whether a bare argument means a patch file or should be tried
+// as a pull-request reference, so directories deliberately do not count.
 func fileExists(p string) bool {
 	info, err := os.Stat(p)
 	return err == nil && !info.IsDir()
 }
 
+// hashString returns a short (16 hex digit) SHA-256 digest, used to fold
+// arbitrary strings — file paths, patch contents, diff-spec titles — into
+// draft keys that are stable, filesystem-safe, and of bounded length.
 func hashString(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:8])
@@ -96,6 +105,10 @@ type patchSource struct {
 	data  []byte
 }
 
+// newPatchFileSource reads the whole patch up front (Files may be called more
+// than once, and the file could change or vanish mid-session). The key hashes
+// the absolute path, so reviewing the same file from a different working
+// directory resumes the same draft.
 func newPatchFileSource(path string) (ReviewSource, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -109,6 +122,9 @@ func newPatchFileSource(path string) (ReviewSource, error) {
 	}, nil
 }
 
+// newStdinSource captures stdin in full at resolution time — a pipe cannot be
+// re-read later. With no path to identify the patch, the key hashes the
+// content itself: feeding the same patch again resumes its draft.
 func newStdinSource(r io.Reader) (ReviewSource, error) {
 	if r == nil {
 		return nil, fmt.Errorf("no stdin available for \"-\"")
@@ -124,11 +140,20 @@ func newStdinSource(r io.Reader) (ReviewSource, error) {
 	}, nil
 }
 
+// Files parses the bytes captured at construction; re-parsing per call keeps
+// the source stateless and is cheap at patch sizes.
 func (p *patchSource) Files(context.Context) ([]diff.FileDiff, error) {
 	return diff.ParsePatchBytes(p.data)
 }
-func (p *patchSource) Title() string                  { return p.title }
-func (p *patchSource) Key() string                    { return p.key }
+
+// Title (the base filename, or "stdin") is shown in the title bar.
+func (p *patchSource) Title() string { return p.title }
+
+// Key seeds the draft store's filename (path hash for files, content hash for stdin).
+func (p *patchSource) Key() string { return p.key }
+
+// HeadOID is empty: a raw patch carries no commit identity, so head-change
+// staleness detection and comment relocation are disabled for this source.
 func (p *patchSource) HeadOID(context.Context) string { return "" }
 
 // --- local git ---
@@ -140,6 +165,11 @@ type gitSource struct {
 	key   string
 }
 
+// newGitSource builds a source over the local repository containing dir. The
+// diff itself is produced lazily by Files; only opening the repo can fail
+// here. The key combines the repo root with the spec's title so different
+// comparisons of the same repo (e.g. --staged vs --base main) keep separate
+// drafts.
 func newGitSource(ctx context.Context, dir string, spec git.DiffSpec) (ReviewSource, error) {
 	repo, err := git.Open(ctx, dir)
 	if err != nil {
@@ -153,6 +183,9 @@ func newGitSource(ctx context.Context, dir string, spec git.DiffSpec) (ReviewSou
 	}, nil
 }
 
+// newGitRevSource handles the explicit two-argument form. Both arguments must
+// resolve as revisions up front, so a typo fails with a clear message here
+// instead of surfacing later as a confusing git-diff error.
 func newGitRevSource(ctx context.Context, dir, revA, revB string, ctxLines int) (ReviewSource, error) {
 	repo, err := git.Open(ctx, dir)
 	if err != nil {
@@ -170,6 +203,9 @@ func newGitRevSource(ctx context.Context, dir, revA, revB string, ctxLines int) 
 	}, nil
 }
 
+// Files runs the git diff each time it is called, so a reload picks up
+// whatever the working tree looks like now. Empty output (no changes) yields
+// nil files rather than an error.
 func (g *gitSource) Files(ctx context.Context) ([]diff.FileDiff, error) {
 	raw, err := g.repo.Diff(ctx, g.spec)
 	if err != nil {
@@ -180,8 +216,17 @@ func (g *gitSource) Files(ctx context.Context) ([]diff.FileDiff, error) {
 	}
 	return diff.ParsePatchBytes(raw)
 }
+
+// Title is the diff spec's description (e.g. "HEAD", "staged", "main..HEAD"),
+// shown in the title bar.
 func (g *gitSource) Title() string { return g.title }
-func (g *gitSource) Key() string   { return g.key }
+
+// Key seeds the draft store's filename; see newGitSource for its composition.
+func (g *gitSource) Key() string { return g.key }
+
+// HeadOID returns the repository's current HEAD, letting the draft layer
+// detect that commits landed since the draft was saved and re-anchor its
+// comments. Errors degrade to "", which simply disables that check.
 func (g *gitSource) HeadOID(ctx context.Context) string {
 	oid, err := g.repo.HeadOID(ctx)
 	if err != nil {

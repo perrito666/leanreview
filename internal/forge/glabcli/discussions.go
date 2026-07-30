@@ -36,6 +36,9 @@ type discussionJSON struct {
 	Notes []noteJSON `json:"notes"`
 }
 
+// comment adapts a GitLab note into the forge-neutral Comment. The notes API
+// reports no per-note web URL, so URL stays empty and the UI falls back to
+// the merge request's page.
 func (n noteJSON) comment() forge.Comment {
 	return forge.Comment{
 		ID:        n.ID,
@@ -45,6 +48,11 @@ func (n noteJSON) comment() forge.Comment {
 	}
 }
 
+// location maps a note's diff position to our Location. GitLab expresses the
+// side implicitly: a resolved new_line anchors to the right (new) side, else a
+// resolved old_line anchors to the left. Both nil means the position no longer
+// maps onto the current diff (the caller marks such threads outdated), and a
+// nil receiver means the note was never attached to the diff.
 func (p *posJSON) location() *diff.Location {
 	if p == nil {
 		return nil
@@ -59,6 +67,10 @@ func (p *posJSON) location() *diff.Location {
 	}
 }
 
+// discussions fetches the merge request's full (paginated) discussion list.
+// It is shared by Threads and Reply: GitLab addresses replies by discussion
+// id, a string our int64 comment ids cannot carry, so Reply must re-list the
+// discussions to find the thread a note belongs to.
 func (c *Client) discussions(ctx context.Context, ref forge.PullRequestRef) ([]discussionJSON, error) {
 	path := fmt.Sprintf("projects/%s/merge_requests/%d/discussions", projectPath(ref), ref.Number)
 	out, err := c.run(ctx, nil, apiArgs(ref, path, "--paginate")...)

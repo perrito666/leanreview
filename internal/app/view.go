@@ -10,10 +10,14 @@ import (
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
+	"github.com/perrito666/leanreview/internal/review"
 	"github.com/perrito666/leanreview/internal/ui"
 )
 
-// View implements tea.Model.
+// View implements tea.Model. Overlay modes replace the whole content area
+// (via frame); otherwise it renders the diff body, prefixing each row with
+// the sidebar column when it is shown, all sandwiched between the title and
+// status bars.
 func (m *Model) View() string {
 	if m.quitting {
 		return ""
@@ -33,6 +37,8 @@ func (m *Model) View() string {
 		return m.frame(m.confirmView())
 	case ModeThread:
 		return m.frame(m.threadReaderView())
+	case ModePR:
+		return m.frame(m.prInfoView())
 	}
 
 	if len(m.files) == 0 {
@@ -70,7 +76,14 @@ func (m *Model) frame(body string) string {
 	return m.titleBar() + "\n" + strings.Join(lines, "\n") + "\n" + m.statusBar()
 }
 
+// titleBar renders the two header lines: the review title (prefixed with the
+// forge the PR lives on, when there is one), then the current file.
 func (m *Model) titleBar() string {
+	title := m.title
+	if name := m.forgeName(); name != "" {
+		title = name + "  " + title
+	}
+
 	f := m.currentFile()
 	path := ""
 	fileInfo := ""
@@ -81,8 +94,11 @@ func (m *Model) titleBar() string {
 		}
 		fileInfo = fmt.Sprintf(" [%d/%d]", m.fileIdx+1, len(m.files))
 	}
-	left := fmt.Sprintf("leanreview  %s", m.title)
-	right := fmt.Sprintf("%s%s  %s", path, fileInfo, m.layout)
+	return m.titleLine(title, "") + "\n" + m.titleLine(path+fileInfo, m.layout.String())
+}
+
+// titleLine lays out one header row with left- and right-aligned segments.
+func (m *Model) titleLine(left, right string) string {
 	gap := m.width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 1 {
 		gap = 1
@@ -91,6 +107,10 @@ func (m *Model) titleBar() string {
 	return m.theme.Title.Width(m.width).Render(clip(line, m.width))
 }
 
+// statusBar renders the bottom line by priority: an active cmdline or search
+// buffer first (so the user sees what they are typing where it will run),
+// then a pending error, and finally the mode indicator (with the active split
+// side) plus either the transient status message or a default hint.
 func (m *Model) statusBar() string {
 	if m.cmdlineActive {
 		return m.theme.Status.Width(m.width).Render(clip(m.cmdline, m.width))
@@ -155,18 +175,19 @@ func (m *Model) numWidth() int {
 	return w
 }
 
+// renderRow draws one display row at the content width. Annotation rows are
+// delegated to the comment-preview renderer; everything else gets the comment
+// gutter, and the row style is chosen by precedence — cursor, then selection,
+// then search match — falling back to split per-side styling or syntax
+// highlighting only when no state style would otherwise be masked by them.
 func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) string {
 	isCursor := idx == m.cursor
 	selected := inSel && m.mode == ModeVisual && m.selAnchor >= 0
 	cw := m.contentWidth()
 
-	// Inline comment previews: dim, indented, full content width.
+	// Inline comment previews render as a bordered box (right panel in split).
 	if r.Annotation {
-		text := pad(clip("   "+r.Left.Text, cw), cw)
-		if isCursor {
-			return m.theme.Cursor.Render(text)
-		}
-		return m.theme.Faint.Render(text)
+		return m.renderAnnotation(r, isCursor)
 	}
 
 	// Every non-annotation row gets a 2-column gutter signalling comments:
@@ -207,11 +228,35 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 		return m.theme.Select.Render(glyph + " " + plain)
 	case m.search != "" && m.rowMatches(r):
 		return m.theme.Search.Render(glyph + " " + plain)
-	case m.layout == LayoutUnified && m.highlighter.Enabled():
+	case m.layout == LayoutSplit:
+		return m.theme.Marker.Render(glyph) + " " + m.renderSplitStyled(r, nw, inner)
+	case m.highlighter.Enabled():
 		return m.theme.Marker.Render(glyph) + " " + m.renderHighlighted(r, nw, inner)
 	default:
 		return m.theme.Marker.Render(glyph) + " " + m.styleFor(kindOf(r)).Render(plain)
 	}
+}
+
+// renderSplitStyled draws a split row styling each side by its own kind, so a
+// paired deletion/addition (and its wrapped continuations) keeps the left
+// panel red and the right panel green instead of one color spanning both.
+func (m *Model) renderSplitStyled(r *diff.DisplayRow, nw, width int) string {
+	half := splitHalf(width, nw)
+	lNum, lText, lKind := strings.Repeat(" ", nw), "", diff.LineContext
+	if r.Left != nil {
+		lNum = numStr(r.Left.LineNumber, nw)
+		lText = m.hcut(r.Left.Text)
+		lKind = r.Left.Kind
+	}
+	rNum, rText, rKind := strings.Repeat(" ", nw), "", diff.LineContext
+	if r.Right != nil {
+		rNum = numStr(r.Right.LineNumber, nw)
+		rText = m.hcut(r.Right.Text)
+		rKind = r.Right.Kind
+	}
+	left := m.styleFor(lKind).Render(fmt.Sprintf("%s %s", lNum, pad(clip(lText, half), half)))
+	right := m.styleFor(rKind).Render(fmt.Sprintf("%s %s", rNum, clip(rText, half)))
+	return pad(left+m.theme.Faint.Render(" │ ")+right, width)
 }
 
 // renderHighlighted draws a unified content row at the given width: a dim
@@ -238,6 +283,9 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw, width int) string {
 	return pad(gutter+sign+text, width)
 }
 
+// plainUnified formats a unified row without styling: old/new number gutters,
+// the diff sign, and the horizontally scrolled text. It feeds the code paths
+// (cursor, selection, search) where a single style spans the whole row.
 func (m *Model) plainUnified(r *diff.DisplayRow, nw int) string {
 	oldN := numStr(r.Left.LineNumber, nw)
 	newN := numStr(r.Right.LineNumber, nw)
@@ -248,11 +296,12 @@ func (m *Model) plainUnified(r *diff.DisplayRow, nw int) string {
 	return fmt.Sprintf("%s %s %s %s", oldN, newN, sign, m.hcut(r.Left.Text))
 }
 
+// plainSplit formats a split row without styling: two number+text panels
+// around the divider, mirroring renderSplitStyled's geometry so a row keeps
+// its columns when the cursor or selection style flattens it to one color. A
+// missing side renders as a blank panel rather than collapsing the divider.
 func (m *Model) plainSplit(r *diff.DisplayRow, nw, width int) string {
-	half := (width - (nw * 2) - 6) / 2
-	if half < 4 {
-		half = 4
-	}
+	half := splitHalf(width, nw)
 	lNum, lText := "", ""
 	if r.Left != nil {
 		lNum = numStr(r.Left.LineNumber, nw)
@@ -272,6 +321,21 @@ func (m *Model) plainSplit(r *diff.DisplayRow, nw, width int) string {
 	return left + " │ " + right
 }
 
+// splitHalf is the text width of one panel in a split row of the given
+// content width: two number gutters, the divider, and panel padding are
+// subtracted, floored at 4. plainSplit and renderSplitStyled must share this
+// so the flat (cursor/selection) and per-side stylings never drift out of
+// column alignment.
+func splitHalf(width, nw int) int {
+	half := (width - (nw * 2) - 6) / 2
+	if half < 4 {
+		half = 4
+	}
+	return half
+}
+
+// styleFor maps a diff line kind to its theme style, defaulting to the
+// context style for kinds without a dedicated color.
 func (m *Model) styleFor(kind diff.LineKind) lipgloss.Style {
 	switch kind {
 	case diff.LineAddition:
@@ -285,6 +349,8 @@ func (m *Model) styleFor(kind diff.LineKind) lipgloss.Style {
 	}
 }
 
+// filesView renders the file-picker overlay: status, path, and a ●n draft
+// comment count per file so commented files stand out while navigating.
 func (m *Model) filesView() string {
 	var b strings.Builder
 	b.WriteString("Files (enter to open, esc to close)\n\n")
@@ -304,6 +370,10 @@ func (m *Model) filesView() string {
 	return b.String()
 }
 
+// commentsView renders the draft-comment list and, in PR mode, a read-only
+// summary of existing review threads. Only drafts are navigable here —
+// replying to a thread happens with r on its diff line, so threads are shown
+// for orientation, not selection.
 func (m *Model) commentsView() string {
 	var b strings.Builder
 	b.WriteString("Comments (enter to jump, e to edit, d to delete, esc to close)\n\n")
@@ -320,7 +390,7 @@ func (m *Model) commentsView() string {
 			reply = "↳ "
 		}
 		state := ""
-		if c.State != 0 { // non-active
+		if c.State != review.DraftActive {
 			state = " [" + c.State.String() + "]"
 		}
 		first := firstLine(c.Body)
@@ -348,6 +418,10 @@ func (m *Model) commentsView() string {
 	return b.String()
 }
 
+// confirmView renders the submission summary: what will be sent (new
+// comments and replies), an explicit warning for orphaned comments that will
+// be silently kept as drafts instead of submitted, and the review-event
+// picker.
 func (m *Model) confirmView() string {
 	c := m.submitCounts()
 	var b strings.Builder
@@ -367,6 +441,8 @@ func (m *Model) confirmView() string {
 	return b.String()
 }
 
+// eventLine formats one review-event choice as a checkbox row with the key
+// that selects it.
 func eventLine(key, label string, selected bool) string {
 	mark := "[ ]"
 	if selected {
@@ -375,6 +451,8 @@ func eventLine(key, label string, selected bool) string {
 	return fmt.Sprintf("    %s %s  (%s)\n", mark, label, key)
 }
 
+// commentCountForPath counts the draft comments anchored in a file, feeding
+// the file picker's ●n markers.
 func (m *Model) commentCountForPath(path string) int {
 	n := 0
 	for _, c := range m.draft.Comments {
@@ -387,6 +465,8 @@ func (m *Model) commentCountForPath(path string) int {
 
 // --- small formatting helpers ---
 
+// numStr right-aligns a line number in a w-wide gutter; a nil number (the
+// absent side of an add/delete) renders as blanks so columns stay aligned.
 func numStr(n *int, w int) string {
 	if n == nil {
 		return strings.Repeat(" ", w)
@@ -394,6 +474,9 @@ func numStr(n *int, w int) string {
 	return fmt.Sprintf("%*d", w, *n)
 }
 
+// signFor returns the classic +/- diff marker for a line kind (space for
+// context and metadata), kept even though rows are colored so the diff reads
+// without color.
 func signFor(kind diff.LineKind) string {
 	switch kind {
 	case diff.LineAddition:
@@ -405,6 +488,8 @@ func signFor(kind diff.LineKind) string {
 	}
 }
 
+// firstLine truncates s at its first newline, giving the one-line preview
+// used wherever a multi-line comment body must fit a list row.
 func firstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i >= 0 {
 		return s[:i]

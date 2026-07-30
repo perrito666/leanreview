@@ -67,6 +67,8 @@ func ExportMarkdown(d *DraftReview) string {
 	return strings.TrimRight(b.String(), "\n") + "\n"
 }
 
+// lineRef renders a location's line span for a comment heading, collapsing a
+// single-line range to "L12" instead of the noisier "L12-12".
 func lineRef(l diff.Location) string {
 	if l.Single() {
 		return fmt.Sprintf("L%d", l.StartLine)
@@ -74,6 +76,10 @@ func lineRef(l diff.Location) string {
 	return fmt.Sprintf("L%d-%d", l.StartLine, l.EndLine)
 }
 
+// blockquote prefixes every line of body with "> " so the note reads as a
+// quote distinct from the surrounding structure. Empty lines become a bare ">"
+// — a truly blank line would end the quote block in Markdown, splitting a
+// multi-paragraph note in two.
 func blockquote(body string) string {
 	lines := strings.Split(strings.TrimRight(body, "\n"), "\n")
 	for i, ln := range lines {

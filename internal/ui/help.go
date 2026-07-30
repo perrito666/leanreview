@@ -8,7 +8,7 @@ func HelpText() string {
    j / k, ↓ / ↑  down / up one line
    J / K         next / previous change
    ]c / [c       next / previous hunk
-   ]f / [f       next / previous file
+   Tab / S-Tab   next / previous file (also ]f / [f)
    gg / G        first / last line
    Ctrl-d/u      half page down / up
    PgDn / PgUp   full page down / up
@@ -36,6 +36,7 @@ func HelpText() string {
    dd            delete comment under cursor
 
  Pull-request mode
+   p             PR details (title, description, link)
    r             reply to the thread under the cursor
    s             submit review (confirmation screen)
    :comment      submit as a general comment

@@ -76,6 +76,9 @@ func (m *Model) sidebarLines(h int) []string {
 	return padLines(lines, h, w)
 }
 
+// padLines pads with blank rows (or truncates) to exactly h lines of width w:
+// the sidebar is joined line-by-line with the diff body, so its column must
+// match the content height exactly.
 func padLines(lines []string, h, w int) []string {
 	for len(lines) < h {
 		lines = append(lines, pad("", w))

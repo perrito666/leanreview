@@ -12,7 +12,7 @@ import (
 func TestViewRendersDiff(t *testing.T) {
 	m := testModel(t)
 	out := m.View()
-	if !strings.Contains(out, "leanreview") {
+	if !strings.Contains(out, "test") {
 		t.Errorf("title bar missing from view")
 	}
 	if !strings.Contains(out, "calculate(input)") {
