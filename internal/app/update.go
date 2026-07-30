@@ -72,40 +72,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.handleThreadKey(key)
 	}
 
-	switch key {
-	case ":":
-		m.cmdlineActive = true
-		m.cmdline = ":"
-		return m, nil
-	case "/":
-		m.searchActive = true
-		m.searchInput = "/"
-		return m, nil
-	case "\\":
-		m.toggleSidebar()
-		return m, nil
-	case "n":
-		m.nextMatch(1)
-		return m, nil
-	case "N":
-		m.nextMatch(-1)
-		return m, nil
-	case "ctrl+d":
-		m.halfPage(1)
-		return m, nil
-	case "ctrl+u":
-		m.halfPage(-1)
-		return m, nil
-	case "r":
-		return m, m.startReplyUnderCursor()
-	case "s":
-		if m.prActive() {
-			m.beginSubmit(m.draft.Event)
-		}
-		return m, nil
-	}
-
-	cmd, ready := m.pending.Feed(key)
+	cmd, ready := m.pending.Feed(key, m.keymap)
 	if !ready {
 		return m, nil
 	}
@@ -138,6 +105,28 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		// Horizontal motion arrives with M4 clipping; no-op for now.
 	case "toggle-layout":
 		m.toggleLayout()
+	case "sidebar":
+		m.toggleSidebar()
+	case "cmdline":
+		m.cmdlineActive = true
+		m.cmdline = ":"
+	case "search":
+		m.searchActive = true
+		m.searchInput = "/"
+	case "next-match":
+		m.nextMatch(1)
+	case "prev-match":
+		m.nextMatch(-1)
+	case "half-page-down":
+		m.halfPage(1)
+	case "half-page-up":
+		m.halfPage(-1)
+	case "reply":
+		return m.startReplyUnderCursor()
+	case "submit":
+		if m.prActive() {
+			m.beginSubmit(m.draft.Event)
+		}
 	case "select":
 		m.toggleSelect()
 	case "select-block":

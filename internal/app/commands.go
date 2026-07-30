@@ -30,7 +30,6 @@ var firstKeys = map[string]bool{"g": true, "]": true, "[": true, "d": true, "z":
 // combinations are discarded.
 var twoKey = map[string]string{
 	"gg": "first-line",
-	"G":  "last-line", // handled as single key below, listed for clarity
 	"]c": "next-hunk",
 	"[c": "prev-hunk",
 	"]f": "next-file",
@@ -41,10 +40,10 @@ var twoKey = map[string]string{
 	"zM": "collapse-all",
 }
 
-// Feed consumes one key. It returns (cmd, true) when a command is ready, or
-// (_, false) when more input is needed (a pending prefix) or the key was a
-// digit that only extended the count.
-func (p *pendingCommand) Feed(key string) (command, bool) {
+// Feed consumes one key, resolving single keys through the supplied keymap. It
+// returns (cmd, true) when a command is ready, or (_, false) when more input is
+// needed (a pending prefix) or the key was a digit that only extended the count.
+func (p *pendingCommand) Feed(key string, single Keymap) (command, bool) {
 	// Numeric prefix accumulation (0 only counts once a prefix has started, so
 	// a bare "0" remains the go-to-line-start motion).
 	if len(key) == 1 && key[0] >= '1' && key[0] <= '9' || (key == "0" && p.count > 0) {
@@ -69,7 +68,7 @@ func (p *pendingCommand) Feed(key string) (command, bool) {
 		return command{}, false
 	}
 
-	name := singleKey[key]
+	name := single[key]
 	if name == "" {
 		// Unknown single key: reset any count and ignore.
 		p.count = 0
@@ -85,25 +84,3 @@ func (p *pendingCommand) Pending() bool { return p.prefix != "" }
 
 // Reset clears any pending state.
 func (p *pendingCommand) Reset() { p.prefix = ""; p.count = 0 }
-
-// singleKey maps immediate normal-mode keys to command names.
-var singleKey = map[string]string{
-	"j":     "down",
-	"k":     "up",
-	"J":     "next-change",
-	"K":     "prev-change",
-	"G":     "last-line",
-	"0":     "line-start",
-	"$":     "line-end",
-	"t":     "toggle-layout",
-	"v":     "select",
-	"V":     "select-block",
-	"c":     "comment",
-	"e":     "edit",
-	"f":     "files",
-	"C":     "comments",
-	"?":     "help",
-	"q":     "quit",
-	"esc":   "escape",
-	"enter": "open",
-}

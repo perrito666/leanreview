@@ -173,6 +173,7 @@ func run(argv []string) error {
 		Editor:      ed,
 		Theme:       ui.ThemeByName(cfg.Theme),
 		Highlighter: ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
+		Keys:        cfg.Keys,
 		PR:          prCtx,
 	})
 

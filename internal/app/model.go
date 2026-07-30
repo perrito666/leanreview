@@ -28,6 +28,9 @@ type Config struct {
 
 	// Highlighter, when set, overrides the environment-derived default.
 	Highlighter *ui.Highlighter
+
+	// Keys overrides individual normal-mode key bindings (key -> action).
+	Keys map[string]string
 }
 
 // Model is the root Bubble Tea model.
@@ -57,6 +60,7 @@ type Model struct {
 	mode      Mode
 	selAnchor int // -1 when no selection is active
 	pending   pendingCommand
+	keymap    Keymap
 
 	// listCursor is the selection index for the files / comments overlays.
 	listCursor int
@@ -133,6 +137,8 @@ func New(cfg Config) *Model {
 	if m.highlighter == nil {
 		m.highlighter = ui.NewHighlighterFromEnv()
 	}
+	m.keymap = DefaultKeymap()
+	m.keymap.apply(cfg.Keys)
 	m.buildThreadIndex()
 	m.cursor = m.firstContentRow()
 	return m

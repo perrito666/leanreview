@@ -24,6 +24,8 @@ type Config struct {
 	TabWidth int
 	// Context is the default number of unified context lines when -U is unset.
 	Context int
+	// Keys overrides individual normal-mode key bindings (key -> action).
+	Keys map[string]string
 	// LogPath is where diagnostic logs are written (never stdout).
 	LogPath string
 }
@@ -31,12 +33,13 @@ type Config struct {
 // fileConfig mirrors the on-disk JSON, using pointers so absent keys are
 // distinguishable from zero values.
 type fileConfig struct {
-	Editor      *string `json:"editor"`
-	Syntax      *bool   `json:"syntax"`
-	SyntaxStyle *string `json:"syntax_style"`
-	Theme       *string `json:"theme"`
-	TabWidth    *int    `json:"tab_width"`
-	Context     *int    `json:"context"`
+	Editor      *string           `json:"editor"`
+	Syntax      *bool             `json:"syntax"`
+	SyntaxStyle *string           `json:"syntax_style"`
+	Theme       *string           `json:"theme"`
+	TabWidth    *int              `json:"tab_width"`
+	Context     *int              `json:"context"`
+	Keys        map[string]string `json:"keys"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -68,6 +71,9 @@ func Load() Config {
 		}
 		if fc.Context != nil && *fc.Context >= 0 {
 			c.Context = *fc.Context
+		}
+		if fc.Keys != nil {
+			c.Keys = fc.Keys
 		}
 	}
 

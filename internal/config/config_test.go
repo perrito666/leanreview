@@ -63,6 +63,14 @@ func TestNoColorDisablesSyntax(t *testing.T) {
 	}
 }
 
+func TestKeysConfig(t *testing.T) {
+	withConfig(t, `{"keys":{"x":"down","j":""}}`)
+	c := Load()
+	if c.Keys["x"] != "down" || c.Keys["j"] != "" {
+		t.Errorf("keys not parsed: %+v", c.Keys)
+	}
+}
+
 func TestInvalidFileIgnored(t *testing.T) {
 	withConfig(t, `{not valid json`)
 	c := Load()
