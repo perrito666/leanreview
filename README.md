@@ -96,17 +96,21 @@ one atomic review and staged replies are posted. Nothing is sent until you
 confirm. Requires the [`gh` CLI](https://cli.github.com/) to be installed and
 authenticated (`gh auth login`); enterprise hosts are supported.
 
+When the PR head moves between sessions, saved draft comments are re-anchored to
+the new diff: each is relocated by matching its captured surrounding context
+(following renames), uniquely or not at all. Comments with no unique match are
+marked orphaned, excluded from submission, and kept as drafts for you to
+reposition.
+
 ## Milestones
 
 - **M1 (done)** — shared diff core, patch/local viewer, unified/split layouts,
   draft comments via `$EDITOR`, persistence, Markdown export.
 - **M3 (done)** — GitHub PR mode (via `gh`): canonical PR diff, threads, replies,
-  atomic review submission, and stale-comment detection on head change.
+  atomic review submission, and context-based comment relocation on head change.
 - **M2 / M4** — comment-panel and navigation polish, side panels, file sidebar,
   search, collapsible context, syntax highlighting, config & themes.
 - **M5** — other forges (GitLab/Forgejo) behind the same `Forge` seam.
-- **Later** — full comment relocation when the PR head moves (currently
-  stale comments are flagged and warned about at submission).
 
 ## Architecture
 
