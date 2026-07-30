@@ -37,6 +37,7 @@ import (
 	"github.com/perrito666/leanreview/internal/editor"
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/forge/ghcli"
+	"github.com/perrito666/leanreview/internal/forge/glabcli"
 	"github.com/perrito666/leanreview/internal/review"
 	"github.com/perrito666/leanreview/internal/source"
 	"github.com/perrito666/leanreview/internal/ui"
@@ -196,7 +197,7 @@ func resolveSource(ctx context.Context, opts options) (source.ReviewSource, *sou
 			if err != nil {
 				return nil, nil, err
 			}
-			prSrc, err := source.NewPRSource(ctx, ghcli.New(), ref)
+			prSrc, err := source.NewPRSource(ctx, forgeFor(ref), ref)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -217,6 +218,16 @@ func resolveSource(ctx context.Context, opts options) (source.ReviewSource, *sou
 func fileExists(p string) bool {
 	info, err := os.Stat(p)
 	return err == nil && !info.IsDir()
+}
+
+// forgeFor picks the adapter matching the reference's host: GitLab hosts get
+// the glab-backed client, everything else (github.com, GHE, empty) the
+// gh-backed one. The TUI itself never knows which is in use.
+func forgeFor(ref forge.PullRequestRef) forge.Forge {
+	if forge.KindForHost(ref.Host) == forge.KindGitLab {
+		return glabcli.New()
+	}
+	return ghcli.New()
 }
 
 // parseArgs performs a small hand-rolled parse so flags and positionals can be

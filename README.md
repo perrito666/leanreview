@@ -148,6 +148,24 @@ the new diff: each is relocated by matching its captured surrounding context
 marked orphaned, excluded from submission, and kept as drafts for you to
 reposition.
 
+## GitLab merge-request mode
+
+The same review flow works against GitLab through the
+[`glab` CLI](https://gitlab.com/gitlab-org/cli) (`glab auth login`); the
+adapter is chosen by host, so the TUI is identical:
+
+```bash
+leanreview 'https://gitlab.com/group/repo/-/merge_requests/42'
+leanreview 'group/repo!42'                # nested subgroups work too
+leanreview 42                             # inside a checkout with a GitLab origin
+```
+
+GitLab has no atomic review-with-comments endpoint, so submission maps onto its
+model: each line comment is posted as a positioned diff discussion, the summary
+becomes a merge-request note, **Approve** approves the MR, and **Request
+changes** posts a "Changes requested" note. Comments post in order and a
+failure reports how many were already published.
+
 ## Milestones
 
 - **M1 (done)** — shared diff core, patch/local viewer, unified/split layouts,
@@ -157,8 +175,9 @@ reposition.
 - **Ergonomics (done)** — edit drafts (`e`), in-diff search (`/`, `n`, `N`),
   collapsible hunks (`za`/`zR`/`zM`), a changed-files sidebar (`\`), Chroma
   syntax highlighting, and a JSON config file (editor, theme, syntax, tabs).
-- **Remaining polish** — configurable key bindings; PR-mode thread side panel.
-- **M5** — other forges (GitLab/Forgejo) behind the same `Forge` seam.
+- **M5 (done)** — GitLab merge requests via `glab`, behind the same `Forge`
+  seam (adapter picked by host; the TUI is unchanged). Forgejo/Gitea remain an
+  open adapter slot.
 
 ## Architecture
 
@@ -167,8 +186,9 @@ cmd/leanreview      CLI entrypoint, logging, tea.Program wiring
 internal/diff       canonical diff model, parser, unified/split projections, Location
 internal/source     resolve args -> ReviewSource (patch file, stdin, local git, PR)
 internal/git        wrapper over the git executable (incl. origin inference)
-internal/forge      host-agnostic Forge seam + PR-ref parsing
-internal/forge/ghcli  gh-backed Forge implementation (PR, diff, threads, reviews)
+internal/forge      host-agnostic Forge seam + PR/MR-ref parsing + host dispatch
+internal/forge/ghcli   gh-backed Forge implementation (GitHub)
+internal/forge/glabcli glab-backed Forge implementation (GitLab)
 internal/review     draft comments, XDG persistence, Markdown export
 internal/editor     $EDITOR resolution/launch, temp file, template stripping
 internal/app        Bubble Tea model/update/view, key grammar, selection
