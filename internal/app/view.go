@@ -242,7 +242,7 @@ func (m *Model) filesView() string {
 
 func (m *Model) commentsView() string {
 	var b strings.Builder
-	b.WriteString("Comments (enter to jump, d to delete, esc to close)\n\n")
+	b.WriteString("Comments (enter to jump, e to edit, d to delete, esc to close)\n\n")
 	if len(m.draft.Comments) == 0 {
 		b.WriteString("  (no drafts yet — press c on a line to add one)\n")
 	}

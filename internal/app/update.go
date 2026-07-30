@@ -125,6 +125,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.selectBlock()
 	case "comment":
 		return m.startComment("")
+	case "edit":
+		return m.startEditUnderCursor()
 	case "files":
 		m.openFiles()
 	case "comments":
@@ -249,6 +251,40 @@ func (m *Model) startComment(editing string) tea.Cmd {
 	m.mode = ModeExternalEditor
 	c := m.editor.Cmd(m.ctx, sess.Path)
 	return tea.ExecProcess(c, func(err error) tea.Msg { return editorFinishedMsg{err} })
+}
+
+// startEditUnderCursor edits the draft comment anchored at the cursor line.
+func (m *Model) startEditUnderCursor() tea.Cmd {
+	ids := m.commentIDsAt(m.cursor)
+	if len(ids) == 0 {
+		m.setStatus("no draft comment under cursor to edit")
+		return nil
+	}
+	return m.startEdit(ids[len(ids)-1])
+}
+
+// startEdit opens the editor prefilled with an existing draft comment's body,
+// anchored to that comment's own location (not the cursor).
+func (m *Model) startEdit(localID string) tea.Cmd {
+	c := m.draft.Get(localID)
+	if c == nil {
+		m.setStatus("comment not found")
+		return nil
+	}
+	loc := c.Location
+	tctx := editor.TemplateContext{File: loc.Path, Lines: lineRefString(loc), Side: loc.Side.String()}
+	if c.ReplyTo != nil {
+		tctx.ReplyTo = fmt.Sprintf("comment %d", *c.ReplyTo)
+	}
+	sess, err := editor.NewSession(editor.BuildTemplate(tctx, c.Body), fmt.Sprintf("%s-%s", filepath.Base(loc.Path), lineRefString(loc)))
+	if err != nil {
+		m.setError(err)
+		return nil
+	}
+	m.inflight = &pendingEdit{loc: loc, snippet: c.Snippet, editing: localID, replyTo: c.ReplyTo, session: sess}
+	m.mode = ModeExternalEditor
+	cc := m.editor.Cmd(m.ctx, sess.Path)
+	return tea.ExecProcess(cc, func(err error) tea.Msg { return editorFinishedMsg{err} })
 }
 
 func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
@@ -425,6 +461,12 @@ func (m *Model) handleCommentsKey(key string) tea.Cmd {
 		}
 	case "enter":
 		m.jumpToComment(m.listCursor)
+	case "e":
+		if m.listCursor >= 0 && m.listCursor < len(m.draft.Comments) {
+			id := m.draft.Comments[m.listCursor].LocalID
+			m.mode = ModeNormal
+			return m.startEdit(id)
+		}
 	case "d":
 		m.deleteCommentFromList(m.listCursor)
 	}

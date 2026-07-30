@@ -98,6 +98,7 @@ var singleKey = map[string]string{
 	"v":     "select",
 	"V":     "select-block",
 	"c":     "comment",
+	"e":     "edit",
 	"f":     "files",
 	"C":     "comments",
 	"?":     "help",

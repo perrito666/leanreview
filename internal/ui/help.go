@@ -21,6 +21,7 @@ func HelpText() string {
    v             start line selection
    V             select current changed block
    c             comment on line / selection
+   e             edit draft comment under cursor
    dd            delete comment under cursor
 
  Pull-request mode
