@@ -56,6 +56,7 @@ type options struct {
 	contextN   int
 	contextSet bool
 	exportPath string
+	discard    bool
 	args       []string
 }
 
@@ -101,6 +102,20 @@ func run(argv []string) error {
 	store, err := review.DefaultStore()
 	if err != nil {
 		return err
+	}
+
+	// --discard: delete the saved draft for this source and exit.
+	if opts.discard {
+		existing, _ := store.Load(src.Key())
+		if err := store.Delete(src.Key()); err != nil {
+			return fmt.Errorf("discard draft: %w", err)
+		}
+		n := 0
+		if existing != nil {
+			n = len(existing.Comments)
+		}
+		fmt.Printf("discarded draft for %s (%d comment(s))\n", src.Title(), n)
+		return nil
 	}
 
 	// Load or create the draft for this source.
@@ -263,6 +278,8 @@ func parseArgs(argv []string) (options, error) {
 				return o, err
 			}
 			o.exportPath = v
+		case a == "--discard":
+			o.discard = true
 		case a == "-h" || a == "--help":
 			return o, errHelp
 		case len(a) > 1 && a[0] == '-' && a != "-":
@@ -292,6 +309,7 @@ Flags:
   --staged           compare the index against HEAD
   -U, --context N    unified context lines (default 3)
   --export FILE      write existing draft comments as Markdown and exit
+  --discard          delete the saved draft for this source and exit
   -h, --help         show this help
 
 In the TUI, press ? for the key reference.
