@@ -1,0 +1,12 @@
+diff --git a/old/name.go b/new/name.go
+similarity index 92%
+rename from old/name.go
+rename to new/name.go
+index 1111111..2222222 100644
+--- a/old/name.go
++++ b/new/name.go
+@@ -1,3 +1,3 @@
+ package thing
+-func Old() {}
++func New() {}
+ // end

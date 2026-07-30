@@ -1,0 +1,18 @@
+diff --git a/internal/api/handler.go b/internal/api/handler.go
+index 1234567..89abcde 100644
+--- a/internal/api/handler.go
++++ b/internal/api/handler.go
+@@ -70,5 +70,6 @@ func Handle(input Input) (Output, error) {
+ 	ctx := context.Background()
+ 	defer cancel(ctx)
+-	result := calculate(input)
++	result, err := calculate(input)
++	_ = err
+ 	return result, nil
+ }
+@@ -120,3 +121,5 @@ func helper() {
+ 	log.Println("done")
+ }
+ // end
++
++// trailing addition
