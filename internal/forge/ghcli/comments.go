@@ -23,7 +23,6 @@ type reviewCommentJSON struct {
 	StartLine    *int                   `json:"start_line"`
 	Side         string                 `json:"side"`
 	InReplyToID  *int64                 `json:"in_reply_to_id"`
-	Position     *int                   `json:"position"`
 }
 
 // comment adapts the GitHub payload into the forge-neutral Comment; the

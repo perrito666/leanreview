@@ -56,3 +56,21 @@ func TestListCustomFilter(t *testing.T) {
 		t.Errorf("default filter should be replaced, not appended: %s", args)
 	}
 }
+
+// TestSplitQueryKeepsQuotedQualifiers: quoted search phrases must survive as
+// one argument so gh reassembles the query the user wrote.
+func TestSplitQueryKeepsQuotedQualifiers(t *testing.T) {
+	got := splitQuery(`is:open label:"needs review" author:alice "exact phrase"`)
+	want := []string{"is:open", `label:"needs review"`, "author:alice", `"exact phrase"`}
+	if len(got) != len(want) {
+		t.Fatalf("splitQuery = %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("arg %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+	if n := len(splitQuery("  ")); n != 0 {
+		t.Errorf("blank filter should split to nothing, got %d args", n)
+	}
+}
