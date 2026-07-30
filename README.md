@@ -46,6 +46,7 @@ leanreview --export out.md change.diff
 | `gg` / `G` | first / last line |
 | `Ctrl-d` / `Ctrl-u` | half page |
 | `t` | toggle unified / split |
+| `\` | toggle changed-files sidebar |
 | `za` / `zR` / `zM` | fold current hunk / expand all / collapse all |
 | `/`, `n`, `N` | search diff text, next/previous match |
 | `f` | file picker |
@@ -122,9 +123,9 @@ reposition.
 - **M3 (done)** — GitHub PR mode (via `gh`): canonical PR diff, threads, replies,
   atomic review submission, and context-based comment relocation on head change.
 - **Ergonomics (done)** — edit drafts (`e`), in-diff search (`/`, `n`, `N`),
-  collapsible hunks (`za`/`zR`/`zM`), and Chroma syntax highlighting.
-- **Remaining polish** — persistent side panels / file sidebar, configurable
-  keys & themes.
+  collapsible hunks (`za`/`zR`/`zM`), a changed-files sidebar (`\`), and Chroma
+  syntax highlighting.
+- **Remaining polish** — configurable keys & themes.
 - **M5** — other forges (GitLab/Forgejo) behind the same `Forge` seam.
 
 ## Architecture
