@@ -57,6 +57,17 @@ func TestUnknownActionIgnored(t *testing.T) {
 	}
 }
 
+func TestBindSingleKeyToTwoKeyAction(t *testing.T) {
+	// A single key may be bound to a two-key action like next-hunk.
+	m := keymapModel(t, map[string]string{"m": "next-hunk"})
+	startHunk := m.rowAt(m.cursor).Source.HunkIndex
+	m = key(m, "m")
+	got := m.rowAt(m.cursor)
+	if got == nil || got.Source == nil || got.Source.HunkIndex == startHunk {
+		t.Errorf("single key bound to next-hunk did not advance the hunk")
+	}
+}
+
 func TestCountPrefixStillWorksThroughKeymap(t *testing.T) {
 	m := keymapModel(t, nil)
 	start := m.cursor

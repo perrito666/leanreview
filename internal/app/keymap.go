@@ -40,11 +40,16 @@ func DefaultKeymap() Keymap {
 	}
 }
 
-// knownActions is the set of action names a binding may target; overrides naming
-// anything else are ignored.
+// knownActions is the set of action names a binding may target — the union of
+// the default single-key actions and the two-key sequence actions — so a user
+// may bind a single key to any action (e.g. "next-hunk" or "delete-comment").
+// Overrides naming anything else are ignored.
 var knownActions = func() map[string]bool {
 	m := map[string]bool{}
 	for _, a := range DefaultKeymap() {
+		m[a] = true
+	}
+	for _, a := range twoKey {
 		m[a] = true
 	}
 	return m
