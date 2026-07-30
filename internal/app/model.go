@@ -25,6 +25,9 @@ type Config struct {
 
 	// PR is set in pull-request mode; nil for local/patch review.
 	PR *PRContext
+
+	// Highlighter, when set, overrides the environment-derived default.
+	Highlighter *ui.Highlighter
 }
 
 // Model is the root Bubble Tea model.
@@ -109,7 +112,7 @@ func New(cfg Config) *Model {
 		layout:      LayoutUnified,
 		rowCache:    map[string][]diff.DisplayRow{},
 		folded:      map[string]bool{},
-		highlighter: ui.NewHighlighter(),
+		highlighter: cfg.Highlighter,
 		hlCache:     map[string]string{},
 		selAnchor:   -1,
 		draft:       cfg.Draft,
@@ -124,6 +127,9 @@ func New(cfg Config) *Model {
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
+	}
+	if m.highlighter == nil {
+		m.highlighter = ui.NewHighlighterFromEnv()
 	}
 	m.buildThreadIndex()
 	m.cursor = m.firstContentRow()

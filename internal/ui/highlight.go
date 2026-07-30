@@ -21,17 +21,29 @@ type Highlighter struct {
 	style     *chroma.Style
 }
 
-// NewHighlighter builds a highlighter honoring NO_COLOR and LEANREVIEW_SYNTAX.
-func NewHighlighter() *Highlighter {
+// NewHighlighterFromEnv builds a highlighter honoring NO_COLOR and
+// LEANREVIEW_SYNTAX with the default style. Used where no config is available
+// (e.g. tests).
+func NewHighlighterFromEnv() *Highlighter {
+	enabled := os.Getenv("NO_COLOR") == "" && os.Getenv("LEANREVIEW_SYNTAX") != "0"
+	return NewHighlighter(enabled, "github")
+}
+
+// NewHighlighter builds a highlighter with an explicit enabled flag and Chroma
+// style name. An unknown or empty style falls back to a sensible default.
+func NewHighlighter(enabled bool, style string) *Highlighter {
 	h := &Highlighter{}
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("LEANREVIEW_SYNTAX") == "0" {
+	if !enabled {
 		return h
 	}
 	f := formatters.Get("terminal256")
 	if f == nil {
 		return h
 	}
-	s := styles.Get("github")
+	s := styles.Get(style)
+	if s == nil {
+		s = styles.Get("github")
+	}
 	if s == nil {
 		s = styles.Fallback
 	}

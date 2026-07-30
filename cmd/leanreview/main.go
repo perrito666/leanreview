@@ -33,6 +33,7 @@ import (
 
 	"github.com/perrito666/leanreview/internal/app"
 	"github.com/perrito666/leanreview/internal/config"
+	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/editor"
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/forge/ghcli"
@@ -52,6 +53,7 @@ type options struct {
 	base       string
 	staged     bool
 	contextN   int
+	contextSet bool
 	exportPath string
 	args       []string
 }
@@ -75,6 +77,12 @@ func run(argv []string) error {
 	logFile := setupLogging(cfg.LogPath)
 	if logFile != nil {
 		defer logFile.Close()
+	}
+
+	// Apply configuration that must be in place before any diff is parsed.
+	diff.TabWidth = cfg.TabWidth
+	if !opts.contextSet {
+		opts.contextN = cfg.Context
 	}
 
 	ctx := context.Background()
@@ -157,14 +165,15 @@ func run(argv []string) error {
 	}
 
 	model := app.New(app.Config{
-		Files:   files,
-		Title:   src.Title(),
-		HeadOID: headOID,
-		Draft:   draft,
-		Store:   store,
-		Editor:  ed,
-		Theme:   ui.DefaultTheme(),
-		PR:      prCtx,
+		Files:       files,
+		Title:       src.Title(),
+		HeadOID:     headOID,
+		Draft:       draft,
+		Store:       store,
+		Editor:      ed,
+		Theme:       ui.ThemeByName(cfg.Theme),
+		Highlighter: ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
+		PR:          prCtx,
 	})
 
 	prog := tea.NewProgram(model, tea.WithAltScreen())
@@ -235,6 +244,7 @@ func parseArgs(argv []string) (options, error) {
 				return o, fmt.Errorf("%s: %w", a, err)
 			}
 			o.contextN = n
+			o.contextSet = true
 		case a == "--export":
 			v, err := next(argv, &i, "--export")
 			if err != nil {

@@ -1,30 +1,115 @@
-// Package config holds user-facing configuration. In Milestone 1 this is
-// intentionally tiny: the editor override and the log destination, sourced from
-// the environment. A file-based config (review.editor, theme, keymaps) arrives
-// with later milestones.
+// Package config holds user-facing configuration, resolved from (in increasing
+// precedence) built-in defaults, a JSON config file, and environment variables.
+// Command-line flags, handled in main, take precedence over all of these.
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 )
 
 // Config is the resolved runtime configuration.
 type Config struct {
-	// Editor overrides editor auto-detection (highest precedence). Empty means
-	// fall back to GIT_EDITOR/VISUAL/EDITOR/git.
+	// Editor overrides editor auto-detection (highest precedence within the
+	// editor resolution chain). Empty means fall back to GIT_EDITOR/VISUAL/…
 	Editor string
-	// LogPath is where diagnostic logs are written (never stdout, which the TUI
-	// owns while active).
+	// Syntax enables source syntax highlighting (subject to NO_COLOR).
+	Syntax bool
+	// SyntaxStyle is the Chroma style name (e.g. "github", "monokai").
+	SyntaxStyle string
+	// Theme is the TUI palette name ("default" or "mono").
+	Theme string
+	// TabWidth is how many columns a tab expands to.
+	TabWidth int
+	// Context is the default number of unified context lines when -U is unset.
+	Context int
+	// LogPath is where diagnostic logs are written (never stdout).
 	LogPath string
 }
 
-// Load builds a Config from the environment.
+// fileConfig mirrors the on-disk JSON, using pointers so absent keys are
+// distinguishable from zero values.
+type fileConfig struct {
+	Editor      *string `json:"editor"`
+	Syntax      *bool   `json:"syntax"`
+	SyntaxStyle *string `json:"syntax_style"`
+	Theme       *string `json:"theme"`
+	TabWidth    *int    `json:"tab_width"`
+	Context     *int    `json:"context"`
+}
+
+// Load builds a Config from defaults, then the config file, then the environment.
 func Load() Config {
-	return Config{
-		Editor:  os.Getenv("LEANREVIEW_EDITOR"),
-		LogPath: logPath(),
+	c := Config{
+		Syntax:      true,
+		SyntaxStyle: "github",
+		Theme:       "default",
+		TabWidth:    4,
+		Context:     3,
+		LogPath:     logPath(),
 	}
+
+	if fc, ok := readFile(configPath()); ok {
+		if fc.Editor != nil {
+			c.Editor = *fc.Editor
+		}
+		if fc.Syntax != nil {
+			c.Syntax = *fc.Syntax
+		}
+		if fc.SyntaxStyle != nil {
+			c.SyntaxStyle = *fc.SyntaxStyle
+		}
+		if fc.Theme != nil {
+			c.Theme = *fc.Theme
+		}
+		if fc.TabWidth != nil && *fc.TabWidth > 0 {
+			c.TabWidth = *fc.TabWidth
+		}
+		if fc.Context != nil && *fc.Context >= 0 {
+			c.Context = *fc.Context
+		}
+	}
+
+	// Environment overrides the file.
+	if v := os.Getenv("LEANREVIEW_EDITOR"); v != "" {
+		c.Editor = v
+	}
+	if os.Getenv("LEANREVIEW_SYNTAX") == "0" || os.Getenv("NO_COLOR") != "" {
+		c.Syntax = false
+	}
+	if v := os.Getenv("LEANREVIEW_LOG"); v != "" {
+		c.LogPath = v
+	}
+
+	return c
+}
+
+func configPath() string {
+	base := os.Getenv("XDG_CONFIG_HOME")
+	if base == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		base = filepath.Join(home, ".config")
+	}
+	return filepath.Join(base, "leanreview", "config.json")
+}
+
+func readFile(path string) (fileConfig, bool) {
+	if path == "" {
+		return fileConfig{}, false
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fileConfig{}, false
+	}
+	var fc fileConfig
+	if err := json.Unmarshal(data, &fc); err != nil {
+		return fileConfig{}, false
+	}
+	return fc, true
 }
 
 func logPath() string {

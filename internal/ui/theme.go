@@ -31,6 +31,16 @@ type Theme struct {
 	Faint  lipgloss.Style
 }
 
+// ThemeByName returns a named theme. "mono" forces the monochrome palette;
+// anything else (including "" and "default") returns the standard palette,
+// which itself collapses to monochrome under NO_COLOR.
+func ThemeByName(name string) Theme {
+	if name == "mono" {
+		return monoTheme()
+	}
+	return DefaultTheme()
+}
+
 // DefaultTheme returns the standard palette, or a monochrome variant when
 // NO_COLOR is set.
 func DefaultTheme() Theme {

@@ -58,7 +58,7 @@ func convertFile(f *gitdiff.File) FileDiff {
 			pos++
 			p := pos
 			dl := DiffLine{
-				Text:          expandTabs(strings.TrimRight(ln.Line, "\n"), 4),
+				Text:          expandTabs(strings.TrimRight(ln.Line, "\n"), TabWidth),
 				PatchPosition: &p,
 			}
 			switch ln.Op {
@@ -86,6 +86,10 @@ func convertFile(f *gitdiff.File) FileDiff {
 
 	return fd
 }
+
+// TabWidth is the number of columns a tab expands to when parsing diff lines.
+// It defaults to 4 and may be overridden from configuration before parsing.
+var TabWidth = 4
 
 // expandTabs replaces tabs with spaces using tab-stop columns, so display width
 // is predictable (terminals and lipgloss otherwise expand tabs unpredictably
