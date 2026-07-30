@@ -71,9 +71,32 @@ Source is syntax-highlighted in the unified view (Chroma). Drafts persist under
 source. Logs go to `$XDG_STATE_HOME/leanreview/leanreview.log` (never stdout,
 which the TUI owns).
 
-Environment:
+### Configuration
 
-- `LEANREVIEW_EDITOR` — editor override (highest precedence).
+Settings resolve in increasing precedence: built-in defaults → config file →
+environment → command-line flags. The config file lives at
+`$XDG_CONFIG_HOME/leanreview/config.json` (`~/.config/leanreview/config.json`):
+
+```json
+{
+  "editor": "nvim -f",
+  "syntax": true,
+  "syntax_style": "github",
+  "theme": "default",
+  "tab_width": 4,
+  "context": 3
+}
+```
+
+- `editor` — editor command (parsed as a command line, e.g. `code --wait`).
+- `syntax` / `syntax_style` — enable highlighting and pick a Chroma style.
+- `theme` — TUI palette: `default` or `mono`.
+- `tab_width` — columns a tab expands to.
+- `context` — default unified context lines when `-U` is not passed.
+
+Environment overrides:
+
+- `LEANREVIEW_EDITOR` — editor override.
 - `LEANREVIEW_SYNTAX=0` — disable syntax highlighting.
 - `NO_COLOR` — disable all color (highlighting and styling).
 - `LEANREVIEW_LOG` — log file path.
@@ -123,9 +146,9 @@ reposition.
 - **M3 (done)** — GitHub PR mode (via `gh`): canonical PR diff, threads, replies,
   atomic review submission, and context-based comment relocation on head change.
 - **Ergonomics (done)** — edit drafts (`e`), in-diff search (`/`, `n`, `N`),
-  collapsible hunks (`za`/`zR`/`zM`), a changed-files sidebar (`\`), and Chroma
-  syntax highlighting.
-- **Remaining polish** — configurable keys & themes.
+  collapsible hunks (`za`/`zR`/`zM`), a changed-files sidebar (`\`), Chroma
+  syntax highlighting, and a JSON config file (editor, theme, syntax, tabs).
+- **Remaining polish** — configurable key bindings; PR-mode thread side panel.
 - **M5** — other forges (GitLab/Forgejo) behind the same `Forge` seam.
 
 ## Architecture
