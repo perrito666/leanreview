@@ -1,61 +1,182 @@
 # leanreview
 
-A terminal code-review client. It reviews a **patch/diff file** or a **local git
-comparison**, lets you navigate the diff and attach draft comments anchored to
-semantic diff locations, and **exports those comments as Markdown** so they can
-be fed back as prompt feedback. Pull-request (GitHub) mode is planned; see
-[Milestones](#milestones).
+A terminal code-review client. It reviews a **patch/diff file**, a **local git
+comparison**, a **GitHub pull request**, or a **GitLab merge request** in the
+same TUI: navigate the diff, attach draft comments anchored to semantic diff
+locations, then **export them as Markdown** (great for feeding review notes
+back to an AI as prompt feedback) or **submit them as a real review**.
 
-It is a review client, not a git client: the installed `git` handles repository
-semantics, and this tool focuses on navigation, rendering, review state, and
-comments.
+It is a review client, not a git client: the installed `git`, `gh`, and `glab`
+handle repository and forge semantics; leanreview owns navigation, rendering,
+review state, and comments.
+
+![leanreview reviewing a pull request](docs/screens/main.svg)
+
+*The main view: changed-files sidebar, syntax-highlighted unified diff, a draft
+comment (`●1`), and an existing review thread (`◆1`).*
 
 ## Install
 
 ```bash
+go install github.com/perrito666/leanreview/cmd/leanreview@latest
+# or, from a checkout:
 go build -o leanreview ./cmd/leanreview
 ```
 
-## Usage
+Optional, per mode: [`gh`](https://cli.github.com/) (`gh auth login`) for
+GitHub, [`glab`](https://gitlab.com/gitlab-org/cli) (`glab auth login`) for
+GitLab. Patch-file and local-git review need nothing but `git`.
+
+## Quick start
 
 ```bash
-leanreview change.diff          # review a patch file
-git diff | leanreview -         # review a patch from stdin
-leanreview .                    # working tree vs HEAD
-leanreview --base main          # main...HEAD (merge-base)
-leanreview --staged             # index vs HEAD
-leanreview HEAD~3 HEAD          # explicit revision range
+leanreview change.diff        # review a patch file
+leanreview --base main        # review this branch against main
+leanreview 418                # review PR/MR 418 of this repo's origin
 ```
 
-The optional `review` verb is accepted too: `leanreview review .`.
+## A review session, step by step
 
-Non-interactive draft management (useful in scripts / CI):
+This is the core workflow — reviewing an AI-proposed patch and sending the
+notes back:
+
+1. **Open the diff.** Any of:
+
+   ```bash
+   leanreview change.diff          # a patch file
+   git diff | leanreview -         # stdin
+   leanreview .                    # working tree vs HEAD
+   leanreview --staged             # index vs HEAD
+   leanreview --base main          # main...HEAD (merge-base)
+   leanreview HEAD~3 HEAD          # explicit revision range
+   ```
+
+2. **Navigate.** `j`/`k` move by line, `J`/`K` jump between changes, `]c`/`[c`
+   between hunks, `]f`/`[f` between files. `t` toggles unified ↔ split, `\`
+   toggles the file sidebar, `za` folds a hunk, `/` searches.
+
+3. **Comment.** Press `c` on a line — or `v` to select a range (`V` grabs the
+   whole changed block), then `c`. Your `$EDITOR` opens with a Markdown
+   template; write the note, save, quit. The comment is saved as a **draft**,
+   marked `●` in the diff. `e` edits it, `dd` deletes it.
+
+   In split view, `h`/`l` choose which side of a paired change you're
+   commenting on (the status bar shows `[LEFT]`/`[RIGHT]`):
+
+   ![split view with left-side targeting](docs/screens/split.svg)
+
+4. **Review your notes.** `C` lists every draft (and, in PR mode, existing
+   threads); `Enter` jumps to one, `e` edits, `d` deletes.
+
+   ![comment list overlay](docs/screens/comments.svg)
+
+5. **Export.** `:export notes.md` (or non-interactively,
+   `leanreview --export notes.md change.diff`) writes Markdown grouped by
+   file — ready to paste back into a prompt:
+
+   ````markdown
+   ## internal/api/handler.go
+
+   ### L72 (RIGHT)
+   ```go
+   result, err := calculate(input)
+   ```
+   > This still ignores the error from calculate().
+   ````
+
+Drafts persist automatically (`:w` forces a save, quitting saves too) and
+reload the next time you open the same source. `leanreview --discard <target>`
+deletes a saved draft.
+
+## Reviewing a pull request (GitHub)
 
 ```bash
-leanreview --export out.md change.diff   # write draft comments as Markdown
-leanreview --discard change.diff         # delete the saved draft
+leanreview 418                                   # infers owner/repo from origin
+leanreview owner/repo#418
+leanreview https://github.com/owner/repo/pull/418
 ```
 
-Drafts resume automatically: reopening the same source reloads its saved
-comments (relocating them if the head commit moved).
+leanreview fetches the PR's canonical diff through `gh` (so comment positions
+always match what GitHub shows) plus its existing review threads, which appear
+as `◆N` markers. On a marked line, `Enter` opens the full thread and `r`
+drafts a reply.
 
-## Keys
+When you're done, `s` (or `:comment` / `:approve` / `:request`) opens the
+submission screen:
+
+![submission confirmation](docs/screens/submit.svg)
+
+Pick the event with `c`/`a`/`R`, then `y` submits: all draft line comments go
+up as **one atomic review**, and staged replies are posted to their threads.
+Nothing is ever sent before this confirmation. Enterprise hosts work through
+`gh`'s own authentication.
+
+**If the PR head moves between sessions**, saved drafts are re-anchored to the
+new diff by matching each comment's captured surrounding context (following
+renames) — relocating only on a unique match. Comments that can't be placed
+are marked *orphaned*, excluded from submission, and kept for you to
+reposition.
+
+## Reviewing a merge request (GitLab)
+
+The same flow works against GitLab through `glab`; the adapter is chosen by
+host, so the TUI is identical:
+
+```bash
+leanreview 'https://gitlab.com/group/repo/-/merge_requests/42'
+leanreview 'group/repo!42'                # nested subgroups work too
+leanreview 42                             # inside a checkout with a GitLab origin
+```
+
+GitLab has no atomic review-with-comments endpoint, so submission maps onto
+its model: each line comment becomes a positioned diff discussion, the summary
+becomes a merge-request note, **Approve** approves the MR, and **Request
+changes** posts a "Changes requested" note. Comments post in order and a
+failure reports how many were already published.
+
+## Reference
+
+### Command line
+
+```text
+leanreview [flags] [target]        (the "review" verb is also accepted)
+```
+
+| Target | Meaning |
+| --- | --- |
+| `<file.diff>` / `-` | a patch file / stdin |
+| `.` (or nothing) | working tree vs HEAD |
+| `<revA> <revB>` | explicit git revision range |
+| `418`, `#418`, `!42` | PR/MR number (owner/repo inferred from origin) |
+| `owner/repo#418`, `group/repo!42`, full URL | explicit PR/MR reference |
+
+| Flag | Meaning |
+| --- | --- |
+| `--base <ref>` | compare `<ref>...HEAD` instead of the working tree |
+| `--staged` | compare the index against HEAD |
+| `-U, --context N` | unified context lines (default 3, configurable) |
+| `--export FILE` | write draft comments as Markdown and exit |
+| `--discard` | delete the saved draft for this source and exit |
+
+### Keys
 
 | Key | Action |
 | --- | --- |
-| `j` / `k` | down / up a line |
+| `j` / `k` | down / up a line (counts work: `3j`) |
 | `J` / `K` | next / previous change |
 | `]c` / `[c` | next / previous hunk |
 | `]f` / `[f` | next / previous file |
 | `gg` / `G` | first / last line |
 | `Ctrl-d` / `Ctrl-u` | half page |
+| `←` / `→`, `0` / `$` | scroll long lines / jump to start & end |
 | `t` | toggle unified / split |
 | `h` / `l` | target left / right side (split view) |
 | `\` | toggle changed-files sidebar |
 | `za` / `zR` / `zM` | fold current hunk / expand all / collapse all |
-| `/`, `n`, `N` | search diff text, next/previous match |
+| `/`, `n`, `N` | search diff text, next / previous match |
 | `f` | file picker |
-| `C` / `Enter` | comment list |
+| `C` | comment list |
+| `Enter` | open thread reader (on a `◆` line), else comment list |
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
@@ -64,17 +185,21 @@ comments (relocating them if the head commit moved).
 | `s` | submit review (PR mode) |
 | `:w` | save drafts |
 | `:export FILE` | export comments as Markdown |
+| `:comment` / `:approve` / `:request` | open submission with that event |
 | `:q` / `q` | quit |
 | `?` | help |
 
-Comments open your editor (`LEANREVIEW_EDITOR` → `GIT_EDITOR` → `VISUAL` →
-`EDITOR` → `git var GIT_EDITOR` → `vi`). A selection must map onto one continuous
-range on one side (GitHub semantics); cross-side selections are rejected.
+A selection must map onto one continuous range on one side (GitHub
+semantics); cross-side selections are rejected before the editor opens.
 
-Source is syntax-highlighted in the unified view (Chroma). Drafts persist under
-`$XDG_STATE_HOME/leanreview/drafts/` and reload on the next run of the same
-source. Logs go to `$XDG_STATE_HOME/leanreview/leanreview.log` (never stdout,
-which the TUI owns).
+### The editor
+
+`c`, `e`, and `r` open your editor, resolved in this order: `editor` in the
+config file / `LEANREVIEW_EDITOR` → `GIT_EDITOR` → `VISUAL` → `EDITOR` →
+`git var GIT_EDITOR` → `vi`. Values are parsed as command lines (`code
+--wait`, `nvim -f`). The buffer is a `.md` file with an HTML-comment header
+carrying context; the header is stripped automatically — saving an empty body
+discards the comment.
 
 ### Configuration
 
@@ -89,119 +214,54 @@ environment → command-line flags. The config file lives at
   "syntax_style": "github",
   "theme": "default",
   "tab_width": 4,
-  "context": 3
+  "context": 3,
+  "keys": { " ": "down", "m": "next-hunk" }
 }
 ```
 
-- `editor` — editor command (parsed as a command line, e.g. `code --wait`).
+- `editor` — editor command (parsed as a command line).
 - `syntax` / `syntax_style` — enable highlighting and pick a Chroma style.
 - `theme` — TUI palette: `default` or `mono`.
 - `tab_width` — columns a tab expands to.
 - `context` — default unified context lines when `-U` is not passed.
 - `keys` — remap normal-mode bindings, `{ "<key>": "<action>" }`. An empty
-  action unbinds a key. Actions include `down`, `up`, `next-change`,
-  `next-hunk`, `next-file`, `toggle-layout`, `sidebar`, `search`, `next-match`,
-  `comment`, `edit`, `reply`, `submit`, `files`, `comments`, `help`, `quit`
-  (see `DefaultKeymap`). Two-key sequences (`gg`, `]c`, …) and counts are fixed.
+  action unbinds a key; single keys may bind two-key actions (`next-hunk`,
+  `delete-comment`, …). Two-key sequences themselves (`gg`, `]c`, …) and
+  numeric counts are fixed.
 
-```json
-{ "keys": { " ": "down", "x": "delete-comment" } }
-```
+Environment: `LEANREVIEW_EDITOR`, `LEANREVIEW_SYNTAX=0` (disable
+highlighting), `NO_COLOR` (disable all color), `LEANREVIEW_LOG` (log path).
 
-Environment overrides:
+### State on disk
 
-- `LEANREVIEW_EDITOR` — editor override.
-- `LEANREVIEW_SYNTAX=0` — disable syntax highlighting.
-- `NO_COLOR` — disable all color (highlighting and styling).
-- `LEANREVIEW_LOG` — log file path.
-
-## Export format
-
-Comments export as Markdown grouped by file:
-
-````markdown
-## internal/api/handler.go
-
-### L72 (RIGHT)
-```go
-result, err := calculate(input)
-```
-> This ignores the error from calculate().
-````
-
-## GitHub pull-request mode
-
-Point leanreview at a pull request and it fetches the canonical diff through
-`gh`:
-
-```bash
-leanreview 418                                   # infers owner/repo from origin
-leanreview owner/repo#418
-leanreview https://github.com/owner/repo/pull/418
-```
-
-Existing review threads are marked on the diff (`◆N`) and listed in the comment
-overlay. Press `r` on a line to reply, and `s` (or `:comment` / `:approve` /
-`:request`) to open the submission screen — your draft line comments are sent as
-one atomic review and staged replies are posted. Nothing is sent until you
-confirm. Requires the [`gh` CLI](https://cli.github.com/) to be installed and
-authenticated (`gh auth login`); enterprise hosts are supported.
-
-When the PR head moves between sessions, saved draft comments are re-anchored to
-the new diff: each is relocated by matching its captured surrounding context
-(following renames), uniquely or not at all. Comments with no unique match are
-marked orphaned, excluded from submission, and kept as drafts for you to
-reposition.
-
-## GitLab merge-request mode
-
-The same review flow works against GitLab through the
-[`glab` CLI](https://gitlab.com/gitlab-org/cli) (`glab auth login`); the
-adapter is chosen by host, so the TUI is identical:
-
-```bash
-leanreview 'https://gitlab.com/group/repo/-/merge_requests/42'
-leanreview 'group/repo!42'                # nested subgroups work too
-leanreview 42                             # inside a checkout with a GitLab origin
-```
-
-GitLab has no atomic review-with-comments endpoint, so submission maps onto its
-model: each line comment is posted as a positioned diff discussion, the summary
-becomes a merge-request note, **Approve** approves the MR, and **Request
-changes** posts a "Changes requested" note. Comments post in order and a
-failure reports how many were already published.
-
-## Milestones
-
-- **M1 (done)** — shared diff core, patch/local viewer, unified/split layouts,
-  draft comments via `$EDITOR`, persistence, Markdown export.
-- **M3 (done)** — GitHub PR mode (via `gh`): canonical PR diff, threads, replies,
-  atomic review submission, and context-based comment relocation on head change.
-- **Ergonomics (done)** — edit drafts (`e`), in-diff search (`/`, `n`, `N`),
-  collapsible hunks (`za`/`zR`/`zM`), a changed-files sidebar (`\`), Chroma
-  syntax highlighting, and a JSON config file (editor, theme, syntax, tabs).
-- **M5 (done)** — GitLab merge requests via `glab`, behind the same `Forge`
-  seam (adapter picked by host; the TUI is unchanged). Forgejo/Gitea remain an
-  open adapter slot.
+- Drafts: `$XDG_STATE_HOME/leanreview/drafts/` (`~/.local/state/…`), one JSON
+  file per source, atomic writes.
+- Logs: `$XDG_STATE_HOME/leanreview/leanreview.log` — never stdout, which the
+  TUI owns.
 
 ## Architecture
 
 ```
 cmd/leanreview      CLI entrypoint, logging, tea.Program wiring
 internal/diff       canonical diff model, parser, unified/split projections, Location
-internal/source     resolve args -> ReviewSource (patch file, stdin, local git, PR)
+internal/source     resolve args -> ReviewSource (patch file, stdin, local git, PR/MR)
 internal/git        wrapper over the git executable (incl. origin inference)
 internal/forge      host-agnostic Forge seam + PR/MR-ref parsing + host dispatch
 internal/forge/ghcli   gh-backed Forge implementation (GitHub)
 internal/forge/glabcli glab-backed Forge implementation (GitLab)
-internal/review     draft comments, XDG persistence, Markdown export
+internal/review     draft comments, XDG persistence, relocation, Markdown export
 internal/editor     $EDITOR resolution/launch, temp file, template stripping
 internal/app        Bubble Tea model/update/view, key grammar, selection
-internal/ui         theme, help text
-internal/config     environment-sourced config
+internal/ui         theme, syntax highlighting, help text
+internal/config     defaults <- config file <- environment
 ```
 
 The core design rule: rendered screen rows are never canonical comment
 locations. Comments anchor to a semantic `diff.Location` (path, side, line
-range, context) that survives resize, folding, and unified↔split toggles.
-```
+range, surrounding context) that survives resize, folding, unified↔split
+toggles — and head-commit changes, via context-based relocation.
+
+Milestone history: M1 local/patch review core → M3 GitHub PR mode →
+ergonomics (search, folding, sidebar, highlighting, config, keymaps) → M5
+GitLab. Forgejo/Gitea remain an open adapter slot behind the same `Forge`
+seam.
