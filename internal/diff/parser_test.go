@@ -3,6 +3,7 @@ package diff
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -114,6 +115,32 @@ func TestParseDeleted(t *testing.T) {
 	for _, l := range f.Hunks[0].Lines {
 		if l.Kind != LineDeletion {
 			t.Errorf("line %q kind = %v, want deletion", l.Text, l.Kind)
+		}
+	}
+}
+
+func TestExpandTabs(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"no tabs", "no tabs"},
+		{"\tx", "    x"},       // one leading tab -> 4 spaces
+		{"a\tb", "a   b"},      // tab stop at column 4
+		{"ab\tc", "ab  c"},     // partial column fill
+		{"\t\tx", "        x"}, // two tabs
+	}
+	for _, c := range cases {
+		if got := expandTabs(c.in, 4); got != c.want {
+			t.Errorf("expandTabs(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+func TestParsedLinesHaveNoTabs(t *testing.T) {
+	f := loadFixture(t, "simple.diff")[0]
+	for _, h := range f.Hunks {
+		for _, l := range h.Lines {
+			if strings.ContainsRune(l.Text, '\t') {
+				t.Errorf("parsed line still contains a tab: %q", l.Text)
+			}
 		}
 	}
 }

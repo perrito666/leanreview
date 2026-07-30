@@ -58,7 +58,7 @@ func convertFile(f *gitdiff.File) FileDiff {
 			pos++
 			p := pos
 			dl := DiffLine{
-				Text:          strings.TrimRight(ln.Line, "\n"),
+				Text:          expandTabs(strings.TrimRight(ln.Line, "\n"), 4),
 				PatchPosition: &p,
 			}
 			switch ln.Op {
@@ -85,6 +85,31 @@ func convertFile(f *gitdiff.File) FileDiff {
 	}
 
 	return fd
+}
+
+// expandTabs replaces tabs with spaces using tab-stop columns, so display width
+// is predictable (terminals and lipgloss otherwise expand tabs unpredictably
+// relative to our padding). Column counting starts at the beginning of the line
+// text (the number gutter is added separately during rendering).
+func expandTabs(s string, tab int) string {
+	if !strings.ContainsRune(s, '\t') {
+		return s
+	}
+	var b strings.Builder
+	col := 0
+	for _, r := range s {
+		if r == '\t' {
+			n := tab - col%tab
+			for i := 0; i < n; i++ {
+				b.WriteByte(' ')
+			}
+			col += n
+			continue
+		}
+		b.WriteRune(r)
+		col++
+	}
+	return b.String()
 }
 
 func statusOf(f *gitdiff.File) FileStatus {
