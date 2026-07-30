@@ -66,3 +66,39 @@ func TestEscapeClearsSearch(t *testing.T) {
 		t.Errorf("esc did not clear the search")
 	}
 }
+
+// TestSearchAcceptsNonASCII guards the rune-aware input path: multi-byte
+// characters must be typable and backspace must remove whole runes.
+func TestSearchAcceptsNonASCII(t *testing.T) {
+	m := testModel(t)
+	m.searchActive = true
+	m.searchInput = "/"
+	m.handleSearchKey("é")
+	m.handleSearchKey("ü")
+	if m.searchInput != "/éü" {
+		t.Fatalf("searchInput = %q, want /éü", m.searchInput)
+	}
+	m.handleSearchKey("backspace")
+	if m.searchInput != "/é" {
+		t.Errorf("backspace should remove one rune, got %q", m.searchInput)
+	}
+	m.handleSearchKey("up") // named key: must not be appended
+	if m.searchInput != "/é" {
+		t.Errorf("named keys must not enter the query, got %q", m.searchInput)
+	}
+}
+
+// TestCmdlineAcceptsNonASCII mirrors the search guard for ":" input.
+func TestCmdlineAcceptsNonASCII(t *testing.T) {
+	m := testModel(t)
+	m.cmdlineActive = true
+	m.cmdline = ":"
+	m.handleCmdlineKey("ñ")
+	if m.cmdline != ":ñ" {
+		t.Fatalf("cmdline = %q, want :ñ", m.cmdline)
+	}
+	m.handleCmdlineKey("backspace")
+	if m.cmdline != ":" {
+		t.Errorf("backspace should remove the rune, got %q", m.cmdline)
+	}
+}

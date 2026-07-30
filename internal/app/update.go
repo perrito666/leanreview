@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -442,14 +443,16 @@ func (m *Model) handleCmdlineKey(key string) tea.Cmd {
 		m.cmdline = ""
 		return m.runCmdline(strings.TrimSpace(line))
 	case "backspace":
-		if len(m.cmdline) > 1 {
-			m.cmdline = m.cmdline[:len(m.cmdline)-1]
+		if r := []rune(m.cmdline); len(r) > 1 {
+			m.cmdline = string(r[:len(r)-1])
 		} else {
 			m.cmdlineActive = false
 			m.cmdline = ""
 		}
 	default:
-		if len(key) == 1 {
+		// One rune = typed text (multi-rune strings are named keys like "up").
+		// Counting runes rather than bytes keeps non-ASCII input typable.
+		if utf8.RuneCountInString(key) == 1 {
 			m.cmdline += key
 		}
 	}

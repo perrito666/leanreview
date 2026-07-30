@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/perrito666/leanreview/internal/diff"
 )
@@ -18,14 +19,16 @@ func (m *Model) handleSearchKey(key string) {
 		m.searchInput = ""
 		m.runSearch(q)
 	case "backspace":
-		if len(m.searchInput) > 1 {
-			m.searchInput = m.searchInput[:len(m.searchInput)-1]
+		if r := []rune(m.searchInput); len(r) > 1 {
+			m.searchInput = string(r[:len(r)-1])
 		} else {
 			m.searchActive = false
 			m.searchInput = ""
 		}
 	default:
-		if len(key) == 1 {
+		// One rune = typed text (multi-rune strings are named keys like "up").
+		// Counting runes rather than bytes keeps non-ASCII queries typable.
+		if utf8.RuneCountInString(key) == 1 {
 			m.searchInput += key
 		}
 	}
