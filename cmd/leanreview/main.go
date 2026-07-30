@@ -107,7 +107,18 @@ func run(argv []string) error {
 		if draft.Title == "" {
 			draft.Title = src.Title()
 		}
-		markStaleIfHeadChanged(draft, headOID)
+		// If the head moved since the draft was saved, re-anchor its comments
+		// against the current diff and persist the result.
+		if headOID != "" && draft.HeadOID != "" && draft.HeadOID != headOID && len(draft.Comments) > 0 {
+			s := review.RelocateDrafts(draft, files, headOID)
+			if s.Changed() {
+				log.Printf("relocation: %d moved, %d orphaned", s.Moved, s.Orphaned)
+				fmt.Printf("head changed: %d comment(s) moved, %d orphaned\n", s.Moved, s.Orphaned)
+			}
+			if err := store.Save(draft); err != nil {
+				log.Printf("save relocated draft: %v", err)
+			}
+		}
 	}
 
 	// Non-interactive export: write drafts as Markdown and exit.
@@ -281,21 +292,6 @@ func atoi(s string) (int, error) {
 		n = n*10 + int(r-'0')
 	}
 	return n, nil
-}
-
-// markStaleIfHeadChanged flags all comments as potentially stale when the head
-// commit the draft was captured against no longer matches. Full relocation
-// arrives in Milestone 3; for now this just surfaces the risk.
-func markStaleIfHeadChanged(d *review.DraftReview, headOID string) {
-	if headOID == "" || d.HeadOID == "" || d.HeadOID == headOID {
-		return
-	}
-	for i := range d.Comments {
-		if d.Comments[i].State == review.DraftActive {
-			d.Comments[i].State = review.DraftStale
-		}
-	}
-	d.HeadOID = headOID
 }
 
 func setupLogging(path string) *os.File {

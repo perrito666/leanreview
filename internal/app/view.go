@@ -292,8 +292,8 @@ func (m *Model) confirmView() string {
 		b.WriteString(fmt.Sprintf("  Pull request: %s/%s#%d\n", m.pr.Ref.Owner, m.pr.Ref.Repo, m.pr.Ref.Number))
 	}
 	b.WriteString(fmt.Sprintf("  %d new comment(s), %d repl(y/ies)\n", c.NewComments, c.Replies))
-	if c.Stale > 0 {
-		b.WriteString(fmt.Sprintf("  ⚠ %d comment(s) may be stale (the PR head changed); they could be rejected\n", c.Stale))
+	if c.Orphaned > 0 {
+		b.WriteString(fmt.Sprintf("  ⚠ %d orphaned comment(s) (location lost after a head change) will NOT be\n    submitted — reposition them first (they remain saved as drafts)\n", c.Orphaned))
 	}
 	b.WriteString("\n  Event:\n")
 	b.WriteString(eventLine("c", "Comment", m.pendingEvent == forge.EventComment))

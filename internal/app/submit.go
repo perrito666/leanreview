@@ -65,22 +65,22 @@ func (m *Model) beginSubmit(event forge.ReviewEvent) {
 
 // submitCounts summarises the pending draft for the confirmation screen.
 type submitCounts struct {
-	NewComments int
+	NewComments int // submittable line comments (active, non-reply)
 	Replies     int
-	Stale       int
+	Orphaned    int // non-reply comments with no valid location; not submitted
 }
 
 func (m *Model) submitCounts() submitCounts {
 	var c submitCounts
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
-		if cm.ReplyTo != nil {
+		switch {
+		case cm.ReplyTo != nil:
 			c.Replies++
-		} else {
+		case cm.State == review.DraftOrphaned:
+			c.Orphaned++
+		default:
 			c.NewComments++
-		}
-		if cm.State != review.DraftActive {
-			c.Stale++
 		}
 	}
 	return c
@@ -115,14 +115,19 @@ func (m *Model) doSubmit() tea.Cmd {
 	var ids []string
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
-		ids = append(ids, cm.LocalID)
 		if cm.ReplyTo != nil {
+			ids = append(ids, cm.LocalID)
 			replies = append(replies, struct {
 				to   int64
 				body string
 			}{*cm.ReplyTo, cm.Body})
 			continue
 		}
+		if cm.State == review.DraftOrphaned {
+			// No valid location: keep it as a draft for the reviewer to fix.
+			continue
+		}
+		ids = append(ids, cm.LocalID)
 		newComments = append(newComments, toReviewComment(*cm))
 	}
 

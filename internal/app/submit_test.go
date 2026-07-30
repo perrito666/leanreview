@@ -152,6 +152,30 @@ func TestSubmitPostsReplies(t *testing.T) {
 	}
 }
 
+func TestSubmitSkipsOrphanedComments(t *testing.T) {
+	f := &recordingForge{}
+	m := prModel(t, f, nil)
+	// One active line comment and one orphaned one.
+	m.draft.Add(diff.Location{Path: "f.go", Side: diff.SideRight, StartLine: 5, EndLine: 5}, "active", "x")
+	id := m.draft.Add(diff.Location{Path: "f.go", Side: diff.SideRight, StartLine: 9, EndLine: 9}, "orphaned", "y")
+	m.draft.Get(id).State = review.DraftOrphaned
+
+	if c := m.submitCounts(); c.NewComments != 1 || c.Orphaned != 1 {
+		t.Fatalf("counts = %+v, want 1 new, 1 orphaned", c)
+	}
+
+	m.beginSubmit(forge.EventComment)
+	m.onSubmitResult(m.doSubmit()().(submitResultMsg))
+
+	if len(f.createdComments) != 1 || f.createdComments[0].Body != "active" {
+		t.Errorf("submitted comments = %+v, want only the active one", f.createdComments)
+	}
+	// The orphaned comment must be retained as a draft; the active one cleared.
+	if len(m.draft.Comments) != 1 || m.draft.Comments[0].Body != "orphaned" {
+		t.Errorf("remaining drafts = %+v, want only the orphaned one", m.draft.Comments)
+	}
+}
+
 func TestReplyRequiresThread(t *testing.T) {
 	m := prModel(t, &recordingForge{}, nil)
 	// Cursor on a line with no thread.
