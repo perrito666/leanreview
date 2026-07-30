@@ -29,6 +29,10 @@ type Theme struct {
 	Error  lipgloss.Style
 	Key    lipgloss.Style
 	Faint  lipgloss.Style
+
+	// Comment styles inline comment/thread preview text; brighter than Faint
+	// so review discussion stays readable.
+	Comment lipgloss.Style
 }
 
 // ThemeByName returns a named theme. "mono" forces the monochrome palette;
@@ -48,7 +52,9 @@ func DefaultTheme() Theme {
 		return monoTheme()
 	}
 	return Theme{
-		Addition: lipgloss.NewStyle().Foreground(lipgloss.Color("2")),
+		// A true 256-color green: the ANSI palette slot 2 renders olive/mustard
+		// in many terminal schemes.
+		Addition: lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "28", Dark: "114"}),
 		Deletion: lipgloss.NewStyle().Foreground(lipgloss.Color("1")),
 		Context:  lipgloss.NewStyle().Foreground(lipgloss.Color("7")),
 		Metadata: lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
@@ -62,9 +68,15 @@ func DefaultTheme() Theme {
 		Error:    lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
 		Key:      lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
 		Faint:    lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
+		Comment:  lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "240", Dark: "252"}),
 	}
 }
 
+// monoTheme is the palette with all color removed: every style collapses to
+// plain text or an attribute (bold, reverse, underline) so the UI stays
+// legible on monochrome terminals and honours NO_COLOR. Cursor/Select keep
+// reverse video and Search gains an underline, since attributes are the only
+// remaining way to distinguish them.
 func monoTheme() Theme {
 	plain := lipgloss.NewStyle()
 	bold := lipgloss.NewStyle().Bold(true)
@@ -83,5 +95,6 @@ func monoTheme() Theme {
 		Error:    bold,
 		Key:      bold,
 		Faint:    plain,
+		Comment:  plain,
 	}
 }

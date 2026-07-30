@@ -174,18 +174,19 @@ func (m *Model) numWidth() int {
 	return w
 }
 
+// renderRow draws one display row at the content width. Annotation rows are
+// delegated to the comment-preview renderer; everything else gets the comment
+// gutter, and the row style is chosen by precedence — cursor, then selection,
+// then search match — falling back to split per-side styling or syntax
+// highlighting only when no state style would otherwise be masked by them.
 func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) string {
 	isCursor := idx == m.cursor
 	selected := inSel && m.mode == ModeVisual && m.selAnchor >= 0
 	cw := m.contentWidth()
 
-	// Inline comment previews: dim, indented, full content width.
+	// Inline comment previews render as a bordered box (right panel in split).
 	if r.Annotation {
-		text := pad(clip("   "+r.Left.Text, cw), cw)
-		if isCursor {
-			return m.theme.Cursor.Render(text)
-		}
-		return m.theme.Faint.Render(text)
+		return m.renderAnnotation(r, isCursor)
 	}
 
 	// Every non-annotation row gets a 2-column gutter signalling comments:
@@ -226,11 +227,38 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 		return m.theme.Select.Render(glyph + " " + plain)
 	case m.search != "" && m.rowMatches(r):
 		return m.theme.Search.Render(glyph + " " + plain)
-	case m.layout == LayoutUnified && m.highlighter.Enabled():
+	case m.layout == LayoutSplit:
+		return m.theme.Marker.Render(glyph) + " " + m.renderSplitStyled(r, nw, inner)
+	case m.highlighter.Enabled():
 		return m.theme.Marker.Render(glyph) + " " + m.renderHighlighted(r, nw, inner)
 	default:
 		return m.theme.Marker.Render(glyph) + " " + m.styleFor(kindOf(r)).Render(plain)
 	}
+}
+
+// renderSplitStyled draws a split row styling each side by its own kind, so a
+// paired deletion/addition (and its wrapped continuations) keeps the left
+// panel red and the right panel green instead of one color spanning both.
+func (m *Model) renderSplitStyled(r *diff.DisplayRow, nw, width int) string {
+	half := (width - (nw * 2) - 6) / 2
+	if half < 4 {
+		half = 4
+	}
+	lNum, lText, lKind := strings.Repeat(" ", nw), "", diff.LineContext
+	if r.Left != nil {
+		lNum = numStr(r.Left.LineNumber, nw)
+		lText = m.hcut(r.Left.Text)
+		lKind = r.Left.Kind
+	}
+	rNum, rText, rKind := strings.Repeat(" ", nw), "", diff.LineContext
+	if r.Right != nil {
+		rNum = numStr(r.Right.LineNumber, nw)
+		rText = m.hcut(r.Right.Text)
+		rKind = r.Right.Kind
+	}
+	left := m.styleFor(lKind).Render(fmt.Sprintf("%s %s", lNum, pad(clip(lText, half), half)))
+	right := m.styleFor(rKind).Render(fmt.Sprintf("%s %s", rNum, clip(rText, half)))
+	return pad(left+m.theme.Faint.Render(" │ ")+right, width)
 }
 
 // renderHighlighted draws a unified content row at the given width: a dim
@@ -270,6 +298,10 @@ func (m *Model) plainUnified(r *diff.DisplayRow, nw int) string {
 	return fmt.Sprintf("%s %s %s %s", oldN, newN, sign, m.hcut(r.Left.Text))
 }
 
+// plainSplit formats a split row without styling: two number+text panels
+// around the divider, mirroring renderSplitStyled's geometry so a row keeps
+// its columns when the cursor or selection style flattens it to one color. A
+// missing side renders as a blank panel rather than collapsing the divider.
 func (m *Model) plainSplit(r *diff.DisplayRow, nw, width int) string {
 	half := (width - (nw * 2) - 6) / 2
 	if half < 4 {

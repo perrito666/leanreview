@@ -8,7 +8,7 @@ func HelpText() string {
    j / k, ↓ / ↑  down / up one line
    J / K         next / previous change
    ]c / [c       next / previous hunk
-   ]f / [f       next / previous file
+   Tab / S-Tab   next / previous file (also ]f / [f)
    gg / G        first / last line
    Ctrl-d/u      half page down / up
    PgDn / PgUp   full page down / up
