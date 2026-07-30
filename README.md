@@ -1,5 +1,8 @@
 # leanreview
 
+[![CI](https://github.com/perrito666/leanreview/actions/workflows/ci.yml/badge.svg)](https://github.com/perrito666/leanreview/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A terminal code-review client. It reviews a **patch/diff file**, a **local git
 comparison**, a **GitHub pull request**, or a **GitLab merge request** in the
 same TUI: navigate the diff, attach draft comments anchored to semantic diff
@@ -322,6 +325,10 @@ The core design rule: rendered screen rows are never canonical comment
 locations. Comments anchor to a semantic `diff.Location` (path, side, line
 range, surrounding context) that survives resize, folding, unified↔split
 toggles — and head-commit changes, via context-based relocation.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 Milestone history: M1 local/patch review core → M3 GitHub PR mode →
 ergonomics (search, folding, sidebar, highlighting, config, keymaps) → M5
