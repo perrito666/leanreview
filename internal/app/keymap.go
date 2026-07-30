@@ -17,6 +17,8 @@ func DefaultKeymap() Keymap {
 		"G":      "last-line",
 		"0":      "line-start",
 		"$":      "line-end",
+		"left":   "scroll-left",
+		"right":  "scroll-right",
 		"t":      "toggle-layout",
 		"\\":     "sidebar",
 		"v":      "select",

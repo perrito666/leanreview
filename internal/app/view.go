@@ -212,7 +212,7 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw int, marker string) str
 	if avail < 1 {
 		avail = 1
 	}
-	text := ansi.Truncate(m.highlight(path, r.Left.Text), avail, "")
+	text := ansi.Truncate(m.hcut(m.highlight(path, r.Left.Text)), avail, "")
 	line := gutter + sign + text
 	if marker != "" {
 		line += m.theme.Marker.Render(marker)
@@ -224,7 +224,7 @@ func (m *Model) plainUnified(r *diff.DisplayRow, nw int, marker string) string {
 	oldN := numStr(r.Left.LineNumber, nw)
 	newN := numStr(r.Right.LineNumber, nw)
 	sign := signFor(r.Left.Kind)
-	return fmt.Sprintf("%s %s %s %s%s", oldN, newN, sign, r.Left.Text, marker)
+	return fmt.Sprintf("%s %s %s %s%s", oldN, newN, sign, m.hcut(r.Left.Text), marker)
 }
 
 func (m *Model) plainSplit(r *diff.DisplayRow, nw int, marker string) string {
@@ -235,14 +235,14 @@ func (m *Model) plainSplit(r *diff.DisplayRow, nw int, marker string) string {
 	lNum, lText := "", ""
 	if r.Left != nil {
 		lNum = numStr(r.Left.LineNumber, nw)
-		lText = r.Left.Text
+		lText = m.hcut(r.Left.Text)
 	} else {
 		lNum = strings.Repeat(" ", nw)
 	}
 	rNum, rText := "", ""
 	if r.Right != nil {
 		rNum = numStr(r.Right.LineNumber, nw)
-		rText = r.Right.Text
+		rText = m.hcut(r.Right.Text)
 	} else {
 		rNum = strings.Repeat(" ", nw)
 	}

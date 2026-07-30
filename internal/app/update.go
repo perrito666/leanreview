@@ -101,8 +101,14 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.firstLine()
 	case "last-line":
 		m.lastLine()
-	case "line-start", "line-end":
-		// Horizontal motion arrives with M4 clipping; no-op for now.
+	case "line-start":
+		m.lineStart()
+	case "line-end":
+		m.lineEnd()
+	case "scroll-left":
+		m.scrollLeft()
+	case "scroll-right":
+		m.scrollRight()
 	case "toggle-layout":
 		m.toggleLayout()
 	case "sidebar":

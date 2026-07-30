@@ -11,6 +11,8 @@ func HelpText() string {
    ]f / [f       next / previous file
    gg / G        first / last line
    Ctrl-d/u      half page down / up
+   ← / →         scroll left / right
+   0 / $         scroll to line start / end
 
  View
    t             toggle unified / split

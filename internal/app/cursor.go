@@ -145,6 +145,7 @@ func (m *Model) gotoFile(idx int) {
 
 func (m *Model) onFileChange() {
 	m.top = 0
+	m.hscroll = 0
 	m.selAnchor = -1
 	m.mode = ModeNormal
 	m.cursor = m.firstContentRow()

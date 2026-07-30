@@ -51,8 +51,9 @@ type Model struct {
 	highlighter *ui.Highlighter
 	hlCache     map[string]string
 
-	cursor int // index into the current file's rows
-	top    int // first visible row (scroll offset)
+	cursor  int // index into the current file's rows
+	top     int // first visible row (vertical scroll offset)
+	hscroll int // horizontal scroll offset in columns
 
 	width  int
 	height int
