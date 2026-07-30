@@ -29,7 +29,7 @@ func withConfig(t *testing.T, json string) {
 func TestDefaults(t *testing.T) {
 	withConfig(t, "")
 	c := Load()
-	if !c.Syntax || c.SyntaxStyle != "github" || c.Theme != "default" || c.TabWidth != 4 || c.Context != 3 {
+	if !c.Syntax || c.SyntaxStyle != "auto" || c.Theme != "default" || c.TabWidth != 4 || c.Context != 3 {
 		t.Errorf("defaults = %+v", c)
 	}
 }

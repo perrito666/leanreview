@@ -16,7 +16,8 @@ type Config struct {
 	Editor string
 	// Syntax enables source syntax highlighting (subject to NO_COLOR).
 	Syntax bool
-	// SyntaxStyle is the Chroma style name (e.g. "github", "monokai").
+	// SyntaxStyle is the Chroma style name (e.g. "github", "monokai"), or
+	// "auto" to pick one matching the terminal background.
 	SyntaxStyle string
 	// Theme is the TUI palette name ("default" or "mono").
 	Theme string
@@ -46,7 +47,7 @@ type fileConfig struct {
 func Load() Config {
 	c := Config{
 		Syntax:      true,
-		SyntaxStyle: "github",
+		SyntaxStyle: "auto",
 		Theme:       "default",
 		TabWidth:    4,
 		Context:     3,

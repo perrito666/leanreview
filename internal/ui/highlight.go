@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Highlighter renders single source lines to ANSI-colored strings using Chroma.
@@ -22,15 +23,19 @@ type Highlighter struct {
 }
 
 // NewHighlighterFromEnv builds a highlighter honoring NO_COLOR and
-// LEANREVIEW_SYNTAX with the default style. Used where no config is available
-// (e.g. tests).
+// LEANREVIEW_SYNTAX with the auto-detected style. Used where no config is
+// available (e.g. tests).
 func NewHighlighterFromEnv() *Highlighter {
 	enabled := os.Getenv("NO_COLOR") == "" && os.Getenv("LEANREVIEW_SYNTAX") != "0"
-	return NewHighlighter(enabled, "github")
+	return NewHighlighter(enabled, "auto")
 }
 
 // NewHighlighter builds a highlighter with an explicit enabled flag and Chroma
-// style name. An unknown or empty style falls back to a sensible default.
+// style name. The style "auto" (or "") picks one suited to the terminal
+// background — a dark-background style on dark terminals, a light one
+// otherwise — because Chroma styles are background-specific: a light style's
+// dark foreground tokens are unreadable on a dark terminal. An unknown style
+// falls back to the auto choice.
 func NewHighlighter(enabled bool, style string) *Highlighter {
 	h := &Highlighter{}
 	if !enabled {
@@ -40,9 +45,12 @@ func NewHighlighter(enabled bool, style string) *Highlighter {
 	if f == nil {
 		return h
 	}
+	if style == "" || style == "auto" {
+		style = autoStyle()
+	}
 	s := styles.Get(style)
 	if s == nil {
-		s = styles.Get("github")
+		s = styles.Get(autoStyle())
 	}
 	if s == nil {
 		s = styles.Fallback
@@ -51,6 +59,15 @@ func NewHighlighter(enabled bool, style string) *Highlighter {
 	h.formatter = f
 	h.style = s
 	return h
+}
+
+// autoStyle queries the terminal background (before Bubble Tea owns it) and
+// returns a matching Chroma style name.
+func autoStyle() string {
+	if lipgloss.HasDarkBackground() {
+		return "monokai"
+	}
+	return "github"
 }
 
 // Enabled reports whether highlighting is active.

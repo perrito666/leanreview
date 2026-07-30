@@ -223,7 +223,10 @@ environment → command-line flags. The config file lives at
 ```
 
 - `editor` — editor command (parsed as a command line).
-- `syntax` / `syntax_style` — enable highlighting and pick a Chroma style.
+- `syntax` / `syntax_style` — enable highlighting and pick a Chroma style. The
+  default, `auto`, matches your terminal background (`monokai` on dark,
+  `github` on light); any [Chroma style name](https://xyproto.github.io/splash/docs/)
+  can be set explicitly.
 - `theme` — TUI palette: `default` or `mono`.
 - `tab_width` — columns a tab expands to.
 - `context` — default unified context lines when `-U` is not passed.
