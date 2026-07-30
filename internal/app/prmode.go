@@ -2,6 +2,9 @@ package app
 
 import (
 	"fmt"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
@@ -51,3 +54,66 @@ func (m *Model) threadsAt(i int) []int {
 
 // prActive reports whether the model is in pull-request mode.
 func (m *Model) prActive() bool { return m.pr != nil }
+
+// openThreadReader opens the focused reader for threads at the cursor line.
+func (m *Model) openThreadReader() {
+	idxs := m.threadsAt(m.cursor)
+	if len(idxs) == 0 {
+		return
+	}
+	m.threadView = idxs
+	m.mode = ModeThread
+}
+
+// handleThreadKey handles keys while the thread reader is open.
+func (m *Model) handleThreadKey(key string) tea.Cmd {
+	switch key {
+	case "esc", "q", "enter":
+		m.mode = ModeNormal
+	case "r":
+		m.mode = ModeNormal
+		return m.startReplyUnderCursor()
+	}
+	return nil
+}
+
+// threadReaderView renders the full root + replies of the viewed threads.
+func (m *Model) threadReaderView() string {
+	var b strings.Builder
+	b.WriteString("Thread (r to reply, esc to close)\n\n")
+	for _, ti := range m.threadView {
+		if ti < 0 || ti >= len(m.pr.Threads) {
+			continue
+		}
+		th := m.pr.Threads[ti]
+		loc := "general"
+		if th.Location != nil {
+			loc = fmt.Sprintf("%s %s", th.Location.Path, lineRefString(*th.Location))
+		}
+		flags := ""
+		if th.Outdated {
+			flags += " (outdated)"
+		}
+		if th.Resolved {
+			flags += " (resolved)"
+		}
+		b.WriteString(fmt.Sprintf("── %s%s\n", loc, flags))
+		writeThreadComment(&b, th.Root)
+		for _, rep := range th.Replies {
+			writeThreadComment(&b, rep)
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+func writeThreadComment(b *strings.Builder, c forge.Comment) {
+	when := ""
+	if !c.CreatedAt.IsZero() {
+		when = "  " + c.CreatedAt.Format("2006-01-02 15:04")
+	}
+	fmt.Fprintf(b, "  @%s%s\n", c.Author, when)
+	for _, line := range strings.Split(strings.TrimRight(c.Body, "\n"), "\n") {
+		b.WriteString("    " + line + "\n")
+	}
+}

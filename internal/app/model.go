@@ -84,6 +84,8 @@ type Model struct {
 	// pr and threadIndex are populated in pull-request mode.
 	pr          *PRContext
 	threadIndex map[string][]int
+	// threadView holds the thread indices shown in the thread reader.
+	threadView []int
 
 	// pendingEvent is the review event awaiting confirmation; submitting is set
 	// while a submission is in flight.

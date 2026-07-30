@@ -68,6 +68,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.handleCommentsKey(key)
 	case ModeConfirm:
 		return m, m.handleConfirmKey(key)
+	case ModeThread:
+		return m, m.handleThreadKey(key)
 	}
 
 	switch key {
@@ -162,7 +164,11 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.clearSelection()
 		m.clearSearch()
 	case "open":
-		m.openComments()
+		if m.prActive() && len(m.threadsAt(m.cursor)) > 0 {
+			m.openThreadReader()
+		} else {
+			m.openComments()
+		}
 	case "quit":
 		m.quitting = true
 		return tea.Quit

@@ -20,7 +20,8 @@ func HelpText() string {
    /             search diff text
    n / N         next / previous match
    f             file picker
-   C / Enter     comment list
+   C             comment list
+   Enter         open thread reader (on a line with a thread)
 
  Review
    v             start line selection

@@ -22,6 +22,8 @@ const (
 	ModeConfirm
 	// ModeHelp shows the key reference.
 	ModeHelp
+	// ModeThread shows a focused reader for the review thread under the cursor.
+	ModeThread
 	// ModeExternalEditor is a placeholder state while the editor is open.
 	ModeExternalEditor
 )
@@ -38,6 +40,8 @@ func (m Mode) String() string {
 		return "CONFIRM"
 	case ModeHelp:
 		return "HELP"
+	case ModeThread:
+		return "THREAD"
 	case ModeExternalEditor:
 		return "EDITOR"
 	default:

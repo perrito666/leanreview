@@ -31,6 +31,8 @@ func (m *Model) View() string {
 		return m.frame(m.commentsView())
 	case ModeConfirm:
 		return m.frame(m.confirmView())
+	case ModeThread:
+		return m.frame(m.threadReaderView())
 	}
 
 	if len(m.files) == 0 {
