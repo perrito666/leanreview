@@ -11,9 +11,10 @@ import (
 
 // mrJSON is the subset of the GitLab merge-request payload we consume.
 type mrJSON struct {
-	IID    int    `json:"iid"`
-	Title  string `json:"title"`
-	Author struct {
+	IID         int    `json:"iid"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Author      struct {
 		Username string `json:"username"`
 	} `json:"author"`
 	SHA      string `json:"sha"`
@@ -27,6 +28,10 @@ type mrJSON struct {
 	WebURL       string `json:"web_url"`
 }
 
+// mr fetches the raw merge-request payload. It is shared by PullRequest and
+// CreateReview: the latter needs the diff_refs SHAs (base/start/head) that
+// GitLab requires to position review comments, which the neutral
+// forge.PullRequest type does not carry.
 func (c *Client) mr(ctx context.Context, ref forge.PullRequestRef) (*mrJSON, error) {
 	path := fmt.Sprintf("projects/%s/merge_requests/%d", projectPath(ref), ref.Number)
 	out, err := c.run(ctx, nil, apiArgs(ref, path)...)
@@ -49,7 +54,9 @@ func (c *Client) PullRequest(ctx context.Context, ref forge.PullRequestRef) (*fo
 	return &forge.PullRequest{
 		Ref:     ref,
 		Title:   m.Title,
+		Body:    m.Description,
 		Author:  m.Author.Username,
+		URL:     m.WebURL,
 		HeadOID: m.SHA,
 		BaseRef: m.TargetBranch,
 		HeadRef: m.SourceBranch,
@@ -90,6 +97,10 @@ func (c *Client) Diff(ctx context.Context, ref forge.PullRequestRef) ([]byte, er
 	return []byte(b.String()), nil
 }
 
+// writeChange emits one file's entry of the synthetic patch: the "diff --git"
+// header, mode/rename lines for the parser to classify the file correctly,
+// and the ---/+++ pair — but only when the API's diff field does not already
+// include it (GitLab versions differ) — followed by the hunks themselves.
 func writeChange(b *strings.Builder, ch changeJSON) {
 	fmt.Fprintf(b, "diff --git a/%s b/%s\n", ch.OldPath, ch.NewPath)
 	switch {

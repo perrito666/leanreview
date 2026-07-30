@@ -10,9 +10,11 @@ import (
 
 // prJSON is the subset of the GitHub pull-request payload we consume.
 type prJSON struct {
-	Number int    `json:"number"`
-	Title  string `json:"title"`
-	User   struct {
+	Number  int    `json:"number"`
+	Title   string `json:"title"`
+	Body    string `json:"body"`
+	HTMLURL string `json:"html_url"`
+	User    struct {
 		Login string `json:"login"`
 	} `json:"user"`
 	Head struct {
@@ -38,7 +40,9 @@ func (c *Client) PullRequest(ctx context.Context, ref forge.PullRequestRef) (*fo
 	return &forge.PullRequest{
 		Ref:     ref,
 		Title:   p.Title,
+		Body:    p.Body,
 		Author:  p.User.Login,
+		URL:     p.HTMLURL,
 		HeadOID: p.Head.SHA,
 		BaseRef: p.Base.Ref,
 		HeadRef: p.Head.Ref,
