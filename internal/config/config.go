@@ -29,9 +29,12 @@ type Config struct {
 	Keys map[string]string
 	// ListEngine is the default discovery engine for --list ("gh" or "glab").
 	ListEngine string
-	// ListFilter is the default discovery filter for --list; empty applies the
-	// engine's built-in default.
+	// ListFilter is the fallback discovery filter for --list when no filter is
+	// supplied; empty applies the engine's built-in default.
 	ListFilter string
+	// ListFilters are named discovery filters, selectable as --list :name or
+	// --list engine:name. Filter text is engine-specific syntax.
+	ListFilters map[string]string
 	// Wrap enables wrapping of long diff lines and comment previews.
 	Wrap bool
 	// WrapWidth caps the wrap point in the unified layout (split layouts wrap
@@ -53,6 +56,7 @@ type fileConfig struct {
 	Keys        map[string]string `json:"keys"`
 	ListEngine  *string           `json:"list_engine"`
 	ListFilter  *string           `json:"list_filter"`
+	ListFilters map[string]string `json:"list_filters"`
 	Wrap        *bool             `json:"wrap"`
 	WrapWidth   *int              `json:"wrap_width"`
 }
@@ -98,6 +102,9 @@ func Load() Config {
 		}
 		if fc.ListFilter != nil {
 			c.ListFilter = *fc.ListFilter
+		}
+		if fc.ListFilters != nil {
+			c.ListFilters = fc.ListFilters
 		}
 		if fc.Wrap != nil {
 			c.Wrap = *fc.Wrap

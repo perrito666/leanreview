@@ -266,26 +266,74 @@ var listEngines = map[string]func() forge.Lister{
 	"glab": func() forge.Lister { return glabcli.New() },
 }
 
-// runList discovers requests with the configured (or argument-selected) engine
-// and filter. On a TTY the results open an interactive picker and the chosen
-// request's URL is returned for review; otherwise (piped) a plain table is
-// printed and "" is returned.
+// resolveListQuery turns the --list positionals into an engine and a filter.
 //
-// Argument shape: leanreview --list [engine] [filter...]. The first positional
-// is an engine only when it names one; anything else is filter text, so
-// `--list "author:x"` works without naming the engine.
-func runList(ctx context.Context, cfg config.Config, opts options) (string, error) {
-	engine := cfg.ListEngine
-	args := opts.args
+// Shapes: [engine] [filter...], engine:name, :name — where "name" selects a
+// named filter from cfg.ListFilters (":name" keeps the default engine). A
+// first positional is a selector only when it starts with ":" or its prefix
+// names an engine, so raw qualifiers like "author:x" stay filter text. Extra
+// args after a selector refine the named filter (joined engine-appropriately:
+// spaces for search queries, & for glab's query strings). With nothing
+// supplied, cfg.ListFilter is the fallback; empty falls through to the
+// engine's built-in default.
+func resolveListQuery(cfg config.Config, args []string) (engine, filter string, err error) {
+	engine = cfg.ListEngine
 	if len(args) > 0 {
-		if _, ok := listEngines[args[0]]; ok {
-			engine = args[0]
+		first := args[0]
+		if i := strings.Index(first, ":"); i >= 0 {
+			prefix, name := first[:i], first[i+1:]
+			_, engineOK := listEngines[prefix]
+			if prefix == "" || engineOK {
+				if engineOK {
+					engine = prefix
+				}
+				if name == "" {
+					return "", "", fmt.Errorf("empty filter name in %q", first)
+				}
+				f, ok := cfg.ListFilters[name]
+				if !ok {
+					if len(cfg.ListFilters) == 0 {
+						return "", "", fmt.Errorf("no named filters configured (add a %q map to the config file)", "list_filters")
+					}
+					names := make([]string, 0, len(cfg.ListFilters))
+					for n := range cfg.ListFilters {
+						names = append(names, n)
+					}
+					sort.Strings(names)
+					return "", "", fmt.Errorf("unknown filter name %q (available: %s)", name, strings.Join(names, ", "))
+				}
+				filter = f
+				args = args[1:]
+			}
+		} else if _, ok := listEngines[first]; ok {
+			engine = first
 			args = args[1:]
 		}
 	}
-	filter := cfg.ListFilter
+
 	if len(args) > 0 {
-		filter = strings.Join(args, " ")
+		extra := strings.Join(args, " ")
+		if filter == "" {
+			filter = extra
+		} else if engine == "glab" {
+			filter += "&" + extra
+		} else {
+			filter += " " + extra
+		}
+	}
+	if filter == "" {
+		filter = cfg.ListFilter
+	}
+	return engine, filter, nil
+}
+
+// runList discovers requests with the resolved engine and filter. On a TTY the
+// results open an interactive picker and the chosen request's URL is returned
+// for review; otherwise (piped) a plain table is printed and "" is returned.
+func runList(ctx context.Context, cfg config.Config, opts options) (string, error) {
+	engine, filter, err := resolveListQuery(cfg, opts.args)
+	if err != nil {
+		return "", err
 	}
 
 	mk, ok := listEngines[engine]
@@ -388,11 +436,14 @@ Flags:
   -U, --context N    unified context lines (default 3)
   --export FILE      write existing draft comments as Markdown and exit
   --discard          delete the saved draft for this source and exit
-  --list [engine] [filter]
+  --list [engine|engine:name|:name] [filter]
                      discover open PRs/MRs: pick one to review (TTY) or print
                      a table (piped). Engine: gh or glab (default from config).
-                     Filter: engine-specific search text (default from config,
-                     falling back to "review requested from me")
+                     Filter: engine-specific search text, or a named filter
+                     from the config's list_filters map (":name" keeps the
+                     default engine; extra text refines it). With nothing
+                     supplied, list_filter applies, falling back to "review
+                     requested from me"
   -h, --help         show this help
 
 In the TUI, press ? for the key reference.

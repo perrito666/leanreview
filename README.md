@@ -108,12 +108,32 @@ On a terminal the results open a small picker — `Enter` reviews the selected
 request immediately, `q` dismisses. Filters are engine-specific: a GitHub
 search query for `gh` (default `is:open review-requested:@me`), a REST query
 string for `glab` (default `state=opened&reviewer_username=@me`, with `@me`
-resolved to your username). Both the default engine and the default filter are
-configurable:
+resolved to your username).
+
+Filters can be **named** in the config and selected with `engine:name` (or
+`:name` to keep the default engine); extra arguments refine the named filter:
+
+```bash
+leanreview --list :bugs                  # named filter, default engine
+leanreview --list gh:bugs                # named filter, explicit engine
+leanreview --list :bugs "base:main"      # named filter + extra qualifiers
+```
 
 ```json
-{ "list_engine": "gh", "list_filter": "is:open review-requested:@me org:mycorp" }
+{
+  "list_engine": "gh",
+  "list_filter": "is:open review-requested:@me",
+  "list_filters": {
+    "bugs": "is:open label:bug",
+    "team": "is:open team-review-requested:mycorp/reviewers"
+  }
+}
 ```
+
+`list_filter` remains the fallback used when `--list` gets no filter at all.
+A first argument counts as a selector only when it starts with `:` or its
+prefix names an engine — so raw qualifiers like `author:x` still work
+unquoted as plain filters.
 
 ## Reviewing a pull request (GitHub)
 
@@ -262,8 +282,9 @@ environment → command-line flags. The config file lives at
   action unbinds a key; single keys may bind two-key actions (`next-hunk`,
   `delete-comment`, …). Two-key sequences themselves (`gg`, `]c`, …) and
   numeric counts are fixed.
-- `list_engine` / `list_filter` — defaults for `--list`: the discovery engine
-  (`gh` or `glab`) and its search filter.
+- `list_engine` / `list_filter` / `list_filters` — defaults for `--list`: the
+  discovery engine (`gh` or `glab`), the fallback search filter, and a map of
+  named filters selectable as `--list :name` / `--list engine:name`.
 - `wrap` / `wrap_width` — wrapping of long diff lines and comment previews
   (default on, `w` toggles). Code wraps hard at the column edge, comments at
   word boundaries; in unified layout the wrap point is

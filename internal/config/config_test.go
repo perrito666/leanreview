@@ -85,6 +85,12 @@ func TestListConfig(t *testing.T) {
 	if c.ListEngine != "glab" || c.ListFilter != "state=opened&labels=bug" {
 		t.Errorf("list config not applied: %q / %q", c.ListEngine, c.ListFilter)
 	}
+
+	withConfig(t, `{"list_filters":{"bugs":"is:open label:bug","docs":"label:documentation"}}`)
+	c = Load()
+	if c.ListFilters["bugs"] != "is:open label:bug" || c.ListFilters["docs"] != "label:documentation" {
+		t.Errorf("named filters not parsed: %+v", c.ListFilters)
+	}
 }
 
 func TestKeysConfig(t *testing.T) {
