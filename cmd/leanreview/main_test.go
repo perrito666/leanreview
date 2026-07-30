@@ -58,6 +58,14 @@ func TestResolveListQuery(t *testing.T) {
 	}
 }
 
+func TestVersionFlagParsed(t *testing.T) {
+	for _, f := range []string{"-v", "--version"} {
+		if _, err := parseArgs([]string{f}); err != errVersion {
+			t.Errorf("parseArgs(%q) err = %v, want errVersion", f, err)
+		}
+	}
+}
+
 func TestResolveListQueryNoNamedConfigured(t *testing.T) {
 	cfg := listCfg()
 	cfg.ListFilters = nil

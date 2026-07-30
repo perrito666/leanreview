@@ -46,6 +46,10 @@ import (
 	"github.com/perrito666/leanreview/internal/ui"
 )
 
+// version is the build version, overridden at release time via
+// -ldflags "-X main.version=...".
+var version = "dev"
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "leanreview:", err)
@@ -73,6 +77,10 @@ func run(argv []string) error {
 	opts, err := parseArgs(argv)
 	if err == errHelp {
 		fmt.Print(usage)
+		return nil
+	}
+	if err == errVersion {
+		fmt.Printf("leanreview %s\n", version)
 		return nil
 	}
 	if err != nil {
@@ -408,6 +416,8 @@ func parseArgs(argv []string) (options, error) {
 			o.list = true
 		case a == "-h" || a == "--help":
 			return o, errHelp
+		case a == "-v" || a == "--version":
+			return o, errVersion
 		case len(a) > 1 && a[0] == '-' && a != "-":
 			return o, fmt.Errorf("unknown flag: %s", a)
 		default:
@@ -418,6 +428,7 @@ func parseArgs(argv []string) (options, error) {
 }
 
 var errHelp = fmt.Errorf("help requested")
+var errVersion = fmt.Errorf("version requested")
 
 const usage = `leanreview — terminal code-review client
 
@@ -445,6 +456,7 @@ Flags:
                      supplied, list_filter applies, falling back to "review
                      requested from me"
   -h, --help         show this help
+  -v, --version      print the version and exit
 
 In the TUI, press ? for the key reference.
 `
