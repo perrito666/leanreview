@@ -235,6 +235,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
 | `dd` | delete comment under cursor |
+| `p` | PR details: title, description, link (PR mode) |
 | `r` | reply to thread under cursor (PR mode) |
 | `s` | submit review (PR mode) |
 | `:w` | save drafts |

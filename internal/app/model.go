@@ -109,6 +109,8 @@ type Model struct {
 	threadIndex map[string][]int
 	// threadView holds the thread indices shown in the thread reader.
 	threadView []int
+	// prScroll is the vertical scroll offset of the PR details overlay.
+	prScroll int
 
 	// pendingEvent is the review event awaiting confirmation; submitting is set
 	// while a submission is in flight.
@@ -130,7 +132,11 @@ type pendingEdit struct {
 	session *editor.Session
 }
 
-// New builds the initial model.
+// New builds the initial model, filling in whatever cfg leaves unset: an
+// empty draft, the environment-derived highlighter, the default wrap width,
+// and the default keymap overlaid with the user's overrides. The cursor
+// starts on the first commentable row rather than row 0, which is a hunk
+// header.
 func New(cfg Config) *Model {
 	m := &Model{
 		files:          cfg.Files,
@@ -170,7 +176,8 @@ func New(cfg Config) *Model {
 	return m
 }
 
-// Init implements tea.Model.
+// Init implements tea.Model. All data arrives fully loaded through Config, so
+// there is no startup command to run.
 func (m *Model) Init() tea.Cmd { return nil }
 
 // rawRows returns the unfolded display rows for the current file and layout,
@@ -224,8 +231,8 @@ func (m *Model) firstContentRow() int {
 
 // contentHeight is the number of diff rows visible between header and status.
 func (m *Model) contentHeight() int {
-	// Reserve two lines: the top title bar and the bottom status bar.
-	h := m.height - 2
+	// Reserve three lines: the two-line title bar and the bottom status bar.
+	h := m.height - 3
 	if h < 1 {
 		return 1
 	}

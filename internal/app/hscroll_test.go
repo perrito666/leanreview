@@ -72,7 +72,7 @@ func TestScrollKeepsFullWidthAndGutter(t *testing.T) {
 	m.scrollRight()
 	lines := strings.Split(m.View(), "\n")
 	// Body lines stay full width.
-	for i := 1; i < len(lines)-1; i++ {
+	for i := 2; i < len(lines)-1; i++ {
 		if w := lipgloss.Width(lines[i]); w != 40 {
 			t.Fatalf("body line %d width = %d, want 40", i, w)
 		}

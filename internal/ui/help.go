@@ -36,6 +36,7 @@ func HelpText() string {
    dd            delete comment under cursor
 
  Pull-request mode
+   p             PR details (title, description, link)
    r             reply to the thread under the cursor
    s             submit review (confirmation screen)
    :comment      submit as a general comment

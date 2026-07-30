@@ -24,10 +24,14 @@ const (
 	ModeHelp
 	// ModeThread shows a focused reader for the review thread under the cursor.
 	ModeThread
+	// ModePR shows the pull-request details (title, description, URL).
+	ModePR
 	// ModeExternalEditor is a placeholder state while the editor is open.
 	ModeExternalEditor
 )
 
+// String returns the upper-case label shown in the status bar. ModeNormal —
+// and any unknown value — reads NORMAL, so the bar always shows a valid mode.
 func (m Mode) String() string {
 	switch m {
 	case ModeVisual:
@@ -42,6 +46,8 @@ func (m Mode) String() string {
 		return "HELP"
 	case ModeThread:
 		return "THREAD"
+	case ModePR:
+		return "PR"
 	case ModeExternalEditor:
 		return "EDITOR"
 	default:
@@ -53,10 +59,14 @@ func (m Mode) String() string {
 type Layout uint8
 
 const (
+	// LayoutUnified interleaves old and new lines in one column.
 	LayoutUnified Layout = iota
+	// LayoutSplit shows old and new side by side.
 	LayoutSplit
 )
 
+// String returns the lower-case layout name shown in the title bar and in the
+// toggle-layout status message.
 func (l Layout) String() string {
 	if l == LayoutSplit {
 		return "split"

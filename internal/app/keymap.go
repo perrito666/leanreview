@@ -7,7 +7,9 @@ package app
 // are not remappable.
 type Keymap map[string]string
 
-// DefaultKeymap returns the built-in bindings.
+// DefaultKeymap returns the built-in bindings as a fresh map on every call,
+// so apply can mutate one model's keymap without affecting other instances or
+// the knownActions set derived from the defaults.
 func DefaultKeymap() Keymap {
 	return Keymap{
 		"j":      "down",
@@ -47,6 +49,7 @@ func DefaultKeymap() Keymap {
 		"ctrl+u": "half-page-up",
 		"r":      "reply",
 		"s":      "submit",
+		"p":      "pr-info",
 	}
 }
 
