@@ -89,11 +89,14 @@ func (m *Model) submitCounts() submitCounts {
 	return c
 }
 
-// submitResultMsg is delivered when a submission finishes.
+// submitResultMsg is delivered when a submission finishes. done lists the
+// draft ids that actually reached the host — on a partial failure (review
+// created, a later reply refused) it holds everything already posted, so
+// those drafts are cleared and a retry cannot duplicate them.
 type submitResultMsg struct {
 	review  *forge.SubmittedReview
 	replies int
-	ids     []string // draft ids that were submitted (removed on success)
+	done    []string // draft ids confirmed posted (removed even when err is set)
 	err     error
 }
 
@@ -114,23 +117,24 @@ func (m *Model) doSubmit() tea.Cmd {
 	var replies []struct {
 		to   int64
 		body string
+		id   string
 	}
-	var ids []string
+	var commentIDs []string
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
 		if cm.ReplyTo != nil {
-			ids = append(ids, cm.LocalID)
 			replies = append(replies, struct {
 				to   int64
 				body string
-			}{*cm.ReplyTo, cm.Body})
+				id   string
+			}{*cm.ReplyTo, cm.Body, cm.LocalID})
 			continue
 		}
 		if cm.State == review.DraftOrphaned {
 			// No valid location: keep it as a draft for the reviewer to fix.
 			continue
 		}
-		ids = append(ids, cm.LocalID)
+		commentIDs = append(commentIDs, cm.LocalID)
 		newComments = append(newComments, toReviewComment(*cm))
 	}
 
@@ -144,7 +148,7 @@ func (m *Model) doSubmit() tea.Cmd {
 	ctx := m.ctx
 
 	return func() tea.Msg {
-		msg := submitResultMsg{ids: ids}
+		var msg submitResultMsg
 		// Create the review (also valid with zero comments for APPROVE/COMMENT).
 		if len(newComments) > 0 || event != forge.EventComment || summary != "" {
 			res, err := f.CreateReview(ctx, ref, event, summary, newComments)
@@ -154,30 +158,38 @@ func (m *Model) doSubmit() tea.Cmd {
 			}
 			msg.review = res
 		}
-		// Post replies individually (they use the parent comment's identity).
+		// The review is up: its comments are posted regardless of what the
+		// replies below do, so record them as done now.
+		msg.done = append(msg.done, commentIDs...)
+		// Post replies individually (they use the parent comment's identity),
+		// recording each success so a mid-loop failure never resubmits them.
 		for _, r := range replies {
 			if _, err := f.Reply(ctx, ref, r.to, r.body); err != nil {
-				msg.err = fmt.Errorf("posted review but a reply failed: %w", err)
+				msg.err = fmt.Errorf("posted review but a reply failed (the failed reply is kept as a draft): %w", err)
 				return msg
 			}
+			msg.done = append(msg.done, r.id)
 			msg.replies++
 		}
 		return msg
 	}
 }
 
-// onSubmitResult applies the outcome of a submission.
+// onSubmitResult applies the outcome of a submission. Drafts confirmed posted
+// are removed even when the submission failed part-way, so retrying only sends
+// what the host has not yet accepted.
 func (m *Model) onSubmitResult(msg submitResultMsg) {
 	m.submitting = false
+	for _, id := range msg.done {
+		m.draft.Remove(id)
+	}
+	if len(msg.done) > 0 {
+		m.saveDraft()
+	}
 	if msg.err != nil {
 		m.setError(msg.err)
 		return
 	}
-	// Remove the submitted drafts and persist.
-	for _, id := range msg.ids {
-		m.draft.Remove(id)
-	}
-	m.saveDraft()
 	url := ""
 	if msg.review != nil {
 		url = msg.review.URL

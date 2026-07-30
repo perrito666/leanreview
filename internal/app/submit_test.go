@@ -19,6 +19,7 @@ type recordingForge struct {
 	createdComments []forge.ReviewComment
 	replies         []string
 	failReview      bool
+	failReplyAt     int // 1-based reply call that fails; 0 = never
 }
 
 func (f *recordingForge) PullRequest(context.Context, forge.PullRequestRef) (*forge.PullRequest, error) {
@@ -38,6 +39,9 @@ func (f *recordingForge) CreateReview(_ context.Context, _ forge.PullRequestRef,
 	return &forge.SubmittedReview{ID: 42, URL: "http://x/42"}, nil
 }
 func (f *recordingForge) Reply(_ context.Context, _ forge.PullRequestRef, id int64, body string) (*forge.Comment, error) {
+	if f.failReplyAt > 0 && len(f.replies)+1 == f.failReplyAt {
+		return nil, errFake
+	}
 	f.replies = append(f.replies, body)
 	return &forge.Comment{ID: id, Body: body}, nil
 }
@@ -197,6 +201,35 @@ func TestSubmitBlockedInLocalMode(t *testing.T) {
 	}
 	if m.err == nil {
 		t.Errorf("expected an error explaining PR mode is required")
+	}
+}
+
+// TestSubmitPartialFailureClearsPostedDrafts covers the retry-safety contract:
+// when the review goes up but a reply fails, everything already accepted by
+// the host must leave the draft, so a retry only sends the failed reply.
+func TestSubmitPartialFailureClearsPostedDrafts(t *testing.T) {
+	f := &recordingForge{failReplyAt: 2}
+	m := prModel(t, f, nil)
+	m.draft.Add(diff.Location{Path: "f.go", Side: diff.SideRight, StartLine: 5, EndLine: 5}, "line note", "x")
+	ok := int64(1)
+	bad := int64(2)
+	id1 := m.draft.Add(diff.Location{Path: "f.go", Side: diff.SideRight, StartLine: 6, EndLine: 6}, "first reply", "x")
+	m.draft.Get(id1).ReplyTo = &ok
+	id2 := m.draft.Add(diff.Location{Path: "f.go", Side: diff.SideRight, StartLine: 7, EndLine: 7}, "second reply", "x")
+	m.draft.Get(id2).ReplyTo = &bad
+
+	m.beginSubmit(forge.EventComment)
+	m.onSubmitResult(m.doSubmit()().(submitResultMsg))
+
+	if m.err == nil {
+		t.Fatalf("partial failure should surface an error")
+	}
+	if len(f.createdComments) != 1 || len(f.replies) != 1 {
+		t.Fatalf("host state: %d comments, %d replies; want 1 and 1", len(f.createdComments), len(f.replies))
+	}
+	// Only the failed reply remains; retrying cannot duplicate the review.
+	if len(m.draft.Comments) != 1 || m.draft.Comments[0].Body != "second reply" {
+		t.Errorf("remaining drafts = %+v, want only the failed reply", m.draft.Comments)
 	}
 }
 
