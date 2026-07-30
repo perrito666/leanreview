@@ -93,6 +93,15 @@ environment → command-line flags. The config file lives at
 - `theme` — TUI palette: `default` or `mono`.
 - `tab_width` — columns a tab expands to.
 - `context` — default unified context lines when `-U` is not passed.
+- `keys` — remap normal-mode bindings, `{ "<key>": "<action>" }`. An empty
+  action unbinds a key. Actions include `down`, `up`, `next-change`,
+  `next-hunk`, `next-file`, `toggle-layout`, `sidebar`, `search`, `next-match`,
+  `comment`, `edit`, `reply`, `submit`, `files`, `comments`, `help`, `quit`
+  (see `DefaultKeymap`). Two-key sequences (`gg`, `]c`, …) and counts are fixed.
+
+```json
+{ "keys": { " ": "down", "x": "delete-comment" } }
+```
 
 Environment overrides:
 
