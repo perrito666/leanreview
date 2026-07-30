@@ -1,7 +1,8 @@
 // Package source resolves command-line arguments into a ReviewSource: something
 // that yields a parsed set of file diffs, a human title, and a stable key for
 // draft persistence. It unifies the patch-file / stdin path with the local-git
-// path, and recognises (but, in Milestone 1, declines) GitHub PR references.
+// path; pull-request references are resolved by the CLI layer into a PRSource
+// before Resolve is consulted.
 package source
 
 import (
@@ -70,9 +71,11 @@ func Resolve(ctx context.Context, opts Options) (ReviewSource, error) {
 		return newPatchFileSource(arg)
 	}
 
-	// Otherwise, a recognised PR reference is (for now) declined.
+	// PR references are handled by the CLI's PR path before Resolve is
+	// called; reaching this branch means that path was bypassed, so name the
+	// mistake rather than pretending the argument is unrecognisable.
 	if ref, ok := forge.ParseRef(arg); ok {
-		return nil, fmt.Errorf("pull-request review (%s) is not available yet — it lands in Milestone 3; for now pass a patch file, \".\", or --base <ref>", ref)
+		return nil, fmt.Errorf("%s is a pull-request reference — it is reviewed through the forge, not the local resolver", ref)
 	}
 
 	return nil, fmt.Errorf("could not resolve %q: not a file, \".\", or a pull-request reference", arg)

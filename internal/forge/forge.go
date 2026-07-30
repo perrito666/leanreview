@@ -1,9 +1,8 @@
 // Package forge defines the seam between the review UI and a code-hosting
-// service (GitHub, later GitLab/Forgejo). The TUI depends only on the Forge
-// interface and the value types here; concrete adapters (e.g. one that shells
-// out to `gh`) live in subpackages and are wired in from cmd. In Milestone 1
-// no adapter exists yet — only the seam and pull-request reference parsing,
-// which the source resolver uses to recognise (and politely decline) PR refs.
+// service. The TUI depends only on the Forge interface and the value types
+// here; the concrete adapters — ghcli shelling out to `gh`, glabcli to
+// `glab` — live in subpackages and are wired in from cmd, keeping the UI
+// ignorant of which host (or API style) it is talking to.
 package forge
 
 import (

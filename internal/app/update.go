@@ -236,10 +236,10 @@ func (m *Model) toggleLayout() {
 }
 
 // reanchor moves the cursor to the row matching side+line in the current layout.
-func (m *Model) reanchor(side interface{ String() string }, line int) {
+func (m *Model) reanchor(side diff.Side, line int) {
 	rows := m.rows()
 	for i, r := range rows {
-		if r.Source != nil && r.Source.Side.String() == side.String() && r.Source.StartLine == line {
+		if r.Source != nil && r.Source.Side == side && r.Source.StartLine == line {
 			m.cursor = i
 			return
 		}

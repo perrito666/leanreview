@@ -78,10 +78,3 @@ func (p *pendingCommand) Feed(key string, single Keymap) (command, bool) {
 	p.count = 0
 	return command{name: name, count: cnt}, true
 }
-
-// Pending reports whether the grammar is mid-sequence (a prefix is held).
-func (p *pendingCommand) Pending() bool { return p.prefix != "" }
-
-// Reset clears any pending prefix and count, abandoning a half-typed
-// sequence.
-func (p *pendingCommand) Reset() { p.prefix = ""; p.count = 0 }

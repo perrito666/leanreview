@@ -10,6 +10,7 @@ import (
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
+	"github.com/perrito666/leanreview/internal/review"
 	"github.com/perrito666/leanreview/internal/ui"
 )
 
@@ -240,10 +241,7 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 // paired deletion/addition (and its wrapped continuations) keeps the left
 // panel red and the right panel green instead of one color spanning both.
 func (m *Model) renderSplitStyled(r *diff.DisplayRow, nw, width int) string {
-	half := (width - (nw * 2) - 6) / 2
-	if half < 4 {
-		half = 4
-	}
+	half := splitHalf(width, nw)
 	lNum, lText, lKind := strings.Repeat(" ", nw), "", diff.LineContext
 	if r.Left != nil {
 		lNum = numStr(r.Left.LineNumber, nw)
@@ -303,10 +301,7 @@ func (m *Model) plainUnified(r *diff.DisplayRow, nw int) string {
 // its columns when the cursor or selection style flattens it to one color. A
 // missing side renders as a blank panel rather than collapsing the divider.
 func (m *Model) plainSplit(r *diff.DisplayRow, nw, width int) string {
-	half := (width - (nw * 2) - 6) / 2
-	if half < 4 {
-		half = 4
-	}
+	half := splitHalf(width, nw)
 	lNum, lText := "", ""
 	if r.Left != nil {
 		lNum = numStr(r.Left.LineNumber, nw)
@@ -324,6 +319,19 @@ func (m *Model) plainSplit(r *diff.DisplayRow, nw, width int) string {
 	left := fmt.Sprintf("%s %s", lNum, pad(clip(lText, half), half))
 	right := fmt.Sprintf("%s %s", rNum, clip(rText, half))
 	return left + " │ " + right
+}
+
+// splitHalf is the text width of one panel in a split row of the given
+// content width: two number gutters, the divider, and panel padding are
+// subtracted, floored at 4. plainSplit and renderSplitStyled must share this
+// so the flat (cursor/selection) and per-side stylings never drift out of
+// column alignment.
+func splitHalf(width, nw int) int {
+	half := (width - (nw * 2) - 6) / 2
+	if half < 4 {
+		half = 4
+	}
+	return half
 }
 
 // styleFor maps a diff line kind to its theme style, defaulting to the
@@ -382,7 +390,7 @@ func (m *Model) commentsView() string {
 			reply = "↳ "
 		}
 		state := ""
-		if c.State != 0 { // non-active
+		if c.State != review.DraftActive {
 			state = " [" + c.State.String() + "]"
 		}
 		first := firstLine(c.Body)
