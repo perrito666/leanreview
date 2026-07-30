@@ -5,6 +5,9 @@ package diff
 // Right cell the new-side number, and the text is shared; callers style by
 // Kind. Every content row gets a Source so it can be commented on.
 func RenderUnified(f *FileDiff) []DisplayRow {
+	if r := binaryPlaceholder(f); r != nil {
+		return r
+	}
 	var rows []DisplayRow
 	for hi := range f.Hunks {
 		h := &f.Hunks[hi]

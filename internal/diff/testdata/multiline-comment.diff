@@ -1,0 +1,15 @@
+diff --git a/doc.go b/doc.go
+index 5555555..6666666 100644
+--- a/doc.go
++++ b/doc.go
+@@ -1,6 +1,8 @@
+ package doc
+ /*
+-Old block comment line one.
+-Old block comment line two.
++New block comment line one.
++New block comment line two.
++New block comment line three.
++With a fourth line added.
+ */
+ func Doc() {}

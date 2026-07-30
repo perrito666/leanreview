@@ -145,6 +145,78 @@ func TestParsedLinesHaveNoTabs(t *testing.T) {
 	}
 }
 
+func TestParseBinary(t *testing.T) {
+	files := loadFixture(t, "binary.diff")
+	if len(files) != 2 {
+		t.Fatalf("files = %d, want 2 (binary + following text file)", len(files))
+	}
+	bin := files[0]
+	if !bin.IsBinary || bin.Status != StatusBinary || len(bin.Hunks) != 0 {
+		t.Errorf("binary file = binary:%v status:%v hunks:%d", bin.IsBinary, bin.Status, len(bin.Hunks))
+	}
+	// A "Binary files differ" entry must not break the file that follows it —
+	// local `git diff` emits these by default.
+	txt := files[1]
+	if txt.Path() != "after.txt" || txt.Status != StatusModified || len(txt.Hunks) != 1 {
+		t.Errorf("file after binary mangled: %+v", txt)
+	}
+
+	// Binary files render as a one-row placeholder instead of a blank body.
+	uni := RenderUnified(&bin)
+	if len(uni) != 1 || uni[0].Source != nil || !strings.Contains(uni[0].Left.Text, "binary") {
+		t.Errorf("unified binary placeholder = %+v", uni)
+	}
+	spl := RenderSplit(&bin)
+	if len(spl) != 1 || spl[0].Source != nil {
+		t.Errorf("split binary placeholder = %+v", spl)
+	}
+}
+
+func TestParseNoNewline(t *testing.T) {
+	f := loadFixture(t, "no-newline.diff")[0]
+	var adds, dels int
+	for _, h := range f.Hunks {
+		for _, l := range h.Lines {
+			switch l.Kind {
+			case LineAddition:
+				adds++
+			case LineDeletion:
+				dels++
+			}
+		}
+	}
+	if adds != 1 || dels != 1 {
+		t.Errorf("no-newline fixture: %d adds, %d dels, want 1/1", adds, dels)
+	}
+}
+
+func TestParseMultilineComment(t *testing.T) {
+	f := loadFixture(t, "multiline-comment.diff")[0]
+	if f.Path() != "doc.go" {
+		t.Fatalf("path = %q", f.Path())
+	}
+	var adds, dels int
+	for _, l := range f.Hunks[0].Lines {
+		switch l.Kind {
+		case LineAddition:
+			adds++
+		case LineDeletion:
+			dels++
+		}
+	}
+	if adds != 4 || dels != 2 {
+		t.Errorf("multiline block: %d adds, %d dels, want 4/2", adds, dels)
+	}
+	// The contiguous added block must be selectable as one continuous range.
+	hi, li, ok := f.FindBySideLine(SideRight, 3)
+	if !ok {
+		t.Fatalf("first added line not found")
+	}
+	if l := f.LineAt(hi, li); l == nil || l.Kind != LineAddition {
+		t.Errorf("line at new-side 3 = %+v, want addition", l)
+	}
+}
+
 func TestFindBySideLine(t *testing.T) {
 	f := loadFixture(t, "simple.diff")[0]
 	hi, li, ok := f.FindBySideLine(SideRight, 72)

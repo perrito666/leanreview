@@ -1,0 +1,10 @@
+diff --git a/logo.png b/logo.png
+index 1111111..2222222 100644
+Binary files a/logo.png and b/logo.png differ
+diff --git a/after.txt b/after.txt
+index 3333333..4444444 100644
+--- a/after.txt
++++ b/after.txt
+@@ -1,1 +1,1 @@
+-before
++after

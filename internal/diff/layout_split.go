@@ -14,6 +14,9 @@ type idxLine struct {
 // against a blank cell on the opposite side. Similarity/intraline matching is
 // intentionally out of scope for v1.
 func RenderSplit(f *FileDiff) []DisplayRow {
+	if r := binaryPlaceholder(f); r != nil {
+		return r
+	}
 	var rows []DisplayRow
 	for hi := range f.Hunks {
 		h := &f.Hunks[hi]

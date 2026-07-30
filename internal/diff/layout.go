@@ -23,6 +23,16 @@ type DisplayRow struct {
 	Source *Location
 }
 
+// binaryPlaceholder returns a one-row informational rendering for binary files
+// (which have no hunks and would otherwise draw a blank body), or nil for text
+// files.
+func binaryPlaceholder(f *FileDiff) []DisplayRow {
+	if !f.IsBinary {
+		return nil
+	}
+	return []DisplayRow{{Left: &DisplayCell{Kind: LineMetadata, Text: "(binary file — no textual diff)"}}}
+}
+
 // rowSource builds a single-line Location for the line at (hunkIndex, lineIndex).
 func rowSource(f *FileDiff, side Side, line *DiffLine, hunkIndex, lineIndex int) *Location {
 	n, ok := line.LineNumber(side)
