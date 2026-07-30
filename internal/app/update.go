@@ -40,9 +40,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 
-	// Command-line input takes precedence when active.
+	// Command-line / search input takes precedence when active.
 	if m.cmdlineActive {
 		return m, m.handleCmdlineKey(key)
+	}
+	if m.searchActive {
+		m.handleSearchKey(key)
+		return m, nil
 	}
 
 	// Global quit.
@@ -70,6 +74,16 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case ":":
 		m.cmdlineActive = true
 		m.cmdline = ":"
+		return m, nil
+	case "/":
+		m.searchActive = true
+		m.searchInput = "/"
+		return m, nil
+	case "n":
+		m.nextMatch(1)
+		return m, nil
+	case "N":
+		m.nextMatch(-1)
 		return m, nil
 	case "ctrl+d":
 		m.halfPage(1)
@@ -139,6 +153,7 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.setStatus("folding arrives in a later milestone")
 	case "escape":
 		m.clearSelection()
+		m.clearSearch()
 	case "open":
 		m.openComments()
 	case "quit":

@@ -86,6 +86,9 @@ func (m *Model) statusBar() string {
 	if m.cmdlineActive {
 		return m.theme.Status.Width(m.width).Render(clip(m.cmdline, m.width))
 	}
+	if m.searchActive {
+		return m.theme.Status.Width(m.width).Render(clip(m.searchInput, m.width))
+	}
 	if m.err != nil {
 		return m.theme.Error.Width(m.width).Render(clip("error: "+m.err.Error(), m.width))
 	}
@@ -172,6 +175,8 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 		return m.theme.Cursor.Render(plain)
 	case selected:
 		return m.theme.Select.Render(plain)
+	case m.search != "" && m.rowMatches(r):
+		return m.theme.Search.Render(plain)
 	default:
 		return m.styleFor(kindOf(r)).Render(plain)
 	}

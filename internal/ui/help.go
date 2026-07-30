@@ -14,6 +14,8 @@ func HelpText() string {
 
  View
    t             toggle unified / split
+   /             search diff text
+   n / N         next / previous match
    f             file picker
    C / Enter     comment list
 

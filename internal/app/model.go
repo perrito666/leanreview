@@ -52,6 +52,12 @@ type Model struct {
 	cmdlineActive bool
 	cmdline       string
 
+	// search input state ("/") and the committed query used for highlighting
+	// and n/N navigation.
+	searchActive bool
+	searchInput  string
+	search       string
+
 	draft  *review.DraftReview
 	store  *review.Store
 	editor editor.Editor

@@ -21,6 +21,7 @@ type Theme struct {
 	Gutter lipgloss.Style
 	Cursor lipgloss.Style
 	Select lipgloss.Style
+	Search lipgloss.Style
 	Marker lipgloss.Style
 
 	Title  lipgloss.Style
@@ -44,6 +45,7 @@ func DefaultTheme() Theme {
 		Gutter:   lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Cursor:   lipgloss.NewStyle().Reverse(true),
 		Select:   lipgloss.NewStyle().Background(lipgloss.Color("4")).Foreground(lipgloss.Color("15")),
+		Search:   lipgloss.NewStyle().Background(lipgloss.Color("3")).Foreground(lipgloss.Color("0")),
 		Marker:   lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true),
 		Title:    lipgloss.NewStyle().Background(lipgloss.Color("4")).Foreground(lipgloss.Color("15")).Bold(true),
 		Status:   lipgloss.NewStyle().Foreground(lipgloss.Color("7")),
@@ -64,6 +66,7 @@ func monoTheme() Theme {
 		Gutter:   plain,
 		Cursor:   lipgloss.NewStyle().Reverse(true),
 		Select:   lipgloss.NewStyle().Reverse(true),
+		Search:   lipgloss.NewStyle().Underline(true).Bold(true),
 		Marker:   bold,
 		Title:    bold,
 		Status:   plain,
