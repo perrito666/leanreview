@@ -60,8 +60,10 @@ notes back:
 
 3. **Comment.** Press `c` on a line — or `v` to select a range (`V` grabs the
    whole changed block), then `c`. Your `$EDITOR` opens with a Markdown
-   template; write the note, save, quit. The comment is saved as a **draft**,
-   marked `●` in the diff. `e` edits it, `dd` deletes it.
+   template; write the note, save, quit. The comment is saved as a **draft**:
+   the line gets a `●` in the left gutter and the note is previewed inline
+   right under it (`i` hides/shows the previews). `e` edits it, `dd` deletes
+   it.
 
    In split view, `h`/`l` choose which side of a paired change you're
    commenting on (the status bar shows `[LEFT]`/`[RIGHT]`):
@@ -165,15 +167,17 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 
 | Key | Action |
 | --- | --- |
-| `j` / `k` | down / up a line (counts work: `3j`) |
+| `j` / `k`, `↓` / `↑` | down / up a line (counts work: `3j`) |
 | `J` / `K` | next / previous change |
 | `]c` / `[c` | next / previous hunk |
 | `]f` / `[f` | next / previous file |
 | `gg` / `G` | first / last line |
 | `Ctrl-d` / `Ctrl-u` | half page |
-| `←` / `→`, `0` / `$` | scroll long lines / jump to start & end |
+| `PgDn` / `PgUp` | full page |
+| `h` / `l`, `←` / `→` | scroll long lines (unified) / target side (split) |
+| `0` / `$` | scroll to line start / end |
 | `t` | toggle unified / split |
-| `h` / `l` | target left / right side (split view) |
+| `i` | toggle inline comment previews |
 | `\` | toggle changed-files sidebar |
 | `za` / `zR` / `zM` | fold current hunk / expand all / collapse all |
 | `/`, `n`, `N` | search diff text, next / previous match |
