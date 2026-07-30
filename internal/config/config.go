@@ -27,6 +27,11 @@ type Config struct {
 	Context int
 	// Keys overrides individual normal-mode key bindings (key -> action).
 	Keys map[string]string
+	// ListEngine is the default discovery engine for --list ("gh" or "glab").
+	ListEngine string
+	// ListFilter is the default discovery filter for --list; empty applies the
+	// engine's built-in default.
+	ListFilter string
 	// LogPath is where diagnostic logs are written (never stdout).
 	LogPath string
 }
@@ -41,6 +46,8 @@ type fileConfig struct {
 	TabWidth    *int              `json:"tab_width"`
 	Context     *int              `json:"context"`
 	Keys        map[string]string `json:"keys"`
+	ListEngine  *string           `json:"list_engine"`
+	ListFilter  *string           `json:"list_filter"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -51,6 +58,7 @@ func Load() Config {
 		Theme:       "default",
 		TabWidth:    4,
 		Context:     3,
+		ListEngine:  "gh",
 		LogPath:     logPath(),
 	}
 
@@ -75,6 +83,12 @@ func Load() Config {
 		}
 		if fc.Keys != nil {
 			c.Keys = fc.Keys
+		}
+		if fc.ListEngine != nil && *fc.ListEngine != "" {
+			c.ListEngine = *fc.ListEngine
+		}
+		if fc.ListFilter != nil {
+			c.ListFilter = *fc.ListFilter
 		}
 	}
 

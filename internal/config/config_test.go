@@ -63,6 +63,18 @@ func TestNoColorDisablesSyntax(t *testing.T) {
 	}
 }
 
+func TestListConfig(t *testing.T) {
+	withConfig(t, "")
+	if c := Load(); c.ListEngine != "gh" || c.ListFilter != "" {
+		t.Errorf("list defaults = %q / %q", c.ListEngine, c.ListFilter)
+	}
+	withConfig(t, `{"list_engine":"glab","list_filter":"state=opened&labels=bug"}`)
+	c := Load()
+	if c.ListEngine != "glab" || c.ListFilter != "state=opened&labels=bug" {
+		t.Errorf("list config not applied: %q / %q", c.ListEngine, c.ListFilter)
+	}
+}
+
 func TestKeysConfig(t *testing.T) {
 	withConfig(t, `{"keys":{"x":"down","j":""}}`)
 	c := Load()

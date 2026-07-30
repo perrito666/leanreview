@@ -28,8 +28,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 
 	"github.com/perrito666/leanreview/internal/app"
 	"github.com/perrito666/leanreview/internal/config"
@@ -57,6 +60,7 @@ type options struct {
 	contextSet bool
 	exportPath string
 	discard    bool
+	list       bool
 	args       []string
 }
 
@@ -88,6 +92,15 @@ func run(argv []string) error {
 	}
 
 	ctx := context.Background()
+
+	// --list: discover requests; on a TTY, picking one reviews it.
+	if opts.list {
+		url, err := runList(ctx, cfg, opts)
+		if err != nil || url == "" {
+			return err
+		}
+		opts.args = []string{url}
+	}
 
 	src, prSrc, err := resolveSource(ctx, opts)
 	if err != nil {
@@ -245,6 +258,67 @@ func forgeFor(ref forge.PullRequestRef) forge.Forge {
 	return ghcli.New()
 }
 
+// listEngines maps discovery engine names to their listers.
+var listEngines = map[string]func() forge.Lister{
+	"gh":   func() forge.Lister { return ghcli.New() },
+	"glab": func() forge.Lister { return glabcli.New() },
+}
+
+// runList discovers requests with the configured (or argument-selected) engine
+// and filter. On a TTY the results open an interactive picker and the chosen
+// request's URL is returned for review; otherwise (piped) a plain table is
+// printed and "" is returned.
+//
+// Argument shape: leanreview --list [engine] [filter...]. The first positional
+// is an engine only when it names one; anything else is filter text, so
+// `--list "author:x"` works without naming the engine.
+func runList(ctx context.Context, cfg config.Config, opts options) (string, error) {
+	engine := cfg.ListEngine
+	args := opts.args
+	if len(args) > 0 {
+		if _, ok := listEngines[args[0]]; ok {
+			engine = args[0]
+			args = args[1:]
+		}
+	}
+	filter := cfg.ListFilter
+	if len(args) > 0 {
+		filter = strings.Join(args, " ")
+	}
+
+	mk, ok := listEngines[engine]
+	if !ok {
+		names := make([]string, 0, len(listEngines))
+		for n := range listEngines {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		return "", fmt.Errorf("unknown list engine %q (available: %s)", engine, strings.Join(names, ", "))
+	}
+
+	entries, err := mk().List(ctx, filter)
+	if err != nil {
+		return "", err
+	}
+	if len(entries) == 0 {
+		fmt.Println("No matching requests.")
+		return "", nil
+	}
+
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		for _, e := range entries {
+			fmt.Printf("%s\t%s\t@%s\t%s\n", e.Ref, e.Title, e.Author, e.UpdatedAt.Format("2006-01-02"))
+		}
+		return "", nil
+	}
+
+	idx, err := app.PickRequest(entries, ui.ThemeByName(cfg.Theme))
+	if err != nil || idx < 0 {
+		return "", err
+	}
+	return entries[idx].URL, nil
+}
+
 // parseArgs performs a small hand-rolled parse so flags and positionals can be
 // interleaved (the stdlib flag package stops at the first positional).
 func parseArgs(argv []string) (options, error) {
@@ -280,6 +354,8 @@ func parseArgs(argv []string) (options, error) {
 			o.exportPath = v
 		case a == "--discard":
 			o.discard = true
+		case a == "--list":
+			o.list = true
 		case a == "-h" || a == "--help":
 			return o, errHelp
 		case len(a) > 1 && a[0] == '-' && a != "-":
@@ -310,6 +386,11 @@ Flags:
   -U, --context N    unified context lines (default 3)
   --export FILE      write existing draft comments as Markdown and exit
   --discard          delete the saved draft for this source and exit
+  --list [engine] [filter]
+                     discover open PRs/MRs: pick one to review (TTY) or print
+                     a table (piped). Engine: gh or glab (default from config).
+                     Filter: engine-specific search text (default from config,
+                     falling back to "review requested from me")
   -h, --help         show this help
 
 In the TUI, press ? for the key reference.
