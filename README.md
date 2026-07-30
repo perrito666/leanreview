@@ -29,11 +29,15 @@ leanreview HEAD~3 HEAD          # explicit revision range
 
 The optional `review` verb is accepted too: `leanreview review .`.
 
-Non-interactive export (useful in scripts / CI):
+Non-interactive draft management (useful in scripts / CI):
 
 ```bash
-leanreview --export out.md change.diff
+leanreview --export out.md change.diff   # write draft comments as Markdown
+leanreview --discard change.diff         # delete the saved draft
 ```
+
+Drafts resume automatically: reopening the same source reloads its saved
+comments (relocating them if the head commit moved).
 
 ## Keys
 
@@ -46,6 +50,7 @@ leanreview --export out.md change.diff
 | `gg` / `G` | first / last line |
 | `Ctrl-d` / `Ctrl-u` | half page |
 | `t` | toggle unified / split |
+| `h` / `l` | target left / right side (split view) |
 | `\` | toggle changed-files sidebar |
 | `za` / `zR` / `zM` | fold current hunk / expand all / collapse all |
 | `/`, `n`, `N` | search diff text, next/previous match |
