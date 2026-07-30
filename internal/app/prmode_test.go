@@ -62,8 +62,12 @@ func TestThreadMarkerRenders(t *testing.T) {
 	}
 
 	out := m.View()
-	if !strings.Contains(out, "◆1") {
-		t.Errorf("thread marker not rendered:\n%s", out)
+	if !strings.Contains(out, "◆") {
+		t.Errorf("thread gutter marker not rendered:\n%s", out)
+	}
+	// The thread root is previewed inline under the line.
+	if !strings.Contains(out, "@reviewer") || !strings.Contains(out, "please handle the error") {
+		t.Errorf("inline thread preview missing:\n%s", out)
 	}
 }
 

@@ -160,49 +160,65 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 	selected := inSel && m.mode == ModeVisual && m.selAnchor >= 0
 	cw := m.contentWidth()
 
-	// Hunk header rows span the full content width.
-	if isHeader(r) {
-		text := clip(r.Left.Text, cw)
+	// Inline comment previews: dim, indented, full content width.
+	if r.Annotation {
+		text := pad(clip("   "+r.Left.Text, cw), cw)
 		if isCursor {
-			return m.theme.Cursor.Width(cw).Render(text)
+			return m.theme.Cursor.Render(text)
 		}
-		return m.theme.Metadata.Width(cw).Render(pad(text, cw))
+		return m.theme.Faint.Render(text)
 	}
 
-	marker := ""
-	if n := len(m.commentIDsAt(idx)); n > 0 {
-		marker = fmt.Sprintf(" ●%d", n)
+	// Every non-annotation row gets a 2-column gutter signalling comments:
+	// ● draft comment(s), ◆ existing review thread(s).
+	glyph := " "
+	switch {
+	case len(m.commentIDsAt(idx)) > 0:
+		glyph = "●"
+	case len(m.threadsAt(idx)) > 0:
+		glyph = "◆"
 	}
-	if t := len(m.threadsAt(idx)); t > 0 {
-		marker += fmt.Sprintf(" ◆%d", t)
+	inner := cw - 2
+	if inner < 1 {
+		inner = 1
+	}
+
+	// Hunk header rows span the inner width after the gutter.
+	if isHeader(r) {
+		text := pad(clip(r.Left.Text, inner), inner)
+		if isCursor {
+			return m.theme.Cursor.Render(glyph + " " + text)
+		}
+		return m.theme.Marker.Render(glyph) + " " + m.theme.Metadata.Render(text)
 	}
 
 	var plain string
 	if m.layout == LayoutSplit {
-		plain = m.plainSplit(r, nw, marker)
+		plain = m.plainSplit(r, nw, inner)
 	} else {
-		plain = m.plainUnified(r, nw, marker)
+		plain = m.plainUnified(r, nw)
 	}
-	plain = pad(clip(plain, cw), cw)
+	plain = pad(clip(plain, inner), inner)
 
 	switch {
 	case isCursor:
-		return m.theme.Cursor.Render(plain)
+		return m.theme.Cursor.Render(glyph + " " + plain)
 	case selected:
-		return m.theme.Select.Render(plain)
+		return m.theme.Select.Render(glyph + " " + plain)
 	case m.search != "" && m.rowMatches(r):
-		return m.theme.Search.Render(plain)
+		return m.theme.Search.Render(glyph + " " + plain)
 	case m.layout == LayoutUnified && m.highlighter.Enabled():
-		return m.renderHighlighted(r, nw, marker)
+		return m.theme.Marker.Render(glyph) + " " + m.renderHighlighted(r, nw, inner)
 	default:
-		return m.styleFor(kindOf(r)).Render(plain)
+		return m.theme.Marker.Render(glyph) + " " + m.styleFor(kindOf(r)).Render(plain)
 	}
 }
 
-// renderHighlighted draws a unified content row with a dim number gutter, a
-// diff-colored sign, and syntax-highlighted source text. This is the order the
-// design calls for: source text → syntax spans → horizontal clip → assembly.
-func (m *Model) renderHighlighted(r *diff.DisplayRow, nw int, marker string) string {
+// renderHighlighted draws a unified content row at the given width: a dim
+// number gutter, a diff-colored sign, and syntax-highlighted source text. This
+// is the order the design calls for: source text → syntax spans → horizontal
+// clip → assembly.
+func (m *Model) renderHighlighted(r *diff.DisplayRow, nw, width int) string {
 	path := ""
 	if f := m.currentFile(); f != nil {
 		path = f.Path()
@@ -210,28 +226,23 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw int, marker string) str
 	gutter := m.theme.Gutter.Render(fmt.Sprintf("%s %s ", numStr(r.Left.LineNumber, nw), numStr(r.Right.LineNumber, nw)))
 	sign := m.styleFor(r.Left.Kind).Render(signFor(r.Left.Kind) + " ")
 
-	cw := m.contentWidth()
-	avail := cw - lipgloss.Width(gutter) - lipgloss.Width(sign) - lipgloss.Width(marker)
+	avail := width - lipgloss.Width(gutter) - lipgloss.Width(sign)
 	if avail < 1 {
 		avail = 1
 	}
 	text := ansi.Truncate(m.hcut(m.highlight(path, r.Left.Text)), avail, "")
-	line := gutter + sign + text
-	if marker != "" {
-		line += m.theme.Marker.Render(marker)
-	}
-	return pad(line, cw)
+	return pad(gutter+sign+text, width)
 }
 
-func (m *Model) plainUnified(r *diff.DisplayRow, nw int, marker string) string {
+func (m *Model) plainUnified(r *diff.DisplayRow, nw int) string {
 	oldN := numStr(r.Left.LineNumber, nw)
 	newN := numStr(r.Right.LineNumber, nw)
 	sign := signFor(r.Left.Kind)
-	return fmt.Sprintf("%s %s %s %s%s", oldN, newN, sign, m.hcut(r.Left.Text), marker)
+	return fmt.Sprintf("%s %s %s %s", oldN, newN, sign, m.hcut(r.Left.Text))
 }
 
-func (m *Model) plainSplit(r *diff.DisplayRow, nw int, marker string) string {
-	half := (m.contentWidth() - (nw * 2) - 6) / 2
+func (m *Model) plainSplit(r *diff.DisplayRow, nw, width int) string {
+	half := (width - (nw * 2) - 6) / 2
 	if half < 4 {
 		half = 4
 	}
@@ -250,7 +261,7 @@ func (m *Model) plainSplit(r *diff.DisplayRow, nw int, marker string) string {
 		rNum = strings.Repeat(" ", nw)
 	}
 	left := fmt.Sprintf("%s %s", lNum, pad(clip(lText, half), half))
-	right := fmt.Sprintf("%s %s%s", rNum, clip(rText, half), marker)
+	right := fmt.Sprintf("%s %s", rNum, clip(rText, half))
 	return left + " │ " + right
 }
 

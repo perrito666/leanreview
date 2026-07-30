@@ -27,6 +27,11 @@ type DisplayRow struct {
 	// row carries both sides — a paired deletion/addition or a context line —
 	// so the cursor can select either side. Nil elsewhere.
 	AltSource *Location
+
+	// Annotation marks a display-only row injected under a diff line (e.g. an
+	// inline comment preview). Annotation rows carry no Source, are skipped by
+	// navigation, and are not hunk headers.
+	Annotation bool
 }
 
 // binaryPlaceholder returns a one-row informational rendering for binary files

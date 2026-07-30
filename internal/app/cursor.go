@@ -28,10 +28,23 @@ func (m *Model) clampCursor() {
 	}
 }
 
-// moveLine moves the cursor by delta rows.
+// moveLine moves the cursor by delta rows, gliding over display-only
+// annotation rows in the direction of travel.
 func (m *Model) moveLine(delta int) {
 	m.cursor += delta
+	dir := 1
+	if delta < 0 {
+		dir = -1
+	}
+	rows := m.rows()
+	for m.cursor >= 0 && m.cursor < len(rows) && rows[m.cursor].Annotation {
+		m.cursor += dir
+	}
 	m.clampCursor()
+	// If clamping landed on an annotation (file edge), back off the other way.
+	for m.cursor > 0 && m.cursor < len(rows) && rows[m.cursor].Annotation {
+		m.cursor -= dir
+	}
 }
 
 // halfPage moves the cursor by half the visible height.
@@ -166,7 +179,7 @@ func isChange(r *diff.DisplayRow) bool {
 }
 
 func isHeader(r *diff.DisplayRow) bool {
-	return r.Source == nil && r.Left != nil && r.Left.Kind == diff.LineMetadata
+	return !r.Annotation && r.Source == nil && r.Left != nil && r.Left.Kind == diff.LineMetadata
 }
 
 // kindOf reports the diff kind a row represents (preferring the populated side).

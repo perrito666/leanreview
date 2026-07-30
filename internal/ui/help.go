@@ -17,6 +17,7 @@ func HelpText() string {
 
  View
    t             toggle unified / split
+   i             toggle inline comment previews
    \             toggle changed-files sidebar
    za            fold / unfold current hunk
    zR / zM       expand / collapse all hunks

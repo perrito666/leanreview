@@ -14,10 +14,10 @@ func (m *Model) isFolded(hunkIdx int) bool {
 	return m.folded[foldKey(m.fileIdx, hunkIdx)]
 }
 
-// rows returns the visible display rows for the current file, applying fold
-// state: a folded hunk collapses to just its header row (annotated with a count
-// of hidden lines). Headers are prefixed with a fold indicator either way.
-func (m *Model) rows() []diff.DisplayRow {
+// foldedRows returns the fold-filtered display rows for the current file: a
+// folded hunk collapses to just its header row (annotated with a count of
+// hidden lines). Headers are prefixed with a fold indicator either way.
+func (m *Model) foldedRows() []diff.DisplayRow {
 	raw := m.rawRows()
 	if len(raw) == 0 {
 		return raw

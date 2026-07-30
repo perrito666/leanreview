@@ -47,6 +47,9 @@ type Model struct {
 	// sidebar toggles the persistent changed-files list.
 	sidebar bool
 
+	// inlineComments shows comment previews under annotated lines (default on).
+	inlineComments bool
+
 	// highlighter renders source syntax; hlCache memoizes per (path,text).
 	highlighter *ui.Highlighter
 	hlCache     map[string]string
@@ -120,23 +123,24 @@ type pendingEdit struct {
 // New builds the initial model.
 func New(cfg Config) *Model {
 	m := &Model{
-		files:       cfg.Files,
-		layout:      LayoutUnified,
-		rowCache:    map[string][]diff.DisplayRow{},
-		folded:      map[string]bool{},
-		highlighter: cfg.Highlighter,
-		hlCache:     map[string]string{},
-		selAnchor:   -1,
-		draft:       cfg.Draft,
-		store:       cfg.Store,
-		editor:      cfg.Editor,
-		theme:       cfg.Theme,
-		title:       cfg.Title,
-		headOID:     cfg.HeadOID,
-		mode:        ModeNormal,
-		activeSide:  diff.SideRight,
-		ctx:         context.Background(),
-		pr:          cfg.PR,
+		files:          cfg.Files,
+		layout:         LayoutUnified,
+		rowCache:       map[string][]diff.DisplayRow{},
+		folded:         map[string]bool{},
+		highlighter:    cfg.Highlighter,
+		hlCache:        map[string]string{},
+		selAnchor:      -1,
+		draft:          cfg.Draft,
+		store:          cfg.Store,
+		editor:         cfg.Editor,
+		theme:          cfg.Theme,
+		title:          cfg.Title,
+		headOID:        cfg.HeadOID,
+		mode:           ModeNormal,
+		activeSide:     diff.SideRight,
+		inlineComments: true,
+		ctx:            context.Background(),
+		pr:             cfg.PR,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
