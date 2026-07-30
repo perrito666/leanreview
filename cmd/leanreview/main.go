@@ -25,7 +25,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -35,6 +34,8 @@ import (
 	"github.com/perrito666/leanreview/internal/app"
 	"github.com/perrito666/leanreview/internal/config"
 	"github.com/perrito666/leanreview/internal/editor"
+	"github.com/perrito666/leanreview/internal/forge"
+	"github.com/perrito666/leanreview/internal/forge/ghcli"
 	"github.com/perrito666/leanreview/internal/review"
 	"github.com/perrito666/leanreview/internal/source"
 	"github.com/perrito666/leanreview/internal/ui"
@@ -78,17 +79,11 @@ func run(argv []string) error {
 
 	ctx := context.Background()
 
-	var stdin io.Reader = os.Stdin
-	src, err := source.Resolve(ctx, source.Options{
-		Args:    opts.args,
-		Base:    opts.base,
-		Staged:  opts.staged,
-		Context: opts.contextN,
-		Stdin:   stdin,
-	})
+	src, prSrc, err := resolveSource(ctx, opts)
 	if err != nil {
 		return err
 	}
+	_ = prSrc // wired into the TUI in the next milestone step
 
 	files, err := src.Files(ctx)
 	if err != nil {
@@ -152,6 +147,41 @@ func run(argv []string) error {
 		return fmt.Errorf("run tui: %w", err)
 	}
 	return nil
+}
+
+// resolveSource picks between a GitHub pull request and the local/patch
+// resolver. A single argument that parses as a PR reference and is not an
+// existing file is treated as PR mode; owner/repo are inferred from origin when
+// only a number was given. Returns the generic source plus the concrete
+// *PRSource (nil in local/patch mode) for the TUI to use in PR mode.
+func resolveSource(ctx context.Context, opts options) (source.ReviewSource, *source.PRSource, error) {
+	if len(opts.args) == 1 && !fileExists(opts.args[0]) {
+		if ref, ok := forge.ParseRef(opts.args[0]); ok {
+			ref, err := source.InferPRRef(ctx, "", ref)
+			if err != nil {
+				return nil, nil, err
+			}
+			prSrc, err := source.NewPRSource(ctx, ghcli.New(), ref)
+			if err != nil {
+				return nil, nil, err
+			}
+			return prSrc, prSrc, nil
+		}
+	}
+
+	src, err := source.Resolve(ctx, source.Options{
+		Args:    opts.args,
+		Base:    opts.base,
+		Staged:  opts.staged,
+		Context: opts.contextN,
+		Stdin:   os.Stdin,
+	})
+	return src, nil, err
+}
+
+func fileExists(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && !info.IsDir()
 }
 
 // parseArgs performs a small hand-rolled parse so flags and positionals can be
