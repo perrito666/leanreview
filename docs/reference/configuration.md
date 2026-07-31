@@ -61,6 +61,14 @@ for Vim/Neovim setup.
 - `theme` — TUI palette: `default` or `mono`.
 - `tab_width` — columns a tab expands to.
 - `context` — default unified context lines when `-U` is not passed.
+- `keymap` — base binding set: a built-in preset (`default`, `vim`,
+  `vscode`, `sublime`, `intellij`) or the name of an entry in `keymaps`.
+  Presets layer familiar chords over the defaults (terminals cannot report
+  every editor chord, so they are supersets, not clones); `keys` and
+  `sequences` still override on top.
+- `keymaps` — user-defined named keymaps,
+  `{ "<name>": { "keys": {…}, "sequences": […] } }`, each layered on the
+  defaults when selected. Built-in preset names are reserved.
 - `keys` — remap normal-mode bindings, `{ "<key>": "<action>" }`. See
   [Keys](keys.md#remapping).
 - `sequences` — remap two-key sequences, a list of

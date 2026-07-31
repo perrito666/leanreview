@@ -34,6 +34,12 @@ type Config struct {
 	// Sequences overrides two-key sequence bindings; an empty action removes
 	// the sequence.
 	Sequences []SeqBinding
+	// KeymapName selects the base binding set: a built-in preset (default,
+	// vim, vscode, sublime, intellij) or a user-defined entry in UserKeymaps.
+	KeymapName string
+	// UserKeymaps are named keymaps from configuration, each layered on the
+	// defaults when selected.
+	UserKeymaps map[string]NamedKeymap
 
 	// Wrap enables line/comment wrapping at start (default true when built via
 	// the CLI); WrapWidth caps the unified wrap point (0 means the default).
@@ -270,10 +276,7 @@ func New(cfg Config) *Model {
 	if m.changeColors == "" {
 		m.changeColors = changeColorsDiff
 	}
-	m.keymap = DefaultKeymap()
-	m.keymap.apply(cfg.Keys)
-	m.sequences = DefaultSequences()
-	m.sequences.apply(cfg.Sequences)
+	m.keymap, m.sequences = resolveKeymap(cfg.KeymapName, cfg.UserKeymaps, cfg.Keys, cfg.Sequences)
 	m.buildThreadIndex()
 	m.cursor = m.firstContentRow()
 	return m

@@ -13,24 +13,26 @@ const SchemaURL = "https://perrito666.github.io/leanreview/schema/leanreview-con
 // baseline mirrors fileConfig with concrete values and a stable field order,
 // so the generated document reads top-down from identity to keys.
 type baseline struct {
-	Schema       string            `json:"$schema"`
-	Editor       string            `json:"editor"`
-	Author       string            `json:"author"`
-	Syntax       bool              `json:"syntax"`
-	SyntaxStyle  string            `json:"syntax_style"`
-	Theme        string            `json:"theme"`
-	Images       string            `json:"images"`
-	ChangeColors string            `json:"change_colors"`
-	ChangeTint   bool              `json:"change_tint"`
-	TabWidth     int               `json:"tab_width"`
-	Context      int               `json:"context"`
-	Wrap         bool              `json:"wrap"`
-	WrapWidth    int               `json:"wrap_width"`
-	ListEngine   string            `json:"list_engine"`
-	ListFilter   string            `json:"list_filter"`
-	ListFilters  map[string]string `json:"list_filters"`
-	Keys         map[string]string `json:"keys"`
-	Sequences    []SequenceBinding `json:"sequences"`
+	Schema       string               `json:"$schema"`
+	Editor       string               `json:"editor"`
+	Author       string               `json:"author"`
+	Syntax       bool                 `json:"syntax"`
+	SyntaxStyle  string               `json:"syntax_style"`
+	Theme        string               `json:"theme"`
+	Images       string               `json:"images"`
+	ChangeColors string               `json:"change_colors"`
+	ChangeTint   bool                 `json:"change_tint"`
+	TabWidth     int                  `json:"tab_width"`
+	Context      int                  `json:"context"`
+	Wrap         bool                 `json:"wrap"`
+	WrapWidth    int                  `json:"wrap_width"`
+	Keymap       string               `json:"keymap"`
+	Keymaps      map[string]KeymapDef `json:"keymaps"`
+	ListEngine   string               `json:"list_engine"`
+	ListFilter   string               `json:"list_filter"`
+	ListFilters  map[string]string    `json:"list_filters"`
+	Keys         map[string]string    `json:"keys"`
+	Sequences    []SequenceBinding    `json:"sequences"`
 }
 
 // BaselineJSON renders the built-in defaults as a complete config document:
@@ -52,6 +54,8 @@ func BaselineJSON(keys map[string]string, seqs []SequenceBinding) ([]byte, error
 		Context:      3,
 		Wrap:         true,
 		WrapWidth:    120,
+		Keymap:       "default",
+		Keymaps:      map[string]KeymapDef{},
 		ListEngine:   "gh",
 		ListFilters:  map[string]string{},
 		Keys:         keys,
