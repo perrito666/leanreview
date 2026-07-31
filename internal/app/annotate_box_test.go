@@ -127,3 +127,66 @@ func TestSplitRowsStylePerSide(t *testing.T) {
 	}
 	t.Skip("fixture has no paired deletion/addition row")
 }
+
+// TestThreadShareOneBoxOldestFirst: multiple comments on one line share one
+// containing box, ordered by timestamp with inner dividers between items.
+func TestThreadShareOneBoxOldestFirst(t *testing.T) {
+	m := testModel(t)
+	m.cursor = mustFindRow(t, m, diff.SideRight, 72)
+	loc, snip, _ := m.buildLocation()
+	newer := m.draft.Add(loc, "newer note", snip)
+	older := m.draft.Add(loc, "older note", snip)
+	m.draft.Get(newer).At = "2026-07-30T10:00:00Z"
+	m.draft.Get(older).At = "2026-07-01T10:00:00Z"
+
+	rows := m.rows()
+	tops, divs := 0, 0
+	var texts []string
+	for i := range rows {
+		if !rows[i].Annotation {
+			continue
+		}
+		switch rows[i].Edge {
+		case diff.EdgeTop:
+			tops++
+		case diff.EdgeDivider:
+			divs++
+		case diff.EdgeNone:
+			texts = append(texts, rows[i].Left.Text)
+		}
+	}
+	if tops != 1 {
+		t.Errorf("comments should share ONE box, got %d boxes", tops)
+	}
+	if divs != 1 {
+		t.Errorf("two items should have one inner divider, got %d", divs)
+	}
+	joined := strings.Join(texts, "\n")
+	if !strings.Contains(joined, "older note") || !strings.Contains(joined, "newer note") {
+		t.Fatalf("box missing items:\n%s", joined)
+	}
+	if strings.Index(joined, "older note") > strings.Index(joined, "newer note") {
+		t.Errorf("thread not oldest-first:\n%s", joined)
+	}
+	if !strings.Contains(m.View(), "├") {
+		t.Errorf("inner divider not rendered")
+	}
+}
+
+// TestSplitDividerContinuesThroughBox: the split panel divider must not be
+// interrupted by annotation rows — the box floats over the right panel while
+// the two-pane geometry stays continuous.
+func TestSplitDividerContinuesThroughBox(t *testing.T) {
+	m := commentedModel(t)
+	m = key(m, "t") // split
+	div := 2 + m.numWidth() + 1 + m.splitPanelWidth() + 1
+	for _, ln := range strings.Split(m.View(), "\n") {
+		if !strings.Contains(ln, "╭") && !strings.Contains(ln, "╰") {
+			continue
+		}
+		plain := stripANSI(ln)
+		if len([]rune(plain)) <= div || []rune(plain)[div] != '│' {
+			t.Errorf("split divider missing at col %d of box row: %q", div, plain)
+		}
+	}
+}

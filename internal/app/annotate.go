@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/reflow/wrap"
@@ -35,42 +37,29 @@ func (m *Model) rows() []diff.DisplayRow {
 	return out
 }
 
-// annotationRows builds the inline preview rows for one diff row: one preview
-// per draft comment anchored on it (on either side of a split row) and one per
-// existing review thread. With wrapping on, the full body is word-wrapped —
+// annotationRows builds the inline preview rows for one diff row: every draft
+// comment and review thread anchored on it (either side of a split row),
+// merged into one containing box and ordered oldest first so the line's
+// discussion reads as a single thread. With wrapping on, bodies word-wrap —
 // at the side panel's width in split layout, at the configured wrap width in
-// unified; with wrapping off, only the first line is shown (clipped).
+// unified; with wrapping off, only each item's first line is shown (clipped).
 func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
-	var rows []diff.DisplayRow
-	// Each preview renders as one bordered box: an edge row above and below
-	// the wrapped text rows (see renderAnnotation for the drawing). A comment
-	// and its conversation replies share a box — they are one exchange.
-	add := func(texts ...string) {
-		rows = append(rows, diff.DisplayRow{
-			Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
-			Annotation: true,
-			Edge:       diff.EdgeTop,
-		})
-		for _, text := range texts {
-			for _, line := range m.wrapAnnotation(text) {
-				rows = append(rows, diff.DisplayRow{
-					Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
-					Annotation: true,
-				})
-			}
-		}
-		rows = append(rows, diff.DisplayRow{
-			Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
-			Annotation: true,
-			Edge:       diff.EdgeBottom,
-		})
-	}
 	body := func(s string) string {
 		if m.wrapText {
 			return strings.TrimRight(s, "\n")
 		}
 		return firstLine(s)
 	}
+
+	// Gather every item anchored to this row — draft comments and existing
+	// review threads alike — as (sort key, rendered lines) pairs. They all
+	// share ONE containing box, ordered oldest first, so the line's whole
+	// discussion reads as a single thread instead of stacked fragments.
+	type item struct {
+		at    string // RFC 3339 sorts lexically = chronologically
+		texts []string
+	}
+	var items []item
 
 	for _, src := range []*diff.Location{r.Source, r.AltSource} {
 		if src == nil {
@@ -92,28 +81,66 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 					author = "@" + c.Author + ": "
 				}
 				texts := []string{fmt.Sprintf("● %s%s%s", author, body(c.Body), state)}
-				for _, r := range c.Replies {
-					who := r.Author
+				for _, rp := range c.Replies {
+					who := rp.Author
 					if who == "" {
 						who = "reply"
 					}
-					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", who, body(r.Body)))
+					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", who, body(rp.Body)))
 				}
-				add(texts...)
+				items = append(items, item{at: c.At, texts: texts})
 			}
 		}
-		// Existing review threads (PR mode).
+		// Existing review threads (PR mode), with their replies inline.
 		if m.pr != nil {
 			for _, ti := range m.threadIndex[locKey(src.Path, src.Side, src.StartLine)] {
 				th := m.pr.Threads[ti]
-				extra := ""
-				if n := len(th.Replies); n > 0 {
-					extra = fmt.Sprintf("  (+%d repl%s)", n, plural(n, "y", "ies"))
+				texts := []string{fmt.Sprintf("◆ @%s: %s", th.Root.Author, body(th.Root.Body))}
+				for _, rp := range th.Replies {
+					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", rp.Author, body(rp.Body)))
 				}
-				add(fmt.Sprintf("◆ @%s: %s%s", th.Root.Author, body(th.Root.Body), extra))
+				at := ""
+				if !th.Root.CreatedAt.IsZero() {
+					at = th.Root.CreatedAt.UTC().Format(time.RFC3339)
+				}
+				items = append(items, item{at: at, texts: texts})
 			}
 		}
 	}
+	if len(items) == 0 {
+		return nil
+	}
+	// Oldest first; stable so undated items keep their anchor order.
+	sort.SliceStable(items, func(i, j int) bool { return items[i].at < items[j].at })
+
+	// One box: top edge, items separated by an inner divider, bottom edge.
+	rows := []diff.DisplayRow{{
+		Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
+		Annotation: true,
+		Edge:       diff.EdgeTop,
+	}}
+	for i, it := range items {
+		if i > 0 {
+			rows = append(rows, diff.DisplayRow{
+				Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
+				Annotation: true,
+				Edge:       diff.EdgeDivider,
+			})
+		}
+		for _, text := range it.texts {
+			for _, line := range m.wrapAnnotation(text) {
+				rows = append(rows, diff.DisplayRow{
+					Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
+					Annotation: true,
+				})
+			}
+		}
+	}
+	rows = append(rows, diff.DisplayRow{
+		Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
+		Annotation: true,
+		Edge:       diff.EdgeBottom,
+	})
 	return rows
 }
 
@@ -166,22 +193,35 @@ func (m *Model) wrapAnnotation(text string) []string {
 	return lines
 }
 
-// renderAnnotation draws one row of a boxed comment preview: a border edge or
-// a text row framed by the box sides.
+// renderAnnotation draws one row of a boxed comment preview: a border edge,
+// an inner thread divider, or a text row framed by the box sides. In split
+// layout the panel divider is drawn through the box's indent so the two-pane
+// geometry stays visually continuous instead of being interrupted by the
+// thread.
 func (m *Model) renderAnnotation(r *diff.DisplayRow, isCursor bool) string {
 	indent, inner := m.annotationLayout()
 	cw := m.contentWidth()
 	pre := strings.Repeat(" ", indent)
+	if m.layout == LayoutSplit {
+		// The split divider column sits two cells before the box; keep the
+		// vertical line flowing through annotation rows.
+		div := 2 + m.numWidth() + 1 + m.splitPanelWidth() + 1
+		if div+2 <= indent {
+			pre = strings.Repeat(" ", div) + m.theme.Faint.Render("│") + strings.Repeat(" ", indent-div-1)
+		}
+	}
 
 	if isCursor {
 		// The cursor never rests here, but stay defensive and legible.
-		return m.theme.Cursor.Render(pad(pre+clip(r.Left.Text, cw-indent), cw))
+		return m.theme.Cursor.Render(pad(strings.Repeat(" ", indent)+clip(r.Left.Text, cw-indent), cw))
 	}
 	switch r.Edge {
 	case diff.EdgeTop:
 		return pad(pre+m.theme.Faint.Render("╭"+strings.Repeat("─", inner+2)+"╮"), cw)
 	case diff.EdgeBottom:
 		return pad(pre+m.theme.Faint.Render("╰"+strings.Repeat("─", inner+2)+"╯"), cw)
+	case diff.EdgeDivider:
+		return pad(pre+m.theme.Faint.Render("├"+strings.Repeat("┄", inner+2)+"┤"), cw)
 	default:
 		side := m.theme.Faint.Render("│")
 		text := m.theme.Comment.Render(pad(clip(r.Left.Text, inner), inner))

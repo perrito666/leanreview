@@ -50,13 +50,14 @@ type DisplayRow struct {
 }
 
 // AnnotationEdge distinguishes the border rows of a boxed annotation from its
-// text rows.
+// text rows. EdgeDivider separates items of a thread that share one box.
 type AnnotationEdge uint8
 
 const (
 	EdgeNone AnnotationEdge = iota
 	EdgeTop
 	EdgeBottom
+	EdgeDivider
 )
 
 // binaryPlaceholder returns a one-row informational rendering for binary files
