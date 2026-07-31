@@ -24,6 +24,35 @@ un avertissement affiché au démarrage.
 }
 ```
 
+## Générer et valider
+
+Partez d'une base complète plutôt que d'un fichier vide :
+
+```bash
+leanreview --init-config     # écrit le fichier ci-dessus avec toutes les
+                             # valeurs par défaut, le keymap complet et une
+                             # référence $schema
+```
+
+Le map `keys` généré liste **toutes** les associations par défaut : remapper
+devient une édition, pas une devinette. Le générateur refuse d'écraser un
+fichier existant.
+
+Validez à tout moment :
+
+```bash
+leanreview --check-config    # signale fautes de frappe, actions inconnues
+                             # et valeurs invalides ; code de sortie non nul
+                             # en cas de problème
+```
+
+Les éditeurs valident aussi : la référence `$schema` pointe vers le
+[schéma de configuration](../schema/leanreview-config.schema.json) publié,
+offrant validation et complétion (y compris les noms d'action pour `keys`)
+dans VS Code et JetBrains sans réglage — voir
+[`editors/`](https://github.com/perrito666/leanreview/tree/main/editors)
+pour Vim/Neovim.
+
 ## Réglages
 
 - `editor` — commande de l'éditeur (analysée comme une ligne de commande,

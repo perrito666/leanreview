@@ -24,6 +24,8 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `--export FILE` | write draft comments as Markdown and exit |
 | `--discard` | delete the saved draft for this source and exit |
 | `--list [engine] [filter]` | discover open PRs/MRs and pick one to review (plain table when piped) |
+| `--init-config` | write a baseline config (all defaults + the full keymap) and exit |
+| `--check-config` | validate the config file, report problems, and exit |
 | `-h, --help` | show help |
 | `-v, --version` | print the version and exit |
 

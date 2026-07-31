@@ -64,14 +64,16 @@ func main() {
 // positionals. contextSet distinguishes an explicit -U from the default so
 // the config file's context value only applies when the flag was absent.
 type options struct {
-	base       string
-	staged     bool
-	contextN   int
-	contextSet bool
-	exportPath string
-	discard    bool
-	list       bool
-	args       []string
+	base        string
+	staged      bool
+	contextN    int
+	contextSet  bool
+	exportPath  string
+	discard     bool
+	list        bool
+	initConfig  bool
+	checkConfig bool
+	args        []string
 }
 
 // run is the real entry point, returning errors instead of exiting so main
@@ -113,6 +115,15 @@ func run(argv []string) error {
 	diff.TabWidth = cfg.TabWidth
 	if !opts.contextSet {
 		opts.contextN = cfg.Context
+	}
+
+	// Config housekeeping modes: generate a baseline or validate the current
+	// file, then exit — neither needs a review source.
+	if opts.initConfig {
+		return runInitConfig()
+	}
+	if opts.checkConfig {
+		return runCheckConfig()
 	}
 
 	ctx := context.Background()
@@ -465,6 +476,10 @@ func parseArgs(argv []string) (options, error) {
 			o.discard = true
 		case a == "--list":
 			o.list = true
+		case a == "--init-config":
+			o.initConfig = true
+		case a == "--check-config":
+			o.checkConfig = true
 		case a == "-h" || a == "--help":
 			return o, errHelp
 		case a == "-v" || a == "--version":
@@ -509,11 +524,62 @@ Flags:
                      default engine; extra text refines it). With nothing
                      supplied, list_filter applies, falling back to "review
                      requested from me"
+  --init-config      write a baseline config (defaults + full keymap) and exit
+  --check-config     validate the config file, report problems, and exit
   -h, --help         show this help
   -v, --version      print the version and exit
 
 In the TUI, press ? for the key reference.
 `
+
+// runInitConfig writes the baseline config — every setting at its default,
+// the full default keymap spelled out, and a $schema reference for editor
+// validation — refusing to touch an existing file: a generator must never be
+// able to destroy the config it exists to help create.
+func runInitConfig() error {
+	path := config.Path()
+	if path == "" {
+		return fmt.Errorf("cannot resolve a config location (no home directory)")
+	}
+	if fileExists(path) {
+		return fmt.Errorf("%s already exists — refusing to overwrite (edit it, or delete it first)", path)
+	}
+	out, err := config.BaselineJSON(app.DefaultKeymap())
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, out, 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("wrote baseline config to %s\n", path)
+	return nil
+}
+
+// runCheckConfig validates the config file and reports every problem — the
+// counterpart to Load's tolerance: Load must start the TUI despite a typo,
+// while this mode exists to find the typo. A missing file is not a problem
+// (defaults apply); any reported problem makes the exit code non-zero so the
+// check is scriptable.
+func runCheckConfig() error {
+	path := config.Path()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("no config file at %s (defaults apply)\n", path)
+		return nil
+	}
+	problems := config.Validate(data, app.KnownActions())
+	if len(problems) == 0 {
+		fmt.Printf("%s is valid\n", path)
+		return nil
+	}
+	for _, p := range problems {
+		fmt.Println("  - " + p)
+	}
+	return fmt.Errorf("%s: %d problem(s)", path, len(problems))
+}
 
 // next consumes the value following a flag in argv, advancing the caller's
 // loop index past it so value-taking flags work in the hand-rolled parser.

@@ -24,6 +24,8 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `--export FILE` | escribir comentarios en borrador como Markdown y salir |
 | `--discard` | eliminar el borrador guardado de esta fuente y salir |
 | `--list [engine] [filter]` | descubrir PRs/MRs abiertos y elegir uno para revisar (tabla plana cuando se canaliza) |
+| `--init-config` | escribir una configuración base (todos los valores por defecto + el mapa de teclas completo) y salir |
+| `--check-config` | validar el archivo de configuración, informar problemas y salir |
 | `-h, --help` | mostrar ayuda |
 | `-v, --version` | imprimir la versión y salir |
 
