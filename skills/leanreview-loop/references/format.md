@@ -35,8 +35,9 @@ near the start.
 
 Markdown image references in `body`/reply text (`![alt](path)`) render
 inline in the TUI when the terminal supports it (kitty protocol or chafa);
-use paths relative to the repository root, and expect remote URLs to show
-as tags — leanreview never fetches the network for previews.
+use paths relative to the repository root. Forge attachment URLs render
+too (fetched with the forge CLI's authentication); other remote URLs show
+as tags.
 
 ## Semantics that matter
 

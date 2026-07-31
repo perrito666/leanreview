@@ -71,8 +71,10 @@ contenedora, ordenados del más antiguo al más reciente, de modo que la
 discusión se lee como un solo hilo. Las referencias de imagen Markdown en
 los comentarios se renderizan en línea — gráficos kitty en kitty/ghostty,
 arte de celdas con `chafa` en otros casos (ver el ajuste `images` en la
-[configuración](../reference/configuration.md)) — y las URLs remotas quedan
-como etiquetas.
+[configuración](../reference/configuration.md)). En modo PR/MR, los
+adjuntos de comentarios — incluidos los `<img>` en HTML de GitHub — se
+descargan con la autenticación del forge y se guardan en caché; otras URLs
+remotas quedan como etiquetas.
 
 ## Revisar tus notas
 

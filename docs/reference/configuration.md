@@ -74,7 +74,9 @@ for Vim/Neovim setup.
   (default `true`).
 - `images` — comment-image rendering: `auto` (kitty graphics on
   kitty/ghostty, `chafa` when installed, off otherwise), `kitty`, `chafa`,
-  or `off`. Remote URLs are never fetched; they render as tags.
+  or `off`. In PR/MR mode, comment attachments (GitHub `user-attachments`,
+  GitLab `/uploads`, including HTML `<img>` embeds) are fetched through the
+  forge CLI's authentication and cached; other remote URLs render as tags.
 - `author` — the name attributed to your replies in
   [review-exchange conversations](exchange-format.md) (default: `$USER`).
 - `wrap` / `wrap_width` — wrapping of long diff lines and comment previews

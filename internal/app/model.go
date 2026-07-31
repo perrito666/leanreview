@@ -49,6 +49,10 @@ type Config struct {
 	// Images selects comment-image rendering: auto, kitty, chafa, or off.
 	Images string
 
+	// FetchImage resolves a remote image reference (a forge attachment URL)
+	// to its bytes, authenticated through the forge CLI; nil outside PR mode.
+	FetchImage func(ctx context.Context, url string) ([]byte, error)
+
 	// ChangeColors picks how +/- lines are colored when syntax highlighting
 	// is on: "diff" (classic red/green, syntax for context only) or "syntax"
 	// (syntax everywhere). Empty means "diff".
@@ -88,8 +92,16 @@ type Model struct {
 	highlighter *ui.Highlighter
 	hlCache     map[string]string
 
-	// images renders comment-thread image references (kitty/chafa/off).
-	images *ui.ImageRenderer
+	// images renders comment-thread image references (kitty/chafa/off);
+	// fetchImage resolves forge attachments; imageFiles maps fetched URLs to
+	// session-local files, imagePending/imageFailed gate one fetch per URL,
+	// imageDir is the session's attachment scratch directory.
+	images       *ui.ImageRenderer
+	fetchImage   func(ctx context.Context, url string) ([]byte, error)
+	imageFiles   map[string]string
+	imagePending map[string]bool
+	imageFailed  map[string]bool
+	imageDir     string
 
 	// syntaxOn is the runtime highlighting toggle (S cycles); changeColors
 	// picks red/green vs syntax for +/- lines; changeTint backs syntax-mode
@@ -230,6 +242,10 @@ func New(cfg Config) *Model {
 		contextRows:    map[int][]diff.DisplayRow{},
 		fetchContext:   cfg.FetchContext,
 		images:         ui.NewImageRenderer(cfg.Images),
+		fetchImage:     cfg.FetchImage,
+		imageFiles:     map[string]string{},
+		imagePending:   map[string]bool{},
+		imageFailed:    map[string]bool{},
 		syntaxOn:       true,
 		changeColors:   cfg.ChangeColors,
 		changeTint:     cfg.ChangeTint,
@@ -259,7 +275,9 @@ func New(cfg Config) *Model {
 
 // Init implements tea.Model. The only startup work is the optional
 // whole-file content fetch that upgrades syntax highlighting for file 0.
-func (m *Model) Init() tea.Cmd { return m.maybeFetchHighlight() }
+func (m *Model) Init() tea.Cmd {
+	return tea.Batch(m.maybeFetchHighlight(), m.maybeFetchImages())
+}
 
 // SetExchangeWriteback makes every draft save also rewrite the review-exchange
 // file at path, keeping the on-disk conversation current without an explicit

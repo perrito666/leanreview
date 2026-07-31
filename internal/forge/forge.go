@@ -8,6 +8,8 @@ package forge
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -144,6 +146,40 @@ type Forge interface {
 	// FileContent returns the raw content of path at rev (a commit id,
 	// typically the PR head) — the full-file context view's data source.
 	FileContent(ctx context.Context, ref PullRequestRef, path, rev string) ([]byte, error)
+	// Attachment fetches an image/file referenced from a comment body (an
+	// absolute attachment URL, or a host-relative /uploads path), using the
+	// adapter's authentication where the host requires it.
+	Attachment(ctx context.Context, ref PullRequestRef, url string) ([]byte, error)
+}
+
+// maxAttachmentBytes caps comment-attachment downloads: a preview is not
+// worth an unbounded pull.
+const maxAttachmentBytes = 10 << 20
+
+// FetchAttachmentURL is the adapters' shared plain-HTTP path for attachment
+// URLs that need no API authentication (or as a fallback when the CLI cannot
+// serve them). Size-capped and context-bound.
+func FetchAttachmentURL(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetch %s: %s", url, resp.Status)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxAttachmentBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxAttachmentBytes {
+		return nil, fmt.Errorf("attachment exceeds %d bytes", maxAttachmentBytes)
+	}
+	return data, nil
 }
 
 // ReviewComment is a single line comment expressed in host API terms.

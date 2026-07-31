@@ -66,7 +66,9 @@ All comments and threads on a line share one containing box, ordered
 oldest first, so the discussion reads as a single thread. Markdown image
 references in comment bodies render inline — kitty graphics on
 kitty/ghostty, `chafa` cell art elsewhere (see the `images`
-[setting](../reference/configuration.md)) — and remote URLs stay as tags.
+[setting](../reference/configuration.md)). In PR/MR mode, comment
+attachments — including GitHub's HTML `<img>` embeds — are fetched through
+the forge's authentication and cached; other remote URLs stay as tags.
 
 ## Reviewing your notes
 

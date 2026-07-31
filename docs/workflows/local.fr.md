@@ -74,8 +74,10 @@ conteneur, du plus ancien au plus récent, si bien que la discussion se lit
 comme un seul fil. Les références d'images Markdown dans les commentaires
 sont rendues en ligne — graphiques kitty sur kitty/ghostty, art en
 cellules via `chafa` ailleurs (voir le réglage `images` dans la
-[configuration](../reference/configuration.md)) — et les URL distantes
-restent des étiquettes.
+[configuration](../reference/configuration.md)). En mode PR/MR, les pièces
+jointes des commentaires — y compris les balises HTML `<img>` de GitHub —
+sont téléchargées via l'authentification de la forge et mises en cache ;
+les autres URL distantes restent des étiquettes.
 
 ## Relire ses notes
 

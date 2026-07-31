@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,7 +9,9 @@ import (
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/editor"
+	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/review"
+	"github.com/perrito666/leanreview/internal/ui"
 )
 
 // TestDismissToggle: x flags the comment under the cursor as dismissed (kept,
@@ -206,5 +209,95 @@ func TestConversationDismissAndReply(t *testing.T) {
 	}
 	if m.mode != ModeExternalEditor {
 		t.Errorf("mode = %v, want external editor", m.mode)
+	}
+}
+
+// TestHTMLImageTagParsing uses the exact shape GitHub embeds pasted images
+// with: the src must be extracted and the raw HTML removed from display.
+func TestHTMLImageTagParsing(t *testing.T) {
+	body := `broken here <img width="416" height="480" alt="Image" src="https://github.com/user-attachments/assets/900ae85f-976b-45ee-985a-1d16637c1901" /> as you can see`
+	refs := imageRefs(body)
+	if len(refs) != 1 || refs[0] != "https://github.com/user-attachments/assets/900ae85f-976b-45ee-985a-1d16637c1901" {
+		t.Fatalf("refs = %v", refs)
+	}
+	clean := stripImageMarkup(body)
+	if strings.Contains(clean, "<img") || strings.Contains(clean, "src=") {
+		t.Errorf("raw HTML leaked into display text: %q", clean)
+	}
+	if !strings.Contains(clean, "[Image]") {
+		t.Errorf("alt text lost: %q", clean)
+	}
+	// Markdown form: alt kept, target stripped.
+	if got := stripImageMarkup("see ![shot](a/b.png) here"); got != "see [shot] here" {
+		t.Errorf("markdown strip = %q", got)
+	}
+	// GitLab relative upload counts as remote.
+	if !isRemoteRef("/uploads/abc/shot.png") || !isRemoteRef("https://x") || isRemoteRef("docs/a.png") {
+		t.Errorf("isRemoteRef misclassifies")
+	}
+}
+
+// TestForgeAttachmentFetchFlow: a thread with a GitHub-style <img> attachment
+// fetches once through the forge, lands in a session file, and renders in
+// the box; failures degrade to a tag and are not retried.
+func TestForgeAttachmentFetchFlow(t *testing.T) {
+	threads := []forge.Thread{{
+		Root: forge.Comment{ID: 1, Author: "rev",
+			Body: `look <img alt="Image" src="https://github.com/user-attachments/assets/xyz" />`},
+		Location: &diff.Location{Path: "internal/api/handler.go", Side: diff.SideRight, StartLine: 72, EndLine: 72},
+	}}
+	m := prModel(t, &recordingForge{}, threads)
+	m.images = ui.NewImageRenderer("kitty")
+	png, err := os.ReadFile(writeTestPNG(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetches := 0
+	m.fetchImage = func(context.Context, string) ([]byte, error) {
+		fetches++
+		return png, nil
+	}
+
+	// Before the fetch lands: visible tag with a fetching hint.
+	cmd := m.maybeFetchImages()
+	if cmd == nil {
+		t.Fatalf("no fetch issued for the thread attachment")
+	}
+	if !strings.Contains(m.View(), "(fetching…)") {
+		t.Errorf("pending attachment should render as a fetching tag")
+	}
+	if m.maybeFetchImages() != nil {
+		t.Fatalf("second scan refetched a pending URL")
+	}
+
+	msg := cmd().(imageFetchedMsg)
+	m.onImageFetched(msg)
+	if fetches != 1 {
+		t.Fatalf("fetches = %d", fetches)
+	}
+	pre := 0
+	for _, r := range m.rows() {
+		if r.Annotation && r.Pre {
+			pre++
+		}
+	}
+	if pre == 0 {
+		t.Errorf("fetched attachment did not render as image rows")
+	}
+	if strings.Contains(m.View(), "<img") {
+		t.Errorf("raw HTML still visible in the box")
+	}
+
+	// Failure path: remembered, tagged, not retried.
+	m2 := prModel(t, &recordingForge{}, threads)
+	m2.images = ui.NewImageRenderer("kitty")
+	m2.fetchImage = func(context.Context, string) ([]byte, error) { return nil, errFake }
+	cmd2 := m2.maybeFetchImages()
+	m2.onImageFetched(cmd2().(imageFetchedMsg))
+	if !strings.Contains(m2.View(), "[image: https://github.com/user-attachments/assets/xyz]") {
+		t.Errorf("failed attachment should render as a plain tag")
+	}
+	if m2.maybeFetchImages() != nil {
+		t.Errorf("failed URL retried")
 	}
 }

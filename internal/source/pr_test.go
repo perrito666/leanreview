@@ -12,6 +12,10 @@ func (f *fakeForge) FileContent(context.Context, forge.PullRequestRef, string, s
 	return nil, nil
 }
 
+func (f *fakeForge) Attachment(context.Context, forge.PullRequestRef, string) ([]byte, error) {
+	return nil, nil
+}
+
 type fakeForge struct {
 	pr      *forge.PullRequest
 	diff    string

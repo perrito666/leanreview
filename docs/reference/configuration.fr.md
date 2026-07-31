@@ -80,8 +80,11 @@ pour Vim/Neovim.
   au premier coup d'œil (par défaut `true`).
 - `images` — rendu des images des commentaires : `auto` (protocole
   kitty sur kitty/ghostty, `chafa` s'il est installé, désactivé sinon),
-  `kitty`, `chafa` ou `off`. Les URL distantes ne sont jamais téléchargées ;
-  elles s'affichent comme des étiquettes.
+  `kitty`, `chafa` ou `off`. En mode PR/MR, les pièces jointes des
+  commentaires (`user-attachments` GitHub, `/uploads` GitLab, y compris les
+  balises HTML `<img>`) sont téléchargées via l'authentification du CLI de
+  la forge et mises en cache ; les autres URL distantes s'affichent comme
+  des étiquettes.
 - `author` — le nom attribué à vos réponses dans les
   [conversations d'échange de revue](exchange-format.md)
   (par défaut : `$USER`).

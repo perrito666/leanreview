@@ -40,6 +40,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.onContextContent(msg)
 		return m, nil
 
+	case imageFetchedMsg:
+		m.onImageFetched(msg)
+		return m, nil
+
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 	}
@@ -95,9 +99,10 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if !ready {
 		return m, nil
 	}
-	// Batch in the once-per-file highlight-content fetch so switching files
-	// (by any means) upgrades syntax colors without dedicated plumbing.
-	return m, tea.Batch(m.execute(cmd), m.maybeFetchHighlight())
+	// Batch in the once-per-file highlight fetch and the once-per-URL image
+	// fetch, so file switches and freshly added comments upgrade themselves
+	// without dedicated plumbing.
+	return m, tea.Batch(m.execute(cmd), m.maybeFetchHighlight(), m.maybeFetchImages())
 }
 
 // execute performs a resolved normal-mode command, applying its numeric count
