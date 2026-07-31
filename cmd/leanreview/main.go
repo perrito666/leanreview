@@ -207,20 +207,20 @@ func run(argv []string) error {
 	// Full-file context fetcher: resolves content by identity through the
 	// on-disk cache (opened here so its age/size cleanup runs at app start);
 	// nil when the source cannot provide file contents.
-	var fetchContext func(context.Context, string) ([]byte, error)
+	var fetchContext func(context.Context, string, diff.Side) ([]byte, error)
 	if cc, ok := src.(source.ContextContenter); ok {
 		fcache, ferr := filecache.Open()
 		if ferr != nil {
 			log.Printf("file cache disabled: %v", ferr)
 		}
-		fetchContext = func(ctx context.Context, path string) ([]byte, error) {
-			key := cc.ContextKey(ctx, path)
+		fetchContext = func(ctx context.Context, path string, side diff.Side) ([]byte, error) {
+			key := cc.ContextKey(ctx, path, side)
 			if key != "" && fcache != nil {
 				if data, ok := fcache.Get(key); ok {
 					return data, nil
 				}
 			}
-			data, err := cc.ContextContent(ctx, path)
+			data, err := cc.ContextContent(ctx, path, side)
 			if err != nil {
 				return nil, err
 			}
@@ -298,6 +298,8 @@ func run(argv []string) error {
 		RawPatch:     rawPatch,
 		Author:       cfg.Author,
 		Images:       cfg.Images,
+		ChangeColors: cfg.ChangeColors,
+		ChangeTint:   cfg.ChangeTint,
 		FetchContext: fetchContext,
 	})
 	if exSrc != nil {

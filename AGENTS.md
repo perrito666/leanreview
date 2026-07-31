@@ -92,6 +92,14 @@ internal/config     defaults <- config file <- environment
   preformatted rows (`DisplayRow.Pre`) — kitty Unicode placeholders with a
   one-shot payload transmission, chafa fallback, tag otherwise; remote URLs
   are never fetched.
+- **Two-pass syntax highlighting.** Whole-file passes per side
+  (`Highlighter.ContentLines`): deletions index the old-file pass,
+  everything else the new — that is what makes multi-line constructs color
+  correctly. Fallback: per-hunk side stitching, then legacy per-line. The
+  passes emit fg-only SGR (never a full reset) so the change_tint
+  background survives; keep that discipline. S cycles
+  red/green-changes → syntax-everywhere → off; content arrives through the
+  same fetch/cache seam as the context view.
 - **ANSI-aware geometry.** Any string measuring/clipping must use
   `lipgloss.Width` / the `clip`/`pad` helpers, never `len()`. Input handling
   counts runes, never bytes.

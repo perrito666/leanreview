@@ -44,10 +44,18 @@ type Config struct {
 
 	// FetchContext returns the full new-side content of a file, enabling the
 	// full-file context view (T). nil disables the toggle for this source.
-	FetchContext func(ctx context.Context, path string) ([]byte, error)
+	FetchContext func(ctx context.Context, path string, side diff.Side) ([]byte, error)
 
 	// Images selects comment-image rendering: auto, kitty, chafa, or off.
 	Images string
+
+	// ChangeColors picks how +/- lines are colored when syntax highlighting
+	// is on: "diff" (classic red/green, syntax for context only) or "syntax"
+	// (syntax everywhere). Empty means "diff".
+	ChangeColors string
+	// ChangeTint backs syntax-mode changed lines with a faint red/green
+	// background so the diff stays legible at a glance.
+	ChangeTint bool
 
 	// Author is the reviewer's name for attribution in review-exchange
 	// conversations (comment replies); empty falls back to "reviewer".
@@ -82,6 +90,19 @@ type Model struct {
 
 	// images renders comment-thread image references (kitty/chafa/off).
 	images *ui.ImageRenderer
+
+	// syntaxOn is the runtime highlighting toggle (S cycles); changeColors
+	// picks red/green vs syntax for +/- lines; changeTint backs syntax-mode
+	// changes with a faint red/green background. contentCache holds fetched
+	// per-side file bytes; hlFileLines/hlHunkLines memoize whole-file and
+	// stitched-hunk highlight passes; hlFetched marks files already asked for.
+	syntaxOn     bool
+	changeColors string
+	changeTint   bool
+	contentCache map[string][]byte
+	hlFileLines  map[string][]string
+	hlHunkLines  map[string]map[int]string
+	hlFetched    map[int]bool
 
 	cursor  int // index into the current file's rows
 	top     int // first visible row (vertical scroll offset)
@@ -148,7 +169,7 @@ type Model struct {
 	// fetchContext is the cmd-injected fetcher (nil: unsupported source).
 	contextView  bool
 	contextRows  map[int][]diff.DisplayRow
-	fetchContext func(ctx context.Context, path string) ([]byte, error)
+	fetchContext func(ctx context.Context, path string, side diff.Side) ([]byte, error)
 
 	// rawPatch and exchangePath support review-exchange conversations: the
 	// literal diff for self-contained exports, and (when the session was
@@ -209,6 +230,13 @@ func New(cfg Config) *Model {
 		contextRows:    map[int][]diff.DisplayRow{},
 		fetchContext:   cfg.FetchContext,
 		images:         ui.NewImageRenderer(cfg.Images),
+		syntaxOn:       true,
+		changeColors:   cfg.ChangeColors,
+		changeTint:     cfg.ChangeTint,
+		contentCache:   map[string][]byte{},
+		hlFileLines:    map[string][]string{},
+		hlHunkLines:    map[string]map[int]string{},
+		hlFetched:      map[int]bool{},
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
@@ -219,6 +247,9 @@ func New(cfg Config) *Model {
 	if m.wrapWidth == 0 {
 		m.wrapWidth = 120
 	}
+	if m.changeColors == "" {
+		m.changeColors = changeColorsDiff
+	}
 	m.keymap = DefaultKeymap()
 	m.keymap.apply(cfg.Keys)
 	m.buildThreadIndex()
@@ -226,9 +257,9 @@ func New(cfg Config) *Model {
 	return m
 }
 
-// Init implements tea.Model. All data arrives fully loaded through Config, so
-// there is no startup command to run.
-func (m *Model) Init() tea.Cmd { return nil }
+// Init implements tea.Model. The only startup work is the optional
+// whole-file content fetch that upgrades syntax highlighting for file 0.
+func (m *Model) Init() tea.Cmd { return m.maybeFetchHighlight() }
 
 // SetExchangeWriteback makes every draft save also rewrite the review-exchange
 // file at path, keeping the on-disk conversation current without an explicit

@@ -72,6 +72,12 @@ para Vim/Neovim.
   para `--list`: el motor de descubrimiento (`gh` o `glab`), el filtro de
   búsqueda de respaldo, y un mapa de filtros con nombre seleccionables
   como `--list :name` / `--list engine:name`.
+- `change_colors` — cómo se colorean las líneas `+`/`-` con el resaltado
+  de sintaxis activo: `diff` (por defecto: rojo/verde clásico, sintaxis
+  solo en las líneas de contexto) o `syntax` (sintaxis en todas).
+- `change_tint` — con `change_colors: syntax`, respalda las líneas
+  cambiadas con un fondo tenue rojo/verde para que el diff siga siendo
+  legible de un vistazo (por defecto `true`).
 - `images` — renderizado de imágenes en comentarios: `auto` (protocolo
   kitty en kitty/ghostty, `chafa` si está instalado, desactivado en otro
   caso), `kitty`, `chafa` u `off`. Las URLs remotas nunca se descargan; se

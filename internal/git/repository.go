@@ -95,3 +95,13 @@ func (r *Repository) BlobID(ctx context.Context, rev, path string) (string, erro
 	}
 	return strings.TrimSpace(string(out)), nil
 }
+
+// MergeBase returns the merge base of two revisions — the old side of a
+// three-dot (base...HEAD) comparison.
+func (r *Repository) MergeBase(ctx context.Context, a, b string) (string, error) {
+	out, err := r.git(ctx, "merge-base", a, b)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
