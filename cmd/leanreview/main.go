@@ -23,8 +23,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
 	"os"
@@ -243,7 +248,10 @@ func run(argv []string) error {
 			log.Printf("file cache disabled: %v", ferr)
 		}
 		fetchImage = func(ctx context.Context, url string) ([]byte, error) {
-			key := "attachment-" + url
+			// Signed URLs rotate their query (JWT) on every rendering; the
+			// path is the asset's stable identity, so the cache key drops the
+			// query or the cache would miss every session.
+			key := "attachment-" + attachmentCacheKey(url)
 			if fcache != nil {
 				if data, ok := fcache.Get(key); ok {
 					return data, nil
@@ -251,7 +259,14 @@ func run(argv []string) error {
 			}
 			data, err := prSrc.Attachment(ctx, url)
 			if err != nil {
+				log.Printf("attachment %s: %v", url, err)
 				return nil, err
+			}
+			if !looksLikeImage(data) {
+				// An HTML viewer page or error body must never be cached and
+				// served as an "image" forever after.
+				log.Printf("attachment %s: response is not an image", url)
+				return nil, fmt.Errorf("attachment is not an image")
 			}
 			if fcache != nil {
 				if err := fcache.Put(key, data); err != nil {
@@ -694,4 +709,21 @@ func openLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+}
+
+// attachmentCacheKey strips the query string from an attachment URL: signed
+// URLs rotate their token on every rendering while the path identifies the
+// asset, so caching by full URL would never hit.
+func attachmentCacheKey(url string) string {
+	if i := strings.IndexByte(url, '?'); i >= 0 {
+		return url[:i]
+	}
+	return url
+}
+
+// looksLikeImage sniffs whether bytes decode as a supported raster image —
+// the guard that keeps HTML error pages out of the attachment cache.
+func looksLikeImage(data []byte) bool {
+	_, _, err := image.DecodeConfig(bytes.NewReader(data))
+	return err == nil
 }

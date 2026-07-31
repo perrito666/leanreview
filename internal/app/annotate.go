@@ -192,7 +192,10 @@ func imageRefs(body string) []string {
 func stripImageMarkup(body string) string {
 	body = imageRefAltRe.ReplaceAllString(body, "$1")
 	body = htmlImgRe.ReplaceAllStringFunc(body, func(tag string) string {
-		if m := htmlAltRe.FindStringSubmatch(tag); m != nil && m[1] != "" {
+		// GitHub stamps alt="Image" on every paste; repeating that above the
+		// image row (or its tag) is pure duplication — keep only alts that
+		// say something.
+		if m := htmlAltRe.FindStringSubmatch(tag); m != nil && m[1] != "" && !strings.EqualFold(m[1], "image") {
 			return "[" + m[1] + "]"
 		}
 		return ""
@@ -221,6 +224,13 @@ func (m *Model) imageRows(refs []string) []diff.DisplayRow {
 				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: "  [image: " + ref + suffix + "]"},
 				Annotation: true,
 			})
+		}
+		if !m.images.Enabled() {
+			// Say WHY it is a tag — "install chafa" is the fix most users
+			// need and would otherwise never learn from a bare tag.
+			suffix = " — no image renderer; install chafa or use kitty/ghostty"
+			tag()
+			continue
 		}
 		path := ref
 		if isRemoteRef(ref) {

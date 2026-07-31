@@ -106,3 +106,19 @@ func TestValidateFindsProblems(t *testing.T) {
 		t.Errorf("clean config reported problems: %v", got)
 	}
 }
+
+// TestAttachmentHelpers: cache keys drop rotating signatures; the image
+// sniff keeps HTML error pages out of the cache.
+func TestAttachmentHelpers(t *testing.T) {
+	if got := attachmentCacheKey("https://x/a/b.png?jwt=ROTATES"); got != "https://x/a/b.png" {
+		t.Errorf("key = %q", got)
+	}
+	if looksLikeImage([]byte("<!DOCTYPE html><html>nope</html>")) {
+		t.Errorf("HTML accepted as image")
+	}
+	// A real PNG header + minimal body decodes via DecodeConfig.
+	png := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89")
+	if !looksLikeImage(png) {
+		t.Errorf("PNG header rejected")
+	}
+}

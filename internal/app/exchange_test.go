@@ -224,8 +224,13 @@ func TestHTMLImageTagParsing(t *testing.T) {
 	if strings.Contains(clean, "<img") || strings.Contains(clean, "src=") {
 		t.Errorf("raw HTML leaked into display text: %q", clean)
 	}
-	if !strings.Contains(clean, "[Image]") {
-		t.Errorf("alt text lost: %q", clean)
+	// GitHub's default alt="Image" is dropped (the image row carries the
+	// information); meaningful alts survive.
+	if strings.Contains(clean, "[Image]") {
+		t.Errorf("generic alt should be dropped: %q", clean)
+	}
+	if got := stripImageMarkup(`<img alt="crash screenshot" src="https://x/y.png" />`); got != "[crash screenshot]" {
+		t.Errorf("meaningful alt lost: %q", got)
 	}
 	// Markdown form: alt kept, target stripped.
 	if got := stripImageMarkup("see ![shot](a/b.png) here"); got != "see [shot] here" {
