@@ -66,6 +66,16 @@ para Vim/Neovim.
 - `tab_width` — columnas a las que se expande un tab.
 - `context` — líneas de contexto unificado por defecto cuando no se pasa
   `-U`.
+- `keymap` — conjunto base de enlaces: un preajuste integrado (`default`,
+  `vim`, `vscode`, `sublime`, `intellij`) o el nombre de una entrada de
+  `keymaps`. Los preajustes superponen atajos familiares sobre los valores
+  por defecto (los terminales no pueden reportar todos los atajos de cada
+  editor, así que son supraconjuntos, no clones); `keys` y `sequences`
+  siguen teniendo prioridad.
+- `keymaps` — mapas de teclas con nombre definidos por el usuario,
+  `{ "<name>": { "keys": {…}, "sequences": […] } }`, cada uno superpuesto a
+  los valores por defecto al seleccionarlo. Los nombres de los preajustes
+  integrados están reservados.
 - `keys` — reasigna los enlaces de modo normal, `{ "<key>": "<action>" }`.
   Ver [Teclas](keys.md#remapping).
 - `sequences` — reasigna las secuencias de dos teclas, una lista de objetos

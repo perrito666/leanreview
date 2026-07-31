@@ -66,6 +66,16 @@ pour Vim/Neovim.
 - `tab_width` — nombre de colonnes vers lesquelles une tabulation s'étend.
 - `context` — nombre de lignes de contexte unifié par défaut quand `-U`
   n'est pas passé.
+- `keymap` — jeu de liaisons de base : un préréglage intégré (`default`,
+  `vim`, `vscode`, `sublime`, `intellij`) ou le nom d'une entrée de
+  `keymaps`. Les préréglages superposent des raccourcis familiers aux
+  valeurs par défaut (les terminaux ne peuvent pas rapporter tous les
+  raccourcis de chaque éditeur : ce sont des sur-ensembles, pas des
+  clones) ; `keys` et `sequences` gardent la priorité.
+- `keymaps` — jeux de touches nommés définis par l'utilisateur,
+  `{ "<name>": { "keys": {…}, "sequences": […] } }`, chacun superposé aux
+  valeurs par défaut quand il est sélectionné. Les noms des préréglages
+  intégrés sont réservés.
 - `keys` — remappe les liaisons du mode normal, `{ "<key>": "<action>" }`.
   Voir [Touches](keys.md#remapping).
 - `sequences` — remappe les séquences à deux touches, une liste d'objets
