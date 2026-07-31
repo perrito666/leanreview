@@ -77,6 +77,19 @@ kitty/ghostty, `chafa` cell art elsewhere (see the `images`
 attachments — including GitHub's HTML `<img>` embeds — are fetched through
 the forge's authentication and cached; other remote URLs stay as tags.
 
+![Example source photo](../screens/example-photo.png)
+
+*An image referenced from a review comment…*
+
+![The photo rendered inside the thread box](../screens/comment-image.svg)
+
+*…and the thread box rendering it as cell art via chafa.*
+
+![The same comment on ghostty, drawn via the kitty graphics protocol](../screens/comment-image-kitty.png)
+
+*The same comment on ghostty: the kitty graphics protocol draws the real
+photo inside the thread box.*
+
 ## Reviewing your notes
 
 `C` lists every draft; `Enter` jumps to one, `e` edits, `d` deletes.

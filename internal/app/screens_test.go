@@ -2,6 +2,7 @@ package app
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -101,6 +102,25 @@ func TestGenerateScreens(t *testing.T) {
 	// Help overlay (?).
 	m.mode = ModeHelp
 	write("help", m.View())
+
+	// A review thread carrying an image, rendered as chafa cell art — the
+	// docs' proof that comment screenshots show up inside the thread box.
+	// Skipped when chafa is not installed (the SVG then keeps its last state).
+	if _, err := exec.LookPath("chafa"); err == nil {
+		m = newModel()
+		m.width, m.height = 100, 32
+		m.images = ui.NewImageRenderer("chafa")
+		m.cursor = mustFindRow(t, m, diff.SideRight, 72)
+		loc, snip, _ := m.buildLocation()
+		id := m.draft.Add(loc, "The glitch is visible here:\n![garden](docs/screens/example-photo.png)", snip)
+		m.draft.Get(id).Author = "assistant"
+		if wd, err := os.Getwd(); err == nil {
+			// The ref is repo-root-relative; tests run in internal/app.
+			m.draft.Get(id).Body = "The glitch is visible here:\n![garden](" + filepath.Join(wd, "..", "..", "docs", "screens", "example-photo.png") + ")"
+		}
+		m.centerOnCursor()
+		write("comment-image", m.View())
+	}
 
 	// Discovery picker (--list).
 	p := &pickerModel{choice: -1, theme: ui.DefaultTheme(), entries: []forge.ListedRequest{

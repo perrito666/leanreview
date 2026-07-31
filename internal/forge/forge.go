@@ -146,6 +146,10 @@ type Forge interface {
 	// FileContent returns the raw content of path at rev (a commit id,
 	// typically the PR head) — the full-file context view's data source.
 	FileContent(ctx context.Context, ref PullRequestRef, path, rev string) ([]byte, error)
+	// GeneralComments lists the PR's conversation-level comments (GitHub
+	// issue comments, GitLab non-system notes), oldest first — review
+	// discussion that anchors to the request itself rather than a line.
+	GeneralComments(ctx context.Context, ref PullRequestRef) ([]Comment, error)
 	// Attachment fetches an image/file referenced from a comment body (an
 	// absolute attachment URL, or a host-relative /uploads path), using the
 	// adapter's authentication where the host requires it.

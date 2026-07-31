@@ -54,6 +54,14 @@ func (m *Model) maybeFetchImages() tea.Cmd {
 				collect(rp.Body)
 			}
 		}
+		// The p overlay shows the description and the conversation-level
+		// comments; their images must be fetched too, not just inline ones.
+		if m.pr.PR != nil {
+			collect(m.pr.PR.Body)
+		}
+		for _, c := range m.pr.General {
+			collect(c.Body)
+		}
 	}
 	var cmds []tea.Cmd
 	for url := range want {

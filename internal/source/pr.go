@@ -77,6 +77,11 @@ func (s *PRSource) Attachment(ctx context.Context, url string) ([]byte, error) {
 	return s.forge.Attachment(ctx, s.ref, url)
 }
 
+// GeneralComments fetches the PR's conversation-level comments.
+func (s *PRSource) GeneralComments(ctx context.Context) ([]forge.Comment, error) {
+	return s.forge.GeneralComments(ctx, s.ref)
+}
+
 // Threads fetches existing review threads for the PR.
 func (s *PRSource) Threads(ctx context.Context) ([]forge.Thread, error) {
 	return s.forge.Threads(ctx, s.ref)

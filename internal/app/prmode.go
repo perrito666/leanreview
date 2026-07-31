@@ -18,6 +18,9 @@ type PRContext struct {
 	Ref     forge.PullRequestRef
 	PR      *forge.PullRequest
 	Threads []forge.Thread
+	// General is the PR's conversation (non-inline) discussion, oldest
+	// first, shown in the PR details overlay below the description.
+	General []forge.Comment
 }
 
 // buildThreadIndex maps a location key to the indices of threads anchored there,
@@ -119,7 +122,12 @@ func writeThreadComment(b *strings.Builder, c forge.Comment) {
 		when = "  " + c.CreatedAt.Format("2006-01-02 15:04")
 	}
 	fmt.Fprintf(b, "  @%s%s\n", c.Author, when)
-	for _, line := range strings.Split(strings.TrimRight(c.Body, "\n"), "\n") {
+	// Image markup renders as a tag here — the reader is plain text; the
+	// inline annotation box is where the image itself is drawn.
+	for _, line := range strings.Split(strings.TrimRight(stripImageMarkup(c.Body), "\n"), "\n") {
 		b.WriteString("    " + line + "\n")
+	}
+	for _, ref := range imageRefs(c.Body) {
+		b.WriteString("    [image: " + ref + "]\n")
 	}
 }

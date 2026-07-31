@@ -25,7 +25,20 @@ func (m *Model) View() string {
 	if m.width == 0 || m.height == 0 {
 		return "loading…"
 	}
+	out := m.viewBody()
+	// Kitty image payloads must ride on output that actually reaches the
+	// terminal, and View is the only such place — viewBody just ran and may
+	// have enqueued transmissions, so drain them here. The escapes occupy
+	// zero cells (see ImageRenderer.TakeTransmissions for why not in rows).
+	if tx := m.images.TakeTransmissions(); tx != "" {
+		out = tx + out
+	}
+	return out
+}
 
+// viewBody renders the frame content for the current mode, without the
+// image-transmission preamble View adds.
+func (m *Model) viewBody() string {
 	switch m.mode {
 	case ModeHelp:
 		return m.frame(ui.HelpText())

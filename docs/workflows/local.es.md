@@ -84,6 +84,19 @@ adjuntos de comentarios — incluidos los `<img>` en HTML de GitHub — se
 descargan con la autenticación del forge y se guardan en caché; otras URLs
 remotas quedan como etiquetas.
 
+![Foto de ejemplo](../screens/example-photo.png)
+
+*Una imagen referenciada desde un comentario de revisión…*
+
+![La foto renderizada dentro de la caja del hilo](../screens/comment-image.svg)
+
+*…y la caja del hilo renderizándola como arte de celdas con chafa.*
+
+![El mismo comentario en ghostty, dibujado con el protocolo gráfico de kitty](../screens/comment-image-kitty.png)
+
+*El mismo comentario en ghostty: el protocolo gráfico de kitty dibuja la
+foto real dentro de la caja del hilo.*
+
 ## Revisar tus notas
 
 `C` lista todos los borradores; `Enter` salta a uno, `e` edita, `d` elimina.

@@ -89,12 +89,24 @@ internal/config     defaults <- config file <- environment
   (blob id / head+path); there is no in-place invalidation by design.
 - **Thread box.** All comments/threads on a line share one box, oldest
   first (`at` RFC 3339 sorts lexically). Image references render as
-  preformatted rows (`DisplayRow.Pre`) — kitty Unicode placeholders with a
-  one-shot payload transmission, chafa fallback, tag otherwise. Comment
-  bodies are scanned for both Markdown and HTML <img> image syntax (GitHub
-  pastes the latter); forge attachments fetch through the adapter's auth
-  (Forge.Attachment) once per URL into session files, cached by URL —
-  other remote URLs are never fetched.
+  preformatted rows (`DisplayRow.Pre`) — kitty Unicode placeholders, chafa
+  fallback, tag otherwise. Comment bodies are scanned for both Markdown and
+  HTML <img> image syntax (GitHub pastes the latter); forge attachments
+  fetch through the adapter's auth (Forge.Attachment) once per URL into
+  session files. The bodies scanned include the PR description and general
+  comments (the `p` overlay), not just inline threads.
+- **Kitty payload delivery.** The one-shot kitty payload transmission never
+  rides on rendered rows: rows are also built during update processing
+  (cursor clamping, layout math) where the strings are discarded, and a
+  payload emitted there dies unseen — images then only appear after a width
+  change. Renders enqueue; `ImageRenderer.TakeTransmissions` drains at the
+  top of `Model.View`, the only output guaranteed to reach the terminal.
+- **Attachment disk cache is content-addressed only.** `attachmentCacheKey`
+  returns "" (no caching) unless the URL is content-addressed: signed
+  GitHub user-images, user-attachments assets, GitLab `/uploads/` secrets,
+  or a 40-hex commit-pinned path. A branch-addressed raw URL keeps its path
+  while the branch moves, so caching it by URL serves last session's image.
+  Signed URLs cache by path only — their query token rotates per render.
 - **Two-pass syntax highlighting.** Whole-file passes per side
   (`Highlighter.ContentLines`): deletions index the old-file pass,
   everything else the new — that is what makes multi-line constructs color

@@ -27,6 +27,17 @@ autor, ramas, URL, y la descripción renderizada como Markdown con estilo.
 
 ![Superposición de detalles del PR](../screens/pr-overlay.svg)
 
+Debajo de la descripción, la superposición lista la **conversación** del
+PR — los comentarios generales anclados a la solicitud y no a una línea —
+del más antiguo al más reciente, con autores y fechas. Las imágenes
+adjuntas a la descripción o a los comentarios de conversación se
+renderizan directamente en la superposición.
+
+![La conversación en la superposición, con su imagen renderizada](../screens/pr-overlay-kitty.png)
+
+*Un comentario general de conversación con una foto, dibujada en la
+superposición en ghostty mediante el protocolo gráfico de kitty.*
+
 ## Hilos y respuestas
 
 Los hilos de revisión existentes aparecen como marcadores `◆` en la

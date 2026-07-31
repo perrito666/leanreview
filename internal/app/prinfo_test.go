@@ -1,8 +1,10 @@
 package app
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/ui"
@@ -125,5 +127,51 @@ func TestPRInfoFallsBackToRefURL(t *testing.T) {
 	m.openPRInfo()
 	if out := m.View(); !strings.Contains(out, "https://github.com/o/r/pull/7") {
 		t.Errorf("overlay should derive a URL from the ref:\n%s", out)
+	}
+}
+
+// TestPRInfoShowsConversation: general (non-inline) PR comments — previously
+// invisible in the TUI — appear below the description, oldest first.
+func TestPRInfoShowsConversation(t *testing.T) {
+	m := prInfoModel(t, &forge.PullRequest{Title: "with talk", Body: "desc"})
+	m.pr.General = []forge.Comment{
+		{Author: "alice", Body: "first general point", CreatedAt: time.Date(2026, 7, 1, 10, 0, 0, 0, time.UTC)},
+		{Author: "bob", Body: `second, with <img width="416" alt="Image" src="https://x/i.png" />`, CreatedAt: time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)},
+	}
+	m.openPRInfo()
+	out := m.View()
+	for _, want := range []string{"Conversation (2)", "@alice", "first general point", "@bob"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("overlay missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Index(out, "@alice") > strings.Index(out, "@bob") {
+		t.Errorf("conversation not oldest-first")
+	}
+	// The raw markup never reaches the reader; an image tag (or the image
+	// itself, once fetched) takes its place.
+	if strings.Contains(out, "<img") {
+		t.Errorf("raw <img> tag leaked into the overlay:\n%s", out)
+	}
+	if !strings.Contains(out, "[image: https://x/i.png") {
+		t.Errorf("overlay missing the image tag line:\n%s", out)
+	}
+}
+
+// TestOverlayImagesAreFetched: the p overlay's bodies — the description and
+// the general conversation — feed the attachment fetcher, exactly like
+// inline threads do; before this, their images stayed unfetched tags forever.
+func TestOverlayImagesAreFetched(t *testing.T) {
+	m := prInfoModel(t, &forge.PullRequest{Title: "t", Body: "intro ![d](https://x/desc.png)"})
+	m.images = ui.NewImageRenderer("kitty")
+	m.fetchImage = func(ctx context.Context, url string) ([]byte, error) { return nil, nil }
+	m.pr.General = []forge.Comment{{Author: "a", Body: `<img alt="Image" src="https://x/gen.png" />`}}
+	if cmd := m.maybeFetchImages(); cmd == nil {
+		t.Fatalf("no fetch scheduled for overlay images")
+	}
+	for _, url := range []string{"https://x/desc.png", "https://x/gen.png"} {
+		if !m.imagePending[url] {
+			t.Errorf("%s not requested", url)
+		}
 	}
 }

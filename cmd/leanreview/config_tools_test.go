@@ -107,11 +107,27 @@ func TestValidateFindsProblems(t *testing.T) {
 	}
 }
 
-// TestAttachmentHelpers: cache keys drop rotating signatures; the image
-// sniff keeps HTML error pages out of the cache.
+// TestAttachmentHelpers: only content-addressed URLs get cache keys (with
+// rotating signatures dropped) — a branch-addressed raw URL keeps its path
+// while the content changes, so caching it serves a stale image from a
+// previous session. The image sniff keeps HTML error pages out of the cache.
 func TestAttachmentHelpers(t *testing.T) {
-	if got := attachmentCacheKey("https://x/a/b.png?jwt=ROTATES"); got != "https://x/a/b.png" {
-		t.Errorf("key = %q", got)
+	signed := "https://private-user-images.githubusercontent.com/123/456-uuid.png"
+	if got := attachmentCacheKey(signed + "?jwt=ROTATES"); got != signed {
+		t.Errorf("signed asset key = %q", got)
+	}
+	if got := attachmentCacheKey("https://github.com/user-attachments/assets/900ae85f-1"); got == "" {
+		t.Errorf("user-attachments asset should be cacheable")
+	}
+	if got := attachmentCacheKey("https://gitlab.com/o/r/uploads/abc123/shot.png"); got == "" {
+		t.Errorf("gitlab upload (secret-addressed) should be cacheable")
+	}
+	sha := strings.Repeat("0123456789", 4)
+	if got := attachmentCacheKey("https://raw.githubusercontent.com/o/r/" + sha + "/img.png"); got == "" {
+		t.Errorf("commit-pinned raw URL should be cacheable")
+	}
+	if got := attachmentCacheKey("https://raw.githubusercontent.com/o/r/some-branch/img.png"); got != "" {
+		t.Errorf("branch-addressed raw URL must NOT be cached, key = %q", got)
 	}
 	if looksLikeImage([]byte("<!DOCTYPE html><html>nope</html>")) {
 		t.Errorf("HTML accepted as image")

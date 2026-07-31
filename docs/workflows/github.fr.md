@@ -27,6 +27,17 @@ auteur, branches, URL, et la description rendue en Markdown stylisé.
 
 ![PR details overlay](../screens/pr-overlay.svg)
 
+Sous la description, le panneau liste la **conversation** de la PR — les
+commentaires généraux rattachés à la demande plutôt qu'à une ligne — du
+plus ancien au plus récent, avec auteurs et horodatages. Les images
+jointes à la description ou aux commentaires de conversation sont rendues
+directement dans le panneau.
+
+![La conversation dans le panneau, avec son image rendue](../screens/pr-overlay-kitty.png)
+
+*Un commentaire général de conversation portant une photo, dessinée dans
+le panneau sur ghostty via le protocole graphique kitty.*
+
 ## Fils de discussion et réponses
 
 Les fils de discussion de revue existants apparaissent comme des marqueurs
