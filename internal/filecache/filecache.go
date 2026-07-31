@@ -10,7 +10,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"time"
 )
 
@@ -117,7 +117,7 @@ func (c *Cache) cleanup(now time.Time) {
 	if total <= MaxBytes {
 		return
 	}
-	sort.Slice(files, func(i, j int) bool { return files[i].mod.Before(files[j].mod) })
+	slices.SortFunc(files, func(a, b entry) int { return a.mod.Compare(b.mod) })
 	for _, f := range files {
 		if total <= MaxBytes {
 			break

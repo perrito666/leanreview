@@ -34,10 +34,11 @@ import (
 	"io"
 	"iter"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -455,11 +456,7 @@ func resolveListQuery(cfg config.Config, args []string) (engine, filter string, 
 					if len(cfg.ListFilters) == 0 {
 						return "", "", fmt.Errorf("no named filters configured (add a %q map to the config file)", "list_filters")
 					}
-					names := make([]string, 0, len(cfg.ListFilters))
-					for n := range cfg.ListFilters {
-						names = append(names, n)
-					}
-					sort.Strings(names)
+					names := slices.Sorted(maps.Keys(cfg.ListFilters))
 					return "", "", fmt.Errorf("unknown filter name %q (available: %s)", name, strings.Join(names, ", "))
 				}
 				filter = f
@@ -498,11 +495,7 @@ func runList(ctx context.Context, cfg config.Config, opts options) (string, erro
 
 	mk, ok := listEngines[engine]
 	if !ok {
-		names := make([]string, 0, len(listEngines))
-		for n := range listEngines {
-			names = append(names, n)
-		}
-		sort.Strings(names)
+		names := slices.Sorted(maps.Keys(listEngines))
 		return "", fmt.Errorf("unknown list engine %q (available: %s)", engine, strings.Join(names, ", "))
 	}
 

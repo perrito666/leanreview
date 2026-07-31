@@ -2,7 +2,9 @@ package review
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -37,7 +39,7 @@ func (s *Store) Path(key string) string {
 func (s *Store) Load(key string) (*DraftReview, error) {
 	data, err := os.ReadFile(s.Path(key))
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("read draft: %w", err)
@@ -83,7 +85,7 @@ func (s *Store) Save(d *DraftReview) error {
 // Delete removes a draft file if present.
 func (s *Store) Delete(key string) error {
 	err := os.Remove(s.Path(key))
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	return nil

@@ -3,7 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/perrito666/leanreview/internal/diff"
@@ -59,7 +59,7 @@ func (m *Model) buildLocation() (diff.Location, string, error) {
 	}
 
 	sorted := append([]int(nil), nums...)
-	sort.Ints(sorted)
+	slices.Sort(sorted)
 	if sorted[len(sorted)-1]-sorted[0]+1 != len(sorted) {
 		return diff.Location{}, "", errors.New("cannot comment on this selection: the lines are not a continuous range")
 	}
