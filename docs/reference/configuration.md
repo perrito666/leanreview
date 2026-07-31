@@ -66,6 +66,9 @@ for Vim/Neovim setup.
 - `list_engine` / `list_filter` / `list_filters` — defaults for `--list`:
   the discovery engine (`gh` or `glab`), the fallback search filter, and a
   map of named filters selectable as `--list :name` / `--list engine:name`.
+- `images` — comment-image rendering: `auto` (kitty graphics on
+  kitty/ghostty, `chafa` when installed, off otherwise), `kitty`, `chafa`,
+  or `off`. Remote URLs are never fetched; they render as tags.
 - `author` — the name attributed to your replies in
   [review-exchange conversations](exchange-format.md) (default: `$USER`).
 - `wrap` / `wrap_width` — wrapping of long diff lines and comment previews
@@ -82,6 +85,7 @@ for Vim/Neovim setup.
 | `LEANREVIEW_SYNTAX=0` | disable syntax highlighting |
 | `NO_COLOR` | disable all color (mono theme) |
 | `LEANREVIEW_AUTHOR` | reply attribution name (overrides `author`) |
+| `LEANREVIEW_IMAGES` | image rendering backend (overrides `images`) |
 | `LEANREVIEW_LOG` | log file path |
 
 ## State on disk

@@ -17,6 +17,7 @@ func HelpText() string {
 
  View
    t             toggle unified / split
+   T             toggle full file context around the diff
    w             toggle line / comment wrapping
    i             toggle inline comment previews
    \             toggle changed-files sidebar
