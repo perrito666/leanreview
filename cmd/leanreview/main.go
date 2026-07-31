@@ -34,6 +34,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -240,7 +241,7 @@ func run(argv []string) error {
 
 	// Attachment fetcher: comment images (GitHub user-attachments, GitLab
 	// uploads) resolved through the forge's authentication, cached on disk
-	// by URL — the URL is the content identity for attachment links.
+	// only when the URL is content-addressed (see attachmentCacheKey).
 	var fetchImage func(context.Context, string) ([]byte, error)
 	if prSrc != nil {
 		fcache, ferr := filecache.Open()
@@ -248,11 +249,13 @@ func run(argv []string) error {
 			log.Printf("file cache disabled: %v", ferr)
 		}
 		fetchImage = func(ctx context.Context, url string) ([]byte, error) {
-			// Signed URLs rotate their query (JWT) on every rendering; the
-			// path is the asset's stable identity, so the cache key drops the
-			// query or the cache would miss every session.
-			key := "attachment-" + attachmentCacheKey(url)
-			if fcache != nil {
+			// Mutable URLs (branch-addressed raw files) get no cache entry at
+			// all — see attachmentCacheKey for why.
+			key := ""
+			if ck := attachmentCacheKey(url); ck != "" {
+				key = "attachment-" + ck
+			}
+			if key != "" && fcache != nil {
 				if data, ok := fcache.Get(key); ok {
 					return data, nil
 				}
@@ -268,7 +271,7 @@ func run(argv []string) error {
 				log.Printf("attachment %s: response is not an image", url)
 				return nil, fmt.Errorf("attachment is not an image")
 			}
-			if fcache != nil {
+			if key != "" && fcache != nil {
 				if err := fcache.Put(key, data); err != nil {
 					log.Printf("file cache put: %v", err)
 				}
@@ -716,14 +719,33 @@ func openLogFile(path string) (*os.File, error) {
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 }
 
-// attachmentCacheKey strips the query string from an attachment URL: signed
-// URLs rotate their token on every rendering while the path identifies the
-// asset, so caching by full URL would never hit.
+// commitPinnedRe matches a 40-hex path segment — a URL addressing content at
+// a specific commit, which can never change.
+var commitPinnedRe = regexp.MustCompile(`/[0-9a-f]{40}/`)
+
+// attachmentCacheKey derives a disk-cache key for an attachment URL, or ""
+// when the URL must not be cached at all. Only content-addressed URLs are
+// safe: forge asset stores (signed GitHub user-images, upload secrets) and
+// commit-pinned paths. A branch-addressed raw URL keeps its path while the
+// branch moves under it, so caching it by URL serves stale bytes from a
+// previous session — the image the user reviewed last week, not this one.
+// For the cacheable signed URLs the query is stripped: the token rotates on
+// every rendering while the path identifies the asset, so caching by full
+// URL would never hit.
 func attachmentCacheKey(url string) string {
-	if i := strings.IndexByte(url, '?'); i >= 0 {
-		return url[:i]
+	base := url
+	if i := strings.IndexByte(base, '?'); i >= 0 {
+		base = base[:i]
 	}
-	return url
+	switch {
+	case strings.Contains(base, "private-user-images.githubusercontent.com/"),
+		strings.Contains(base, "/user-attachments/assets/"),
+		strings.Contains(base, "objects.githubusercontent.com/"),
+		strings.Contains(base, "/uploads/"),
+		commitPinnedRe.MatchString(base):
+		return base
+	}
+	return ""
 }
 
 // looksLikeImage sniffs whether bytes decode as a supported raster image —

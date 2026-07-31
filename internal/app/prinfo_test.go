@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -135,7 +136,7 @@ func TestPRInfoShowsConversation(t *testing.T) {
 	m := prInfoModel(t, &forge.PullRequest{Title: "with talk", Body: "desc"})
 	m.pr.General = []forge.Comment{
 		{Author: "alice", Body: "first general point", CreatedAt: time.Date(2026, 7, 1, 10, 0, 0, 0, time.UTC)},
-		{Author: "bob", Body: "second, with ![shot](https://x/i.png)", CreatedAt: time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)},
+		{Author: "bob", Body: `second, with <img width="416" alt="Image" src="https://x/i.png" />`, CreatedAt: time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)},
 	}
 	m.openPRInfo()
 	out := m.View()
@@ -146,5 +147,31 @@ func TestPRInfoShowsConversation(t *testing.T) {
 	}
 	if strings.Index(out, "@alice") > strings.Index(out, "@bob") {
 		t.Errorf("conversation not oldest-first")
+	}
+	// The raw markup never reaches the reader; an image tag (or the image
+	// itself, once fetched) takes its place.
+	if strings.Contains(out, "<img") {
+		t.Errorf("raw <img> tag leaked into the overlay:\n%s", out)
+	}
+	if !strings.Contains(out, "[image: https://x/i.png") {
+		t.Errorf("overlay missing the image tag line:\n%s", out)
+	}
+}
+
+// TestOverlayImagesAreFetched: the p overlay's bodies — the description and
+// the general conversation — feed the attachment fetcher, exactly like
+// inline threads do; before this, their images stayed unfetched tags forever.
+func TestOverlayImagesAreFetched(t *testing.T) {
+	m := prInfoModel(t, &forge.PullRequest{Title: "t", Body: "intro ![d](https://x/desc.png)"})
+	m.images = ui.NewImageRenderer("kitty")
+	m.fetchImage = func(ctx context.Context, url string) ([]byte, error) { return nil, nil }
+	m.pr.General = []forge.Comment{{Author: "a", Body: `<img alt="Image" src="https://x/gen.png" />`}}
+	if cmd := m.maybeFetchImages(); cmd == nil {
+		t.Fatalf("no fetch scheduled for overlay images")
+	}
+	for _, url := range []string{"https://x/desc.png", "https://x/gen.png"} {
+		if !m.imagePending[url] {
+			t.Errorf("%s not requested", url)
+		}
 	}
 }

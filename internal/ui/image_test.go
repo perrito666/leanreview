@@ -50,15 +50,14 @@ func TestKittyPlaceholderStructure(t *testing.T) {
 	if !ok || len(lines) == 0 {
 		t.Fatalf("kitty render failed")
 	}
-	// First render carries the one-shot transmission with the protocol keys.
-	first := lines[0]
-	for _, want := range []string{"\x1b_G", "f=100", "U=1", "q=2", "a=T"} {
-		if !strings.Contains(first, want) {
-			t.Errorf("transmission missing %q", want)
-		}
-	}
-	// Every row is placeholder cells addressed by row/col diacritics.
+	// Rows carry only placeholder cells — never the payload transmission.
+	// Rows are also built during update processing where the strings are
+	// discarded; a payload embedded there would die unseen (the "image only
+	// appears after resizing" bug).
 	for i, ln := range lines {
+		if strings.Contains(ln, "\x1b_G") {
+			t.Errorf("row %d embeds the payload transmission", i)
+		}
 		if !strings.ContainsRune(ln, kittyPlaceholder) {
 			t.Errorf("row %d has no placeholder cells", i)
 		}
@@ -71,14 +70,23 @@ func TestKittyPlaceholderStructure(t *testing.T) {
 		t.Errorf("40x10 image rendered %d rows; aspect ignored", len(lines))
 	}
 
-	// Second render must NOT retransmit the payload — repaints would flood
-	// the terminal otherwise.
+	// The payload arrives once via the View-side drain, then never again —
+	// repaints would flood the terminal otherwise.
+	tx := r.TakeTransmissions()
+	for _, want := range []string{"\x1b_G", "f=100", "U=1", "q=2", "a=T"} {
+		if !strings.Contains(tx, want) {
+			t.Errorf("transmission missing %q", want)
+		}
+	}
+	if again := r.TakeTransmissions(); again != "" {
+		t.Errorf("payload drained twice")
+	}
 	again, ok := r.Render(path, 20, 12)
 	if !ok {
 		t.Fatalf("second render failed")
 	}
-	if strings.Contains(again[0], "\x1b_G") {
-		t.Errorf("payload retransmitted on repaint")
+	if r.TakeTransmissions() != "" {
+		t.Errorf("cached re-render enqueued a new transmission")
 	}
 	if len(again) != len(lines) {
 		t.Errorf("row count changed between renders")

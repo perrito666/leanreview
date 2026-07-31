@@ -78,7 +78,8 @@ func (m *Model) prInfoView() string {
 	if strings.TrimSpace(pr.Body) == "" {
 		lines = append(lines, m.theme.Faint.Render("(no description)"))
 	} else {
-		lines = append(lines, ui.RenderMarkdown(pr.Body, w, m.theme)...)
+		lines = append(lines, ui.RenderMarkdown(stripImageMarkup(pr.Body), w, m.theme)...)
+		lines = append(lines, m.imageLines(pr.Body, w)...)
 	}
 
 	// The PR's conversation-level discussion, oldest first — the part of a
@@ -93,7 +94,8 @@ func (m *Model) prInfoView() string {
 				when = "  " + c.CreatedAt.Format("2006-01-02 15:04")
 			}
 			lines = append(lines, "", m.theme.Key.Render("@"+c.Author)+m.theme.Faint.Render(when))
-			lines = append(lines, ui.RenderMarkdown(c.Body, w, m.theme)...)
+			lines = append(lines, ui.RenderMarkdown(stripImageMarkup(c.Body), w, m.theme)...)
+			lines = append(lines, m.imageLines(c.Body, w)...)
 		}
 	}
 
@@ -111,6 +113,44 @@ func (m *Model) prInfoView() string {
 		lines = lines[:h]
 	}
 	return strings.Join(lines, "\n")
+}
+
+// imageLines renders a body's image references for the overlay — real cell
+// art when the attachment is local (or already fetched) and a renderer is
+// active, a textual tag otherwise. It mirrors imageRows but yields plain
+// lines: overlays are line-oriented, not diff-row-oriented. The body text
+// itself goes through stripImageMarkup, so these lines are the only place
+// the image appears.
+func (m *Model) imageLines(body string, w int) []string {
+	var out []string
+	for _, ref := range imageRefs(body) {
+		tag := func(suffix string) {
+			out = append(out, m.theme.Faint.Render("[image: "+ref+suffix+"]"))
+		}
+		if !m.images.Enabled() {
+			tag(" — no image renderer; install chafa or use kitty/ghostty")
+			continue
+		}
+		path := ref
+		if isRemoteRef(ref) {
+			local := m.imageFiles[ref]
+			if local == "" {
+				if m.imagePending[ref] {
+					tag(" (fetching…)")
+				} else {
+					tag("")
+				}
+				continue
+			}
+			path = local
+		}
+		if lines, ok := m.images.Render(path, w-2, 12); ok {
+			out = append(out, lines...)
+		} else {
+			tag("")
+		}
+	}
+	return out
 }
 
 // forgeName is the short badge for the forge hosting the current PR ("gh",

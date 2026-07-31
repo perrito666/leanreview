@@ -91,16 +91,26 @@ func (r *ImageRenderer) Render(path string, maxCols, maxRows int) ([]string, boo
 	if len(lines) == 0 {
 		return nil, false
 	}
-	if tx, ok := r.pendingTx[key]; ok {
-		// Prepend the one-shot payload transmission to the first row of the
-		// first frame that shows this image; later frames reuse bare
-		// placeholders.
-		delete(r.pendingTx, key)
-		out := append([]string(nil), lines...)
-		out[0] = tx + out[0]
-		return out, true
-	}
 	return lines, true
+}
+
+// TakeTransmissions returns (and clears) the pending kitty payload
+// transmissions. It must be called from the code path whose output is
+// guaranteed to reach the terminal — the top of View — never from row
+// construction: rows are also built during update processing (cursor
+// clamping, layout math) where the strings are discarded, and a payload
+// emitted there dies unseen, leaving images invisible until an unrelated
+// width change forces a re-render.
+func (r *ImageRenderer) TakeTransmissions() string {
+	if len(r.pendingTx) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for key, tx := range r.pendingTx {
+		b.WriteString(tx)
+		delete(r.pendingTx, key)
+	}
+	return b.String()
 }
 
 // renderChafa shells out for symbol art. chafa's output rows are plain ANSI
