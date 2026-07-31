@@ -51,6 +51,7 @@ Press `?` inside the TUI for this reference at any time.
 | Key | Action |
 | --- | --- |
 | `p` (or `:pr`) | PR details: title, description, link |
+| `P` | general conversation: browse, reply, add (drafts post on submit) |
 | `s` | submit review (confirmation screen) |
 
 ## Commands

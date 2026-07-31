@@ -16,6 +16,9 @@ func (f *fakeForge) Attachment(context.Context, forge.PullRequestRef, string) ([
 	return nil, nil
 }
 
+func (f *fakeForge) AddGeneralComment(context.Context, forge.PullRequestRef, string) (*forge.Comment, error) {
+	return nil, nil
+}
 func (f *fakeForge) GeneralComments(context.Context, forge.PullRequestRef) ([]forge.Comment, error) {
 	return nil, nil
 }

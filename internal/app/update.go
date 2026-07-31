@@ -93,6 +93,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case ModeConvo:
 		return m, m.handleConvoKey(key)
+	case ModeGeneral:
+		return m, m.handleGeneralKey(key)
 	}
 
 	cmd, ready := m.pending.Feed(key, m.keymap, m.sequences)
@@ -219,6 +221,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.mode = ModeHelp
 	case "pr-info":
 		m.openPRInfo()
+	case "general":
+		m.openGeneral()
 	case "delete-comment":
 		m.deleteCommentUnderCursor()
 	case "dismiss":
@@ -429,6 +433,29 @@ func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 	}
 	if strings.TrimSpace(body) == "" {
 		m.setStatus("comment discarded (empty)")
+		return nil
+	}
+	if pe.editSummary {
+		m.draft.Summary = body
+		m.saveDraft()
+		m.mode = ModeConfirm
+		m.setStatus("review summary updated")
+		return nil
+	}
+	if pe.editingGeneral != "" {
+		if g := m.draft.GetGeneral(pe.editingGeneral); g != nil {
+			g.Body = body
+			m.saveDraft()
+			m.setStatus("general draft updated")
+		}
+		m.mode = ModeGeneral
+		return nil
+	}
+	if pe.general {
+		m.draft.AddGeneral(body, pe.generalQuote)
+		m.saveDraft()
+		m.mode = ModeGeneral
+		m.setStatus("general comment staged (posts on submit)")
 		return nil
 	}
 	if pe.replyToLocal != "" {
@@ -706,6 +733,8 @@ func (m *Model) handleConfirmKey(key string) tea.Cmd {
 	case "R":
 		m.pendingEvent = forge.EventRequestChanges
 		m.draft.Event = forge.EventRequestChanges
+	case "g":
+		return m.startSummaryEdit()
 	case "esc", "n", "q":
 		m.mode = ModeNormal
 		m.setStatus("submission cancelled")

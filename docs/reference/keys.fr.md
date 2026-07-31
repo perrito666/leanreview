@@ -51,6 +51,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | Touche | Action |
 | --- | --- |
 | `p` (ou `:pr`) | détails de la PR : titre, description, lien |
+| `P` | conversation générale : parcourir, répondre, ajouter (les brouillons partent à l'envoi) |
 | `s` | soumettre la revue (écran de confirmation) |
 
 ## Commandes

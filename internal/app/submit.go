@@ -109,6 +109,7 @@ func (m *Model) beginSubmit(event forge.ReviewEvent) {
 type submitCounts struct {
 	NewComments int // submittable line comments (active, non-reply)
 	Replies     int
+	General     int // staged conversation-level comments
 	Orphaned    int // non-reply comments with no valid location; not submitted
 	Dismissed   int // comments a human rejected; kept locally, never submitted
 }
@@ -131,6 +132,7 @@ func (m *Model) submitCounts() submitCounts {
 			c.NewComments++
 		}
 	}
+	c.General = len(m.draft.General)
 	return c
 }
 
@@ -139,10 +141,11 @@ func (m *Model) submitCounts() submitCounts {
 // created, a later reply refused) it holds everything already posted, so
 // those drafts are cleared and a retry cannot duplicate them.
 type submitResultMsg struct {
-	review  *forge.SubmittedReview
-	replies int
-	done    []string // draft ids confirmed posted (removed even when err is set)
-	err     error
+	review   *forge.SubmittedReview
+	replies  int
+	generals int
+	done     []string // draft ids confirmed posted (removed even when err is set)
+	err      error
 }
 
 // doSubmit builds the network command that submits the review and posts replies.
@@ -187,7 +190,12 @@ func (m *Model) doSubmit() tea.Cmd {
 		newComments = append(newComments, toReviewComment(*cm))
 	}
 
-	if len(newComments) == 0 && len(replies) == 0 && event == forge.EventComment && summary == "" {
+	var generals []struct{ body, id string }
+	for _, g := range m.draft.General {
+		generals = append(generals, struct{ body, id string }{g.Body, g.LocalID})
+	}
+
+	if len(newComments) == 0 && len(replies) == 0 && len(generals) == 0 && event == forge.EventComment && summary == "" {
 		m.setStatus("nothing to submit")
 		return nil
 	}
@@ -219,6 +227,16 @@ func (m *Model) doSubmit() tea.Cmd {
 			}
 			msg.done = append(msg.done, r.id)
 			msg.replies++
+		}
+		// General comments post individually too, with the same
+		// record-as-you-go bookkeeping so retries never duplicate.
+		for _, g := range generals {
+			if _, err := f.AddGeneralComment(ctx, ref, g.body); err != nil {
+				msg.err = fmt.Errorf("a general comment failed to post (kept as a draft): %w", err)
+				return msg
+			}
+			msg.done = append(msg.done, g.id)
+			msg.generals++
 		}
 		return msg
 	}

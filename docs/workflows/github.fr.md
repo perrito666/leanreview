@@ -38,6 +38,20 @@ directement dans le panneau.
 *Un commentaire général de conversation portant une photo, dessinée dans
 le panneau sur ghostty via le protocole graphique kitty.*
 
+## La conversation générale
+
+`P` ouvre la conversation dans son propre écran : `j`/`k` sélectionnent un
+commentaire, `r`/`Enter` répond, `a` ajoute un commentaire général. Les
+conversations des deux forges sont plates : une réponse est donc un
+nouveau commentaire pré-rempli d'une citation Markdown de ce à quoi il
+répond. Tout ce que vous écrivez est mis en brouillon — marqué *(draft —
+posts on submit)*, modifiable avec `e` et supprimable avec `d` — et part
+à l'envoi de la revue.
+
+Sur l'écran d'envoi, `g` rédige le **résumé de la revue** — le commentaire
+général attaché à la revue elle-même (le corps de la review sur GitHub, la
+note d'ouverture sur GitLab).
+
 ## Fils de discussion et réponses
 
 Les fils de discussion de revue existants apparaissent comme des marqueurs

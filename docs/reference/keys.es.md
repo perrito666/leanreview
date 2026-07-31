@@ -52,6 +52,7 @@ momento.
 | Tecla | Acción |
 | --- | --- |
 | `p` (o `:pr`) | detalles del PR: título, descripción, enlace |
+| `P` | conversación general: navegar, responder, añadir (los borradores se publican al enviar) |
 | `s` | enviar revisión (pantalla de confirmación) |
 
 ## Comandos

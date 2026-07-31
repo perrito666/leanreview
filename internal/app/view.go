@@ -54,6 +54,8 @@ func (m *Model) viewBody() string {
 		return m.frame(m.prInfoView())
 	case ModeConvo:
 		return m.frame(m.convoView())
+	case ModeGeneral:
+		return m.frame(m.generalView())
 	}
 
 	if len(m.files) == 0 {
@@ -510,7 +512,12 @@ func (m *Model) confirmView() string {
 	if m.prActive() {
 		b.WriteString(fmt.Sprintf("  Pull request: %s/%s#%d\n", m.pr.Ref.Owner, m.pr.Ref.Repo, m.pr.Ref.Number))
 	}
-	b.WriteString(fmt.Sprintf("  %d new comment(s), %d repl(y/ies)\n", c.NewComments, c.Replies))
+	b.WriteString(fmt.Sprintf("  %d new comment(s), %d repl(y/ies), %d general comment(s)\n", c.NewComments, c.Replies, c.General))
+	if s := strings.TrimSpace(m.draft.Summary); s != "" {
+		b.WriteString("  Review summary: " + firstLine(s) + "\n")
+	} else {
+		b.WriteString(m.theme.Faint.Render("  Review summary: (none — press g to write one)") + "\n")
+	}
 	if c.Orphaned > 0 {
 		b.WriteString(fmt.Sprintf("  ⚠ %d orphaned comment(s) (location lost after a head change) will NOT be\n    submitted — reposition them first (they remain saved as drafts)\n", c.Orphaned))
 	}
@@ -518,7 +525,7 @@ func (m *Model) confirmView() string {
 	b.WriteString(eventLine("c", "Comment", m.pendingEvent == forge.EventComment))
 	b.WriteString(eventLine("a", "Approve", m.pendingEvent == forge.EventApprove))
 	b.WriteString(eventLine("R", "Request changes", m.pendingEvent == forge.EventRequestChanges))
-	b.WriteString("\n  Press y to submit, c/a/R to change the event, esc to cancel.\n")
+	b.WriteString("\n  Press y to submit, c/a/R to change the event, g to edit the review\n  summary, esc to cancel.\n")
 	return b.String()
 }
 

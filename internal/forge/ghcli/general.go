@@ -21,6 +21,22 @@ type issueCommentJSON struct {
 	HTMLURL   string                 `json:"html_url"`
 }
 
+// AddGeneralComment posts a conversation-level comment through the issues
+// endpoint — the API surface general PR comments actually live on.
+func (c *Client) AddGeneralComment(ctx context.Context, ref forge.PullRequestRef, body string) (*forge.Comment, error) {
+	path := fmt.Sprintf("repos/%s/issues/%d/comments", repoPath(ref), ref.Number)
+	payload, _ := json.Marshal(map[string]string{"body": body})
+	out, err := c.run(ctx, payload, apiArgs(ref, path, "--method", "POST", "--input", "-")...)
+	if err != nil {
+		return nil, err
+	}
+	var ic issueCommentJSON
+	if err := json.Unmarshal(out, &ic); err != nil {
+		return nil, fmt.Errorf("decode general comment: %w", err)
+	}
+	return &forge.Comment{ID: ic.ID, Author: ic.User.Login, Body: ic.Body, CreatedAt: ic.CreatedAt}, nil
+}
+
 // GeneralComments lists the PR's conversation comments. GitHub models them
 // as issue comments — a PR is an issue with code attached — so this is the
 // issues endpoint, not pulls.

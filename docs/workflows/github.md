@@ -36,6 +36,19 @@ to conversation comments render right in the overlay.
 *A general conversation comment carrying a photo, drawn in the overlay on
 ghostty via the kitty graphics protocol.*
 
+## The general conversation
+
+`P` opens the conversation as its own screen: `j`/`k` select a comment,
+`r`/`Enter` reply, `a` adds a fresh general comment. Both forges'
+conversations are flat, so a reply is a new comment prefilled with a
+Markdown quote of what it answers. Everything you write is staged as a
+draft — marked *(draft — posts on submit)*, editable with `e` and deletable
+with `d` — and posts when you submit the review.
+
+On the submission screen, `g` writes the **review summary** — the general
+comment attached to the review itself (the review body on GitHub, the
+leading note on GitLab).
+
 ## Threads and replies
 
 Existing review threads appear as `◆` markers in the gutter, with the root
