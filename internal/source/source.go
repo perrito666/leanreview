@@ -256,37 +256,51 @@ func (g *gitSource) HeadOID(ctx context.Context) string {
 }
 
 // ContextContenter is implemented by sources that can produce the full
-// new-side content of a file, enabling the TUI's full-file context view.
-// ContextKey is the content's cache identity (cheap to compute; "" means
-// uncacheable — typically mutable local state like the working tree), and
-// ContextContent performs the actual, possibly expensive, fetch.
+// content of a file on either side of the diff — new side for the TUI's
+// full-file context view, old side additionally for whole-file syntax
+// highlighting of deletions. ContextKey is the content's cache identity
+// (cheap to compute; "" means uncacheable — typically mutable local state
+// like the working tree), and ContextContent performs the actual, possibly
+// expensive, fetch. Callers pass the path as spelled on that side (renames).
 type ContextContenter interface {
-	ContextKey(ctx context.Context, path string) string
-	ContextContent(ctx context.Context, path string) ([]byte, error)
+	ContextKey(ctx context.Context, path string, side diff.Side) string
+	ContextContent(ctx context.Context, path string, side diff.Side) ([]byte, error)
 }
 
-// contextRev picks the revision holding the diff's new side for this spec:
-// explicit RevB, HEAD for merge-base comparisons, the index for --staged, and
-// the working tree ("" for ShowFile) otherwise.
-func (g *gitSource) contextRev() string {
+// contextRev picks the revision holding the requested side of the diff for
+// this spec. New side: explicit RevB, HEAD for merge-base comparisons, the
+// index for --staged, the working tree ("" for ShowFile) otherwise. Old
+// side: RevA, the merge base for --base, and HEAD for staged/worktree
+// comparisons.
+func (g *gitSource) contextRev(ctx context.Context, side diff.Side) (string, error) {
+	if side == diff.SideLeft {
+		switch {
+		case g.spec.RevA != "":
+			return g.spec.RevA, nil
+		case g.spec.Base != "":
+			return g.repo.MergeBase(ctx, g.spec.Base, "HEAD")
+		default:
+			return "HEAD", nil
+		}
+	}
 	switch {
 	case g.spec.RevB != "":
-		return g.spec.RevB
+		return g.spec.RevB, nil
 	case g.spec.Base != "":
-		return "HEAD"
+		return "HEAD", nil
 	case g.spec.Staged:
-		return ":"
+		return ":", nil
 	default:
-		return ""
+		return "", nil
 	}
 }
 
-// ContextKey is the blob id at the new-side revision; mutable states (the
+// ContextKey is the blob id at the side's revision; mutable states (the
 // working tree and the index) return "" — reading them is cheap and caching
 // them would serve stale bytes.
-func (g *gitSource) ContextKey(ctx context.Context, path string) string {
-	rev := g.contextRev()
-	if rev == "" || rev == ":" {
+func (g *gitSource) ContextKey(ctx context.Context, path string, side diff.Side) string {
+	rev, err := g.contextRev(ctx, side)
+	if err != nil || rev == "" || rev == ":" {
 		return ""
 	}
 	id, err := g.repo.BlobID(ctx, rev, path)
@@ -296,7 +310,11 @@ func (g *gitSource) ContextKey(ctx context.Context, path string) string {
 	return "git-blob-" + id
 }
 
-// ContextContent reads the file at the new-side revision.
-func (g *gitSource) ContextContent(ctx context.Context, path string) ([]byte, error) {
-	return g.repo.ShowFile(ctx, g.contextRev(), path)
+// ContextContent reads the file at the side's revision.
+func (g *gitSource) ContextContent(ctx context.Context, path string, side diff.Side) ([]byte, error) {
+	rev, err := g.contextRev(ctx, side)
+	if err != nil {
+		return nil, err
+	}
+	return g.repo.ShowFile(ctx, rev, path)
 }

@@ -92,6 +92,9 @@ type PullRequest struct {
 	Author  string
 	URL     string // browsable page; empty when the adapter did not report one
 	HeadOID string
+	// BaseOID is the base commit the diff is against, when the host reports
+	// it — the revision old-side file content lives at.
+	BaseOID string
 	BaseRef string
 	HeadRef string
 }

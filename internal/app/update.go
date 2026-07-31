@@ -95,7 +95,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if !ready {
 		return m, nil
 	}
-	return m, m.execute(cmd)
+	// Batch in the once-per-file highlight-content fetch so switching files
+	// (by any means) upgrades syntax colors without dedicated plumbing.
+	return m, tea.Batch(m.execute(cmd), m.maybeFetchHighlight())
 }
 
 // execute performs a resolved normal-mode command, applying its numeric count
@@ -166,6 +168,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.toggleLayout()
 	case "toggle-context":
 		return m.toggleContext()
+	case "toggle-syntax":
+		return m.cycleSyntax()
 	case "sidebar":
 		m.toggleSidebar()
 	case "toggle-inline":

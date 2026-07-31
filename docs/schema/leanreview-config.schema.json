@@ -22,6 +22,15 @@
       "description": "Chroma style name, or \"auto\" to match the terminal background (monokai on dark, github on light).",
       "type": "string"
     },
+    "change_colors": {
+      "description": "Coloring of +/- lines when syntax highlighting is on: classic red/green (diff) with syntax reserved for context, or syntax colors everywhere.",
+      "type": "string",
+      "enum": ["diff", "syntax"]
+    },
+    "change_tint": {
+      "description": "Back syntax-mode changed lines with a faint red/green background so the diff stays legible at a glance.",
+      "type": "boolean"
+    },
     "images": {
       "description": "Comment-image rendering: auto (kitty protocol on kitty/ghostty, chafa when installed, off otherwise), or an explicit backend.",
       "type": "string",
@@ -81,7 +90,7 @@
           "page-down", "page-up", "pr-info", "prev-change", "prev-file",
           "prev-hunk", "prev-match", "quit", "reply", "scroll-left",
           "scroll-right", "search", "select", "select-block", "side-left",
-          "side-right", "sidebar", "submit", "toggle-context", "toggle-fold", "toggle-inline",
+          "side-right", "sidebar", "submit", "toggle-context", "toggle-fold", "toggle-inline", "toggle-syntax",
           "toggle-layout", "toggle-wrap", "up"
         ]
       }

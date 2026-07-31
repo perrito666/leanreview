@@ -42,7 +42,7 @@ func contextModel(t *testing.T) (*Model, *int) {
 	content := b.String()
 
 	fetches := 0
-	m.fetchContext = func(context.Context, string) ([]byte, error) {
+	m.fetchContext = func(context.Context, string, diff.Side) ([]byte, error) {
 		fetches++
 		return []byte(content), nil
 	}
@@ -151,7 +151,7 @@ func TestContextUnavailableSources(t *testing.T) {
 
 func TestContextRejectsMismatchedContent(t *testing.T) {
 	m, _ := contextModel(t)
-	m.fetchContext = func(context.Context, string) ([]byte, error) {
+	m.fetchContext = func(context.Context, string, diff.Side) ([]byte, error) {
 		return []byte("totally different file\n"), nil
 	}
 	toggleAndDeliver(t, m)

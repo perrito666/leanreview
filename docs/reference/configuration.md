@@ -66,6 +66,12 @@ for Vim/Neovim setup.
 - `list_engine` / `list_filter` / `list_filters` — defaults for `--list`:
   the discovery engine (`gh` or `glab`), the fallback search filter, and a
   map of named filters selectable as `--list :name` / `--list engine:name`.
+- `change_colors` — how `+`/`-` lines are colored when syntax highlighting
+  is on: `diff` (default: classic red/green, syntax reserved for context
+  lines) or `syntax` (syntax colors everywhere).
+- `change_tint` — with `change_colors: syntax`, back changed lines with a
+  faint red/green background so the diff stays legible at a glance
+  (default `true`).
 - `images` — comment-image rendering: `auto` (kitty graphics on
   kitty/ghostty, `chafa` when installed, off otherwise), `kitty`, `chafa`,
   or `off`. Remote URLs are never fetched; they render as tags.

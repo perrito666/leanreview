@@ -59,6 +59,7 @@ func (c *Client) PullRequest(ctx context.Context, ref forge.PullRequestRef) (*fo
 		Author:  m.Author.Username,
 		URL:     m.WebURL,
 		HeadOID: m.SHA,
+		BaseOID: m.DiffRefs.BaseSHA,
 		BaseRef: m.TargetBranch,
 		HeadRef: m.SourceBranch,
 	}, nil

@@ -24,6 +24,7 @@ type prJSON struct {
 		Ref string `json:"ref"`
 	} `json:"head"`
 	Base struct {
+		SHA string `json:"sha"`
 		Ref string `json:"ref"`
 	} `json:"base"`
 }
@@ -46,6 +47,7 @@ func (c *Client) PullRequest(ctx context.Context, ref forge.PullRequestRef) (*fo
 		Author:  p.User.Login,
 		URL:     p.HTMLURL,
 		HeadOID: p.Head.SHA,
+		BaseOID: p.Base.SHA,
 		BaseRef: p.Base.Ref,
 		HeadRef: p.Head.Ref,
 	}, nil

@@ -41,6 +41,13 @@ type Config struct {
 	// WrapWidth caps the wrap point in the unified layout (split layouts wrap
 	// at the side panel width).
 	WrapWidth int
+	// ChangeColors picks the coloring of +/- lines when syntax highlighting
+	// is on: "diff" (classic red/green; syntax for context only) or "syntax"
+	// (syntax colors everywhere).
+	ChangeColors string
+	// ChangeTint backs syntax-mode changed lines with a faint red/green
+	// background so the diff stays legible at a glance.
+	ChangeTint bool
 	// Images selects comment-image rendering: "auto" (kitty protocol on
 	// kitty/ghostty, chafa when installed, off otherwise), "kitty", "chafa",
 	// or "off". Detection is heuristic; the setting is the escape hatch.
@@ -60,36 +67,40 @@ type Config struct {
 // fileConfig mirrors the on-disk JSON, using pointers so absent keys are
 // distinguishable from zero values.
 type fileConfig struct {
-	Editor      *string           `json:"editor"`
-	Syntax      *bool             `json:"syntax"`
-	SyntaxStyle *string           `json:"syntax_style"`
-	Theme       *string           `json:"theme"`
-	TabWidth    *int              `json:"tab_width"`
-	Context     *int              `json:"context"`
-	Keys        map[string]string `json:"keys"`
-	ListEngine  *string           `json:"list_engine"`
-	ListFilter  *string           `json:"list_filter"`
-	ListFilters map[string]string `json:"list_filters"`
-	Wrap        *bool             `json:"wrap"`
-	WrapWidth   *int              `json:"wrap_width"`
-	Author      *string           `json:"author"`
-	Images      *string           `json:"images"`
+	Editor       *string           `json:"editor"`
+	Syntax       *bool             `json:"syntax"`
+	SyntaxStyle  *string           `json:"syntax_style"`
+	Theme        *string           `json:"theme"`
+	TabWidth     *int              `json:"tab_width"`
+	Context      *int              `json:"context"`
+	Keys         map[string]string `json:"keys"`
+	ListEngine   *string           `json:"list_engine"`
+	ListFilter   *string           `json:"list_filter"`
+	ListFilters  map[string]string `json:"list_filters"`
+	Wrap         *bool             `json:"wrap"`
+	WrapWidth    *int              `json:"wrap_width"`
+	Author       *string           `json:"author"`
+	Images       *string           `json:"images"`
+	ChangeColors *string           `json:"change_colors"`
+	ChangeTint   *bool             `json:"change_tint"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
 func Load() Config {
 	c := Config{
-		Syntax:      true,
-		SyntaxStyle: "auto",
-		Theme:       "default",
-		TabWidth:    4,
-		Context:     3,
-		ListEngine:  "gh",
-		Wrap:        true,
-		WrapWidth:   120,
-		Author:      os.Getenv("USER"),
-		Images:      "auto",
-		LogPath:     logPath(),
+		Syntax:       true,
+		SyntaxStyle:  "auto",
+		Theme:        "default",
+		TabWidth:     4,
+		Context:      3,
+		ListEngine:   "gh",
+		Wrap:         true,
+		WrapWidth:    120,
+		Author:       os.Getenv("USER"),
+		Images:       "auto",
+		ChangeColors: "diff",
+		ChangeTint:   true,
+		LogPath:      logPath(),
 	}
 
 	fc, ok, warn := readFile(configPath())
@@ -136,6 +147,12 @@ func Load() Config {
 		}
 		if fc.Images != nil && *fc.Images != "" {
 			c.Images = *fc.Images
+		}
+		if fc.ChangeColors != nil && *fc.ChangeColors != "" {
+			c.ChangeColors = *fc.ChangeColors
+		}
+		if fc.ChangeTint != nil {
+			c.ChangeTint = *fc.ChangeTint
 		}
 	}
 

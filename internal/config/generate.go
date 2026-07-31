@@ -13,21 +13,23 @@ const SchemaURL = "https://perrito666.github.io/leanreview/schema/leanreview-con
 // baseline mirrors fileConfig with concrete values and a stable field order,
 // so the generated document reads top-down from identity to keys.
 type baseline struct {
-	Schema      string            `json:"$schema"`
-	Editor      string            `json:"editor"`
-	Author      string            `json:"author"`
-	Syntax      bool              `json:"syntax"`
-	SyntaxStyle string            `json:"syntax_style"`
-	Theme       string            `json:"theme"`
-	Images      string            `json:"images"`
-	TabWidth    int               `json:"tab_width"`
-	Context     int               `json:"context"`
-	Wrap        bool              `json:"wrap"`
-	WrapWidth   int               `json:"wrap_width"`
-	ListEngine  string            `json:"list_engine"`
-	ListFilter  string            `json:"list_filter"`
-	ListFilters map[string]string `json:"list_filters"`
-	Keys        map[string]string `json:"keys"`
+	Schema       string            `json:"$schema"`
+	Editor       string            `json:"editor"`
+	Author       string            `json:"author"`
+	Syntax       bool              `json:"syntax"`
+	SyntaxStyle  string            `json:"syntax_style"`
+	Theme        string            `json:"theme"`
+	Images       string            `json:"images"`
+	ChangeColors string            `json:"change_colors"`
+	ChangeTint   bool              `json:"change_tint"`
+	TabWidth     int               `json:"tab_width"`
+	Context      int               `json:"context"`
+	Wrap         bool              `json:"wrap"`
+	WrapWidth    int               `json:"wrap_width"`
+	ListEngine   string            `json:"list_engine"`
+	ListFilter   string            `json:"list_filter"`
+	ListFilters  map[string]string `json:"list_filters"`
+	Keys         map[string]string `json:"keys"`
 }
 
 // BaselineJSON renders the built-in defaults as a complete config document:
@@ -38,18 +40,20 @@ type baseline struct {
 // cannot depend on it).
 func BaselineJSON(keys map[string]string) ([]byte, error) {
 	b := baseline{
-		Schema:      SchemaURL,
-		SyntaxStyle: "auto",
-		Syntax:      true,
-		Theme:       "default",
-		Images:      "auto",
-		TabWidth:    4,
-		Context:     3,
-		Wrap:        true,
-		WrapWidth:   120,
-		ListEngine:  "gh",
-		ListFilters: map[string]string{},
-		Keys:        keys,
+		Schema:       SchemaURL,
+		SyntaxStyle:  "auto",
+		Syntax:       true,
+		Theme:        "default",
+		Images:       "auto",
+		ChangeColors: "diff",
+		ChangeTint:   true,
+		TabWidth:     4,
+		Context:      3,
+		Wrap:         true,
+		WrapWidth:    120,
+		ListEngine:   "gh",
+		ListFilters:  map[string]string{},
+		Keys:         keys,
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
