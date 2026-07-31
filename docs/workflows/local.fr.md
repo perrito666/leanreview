@@ -87,7 +87,7 @@ jointes des commentaires — y compris les balises HTML `<img>` de GitHub —
 sont téléchargées via l'authentification de la forge et mises en cache ;
 les autres URL distantes restent des étiquettes.
 
-![Photo d'exemple](../screens/example-photo.png)
+![Photo d'exemple](../screens/example-photo.jpg)
 
 *Une image référencée depuis un commentaire de revue…*
 

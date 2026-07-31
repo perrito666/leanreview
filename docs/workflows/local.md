@@ -77,7 +77,7 @@ kitty/ghostty, `chafa` cell art elsewhere (see the `images`
 attachments — including GitHub's HTML `<img>` embeds — are fetched through
 the forge's authentication and cached; other remote URLs stay as tags.
 
-![Example source photo](../screens/example-photo.png)
+![Example source photo](../screens/example-photo.jpg)
 
 *An image referenced from a review comment…*
 
