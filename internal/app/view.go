@@ -155,8 +155,30 @@ func (m *Model) diffLines() []string {
 }
 
 // numWidth returns the gutter width needed for line numbers in the current file.
+// In the context view the whole file is visible, so the width comes from the
+// projection's last row (numbers are monotone) rather than the hunks.
 func (m *Model) numWidth() int {
 	max := 0
+	if m.contextActive() {
+		rows := m.contextRows[m.fileIdx]
+		for i := len(rows) - 1; i >= 0; i-- {
+			r := &rows[i]
+			if r.Right != nil && r.Right.LineNumber != nil && *r.Right.LineNumber > max {
+				max = *r.Right.LineNumber
+			}
+			if r.Left != nil && r.Left.LineNumber != nil && *r.Left.LineNumber > max {
+				max = *r.Left.LineNumber
+			}
+			if max > 0 {
+				break
+			}
+		}
+		w := len(strconv.Itoa(max))
+		if w < 3 {
+			w = 3
+		}
+		return w
+	}
 	f := m.currentFile()
 	if f != nil {
 		for hi := range f.Hunks {
@@ -190,6 +212,12 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 	// Inline comment previews render as a bordered box (right panel in split).
 	if r.Annotation {
 		return m.renderAnnotation(r, isCursor)
+	}
+
+	// Hunk boundary: a faint rule so disjoint excerpts read as disjoint. It
+	// must render before anything dereferences cells — separators carry none.
+	if r.Separator {
+		return m.theme.Faint.Render(pad(strings.Repeat("┄", cw), cw))
 	}
 
 	// Every non-annotation row gets a 2-column gutter signalling comments:

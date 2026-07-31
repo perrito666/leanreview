@@ -24,6 +24,7 @@ momento.
 | Tecla | Acción |
 | --- | --- |
 | `t` | alternar unificado / dividido |
+| `T` | alternar contexto de archivo completo alrededor del diff (carga perezosa, con caché; `]c`/`[c` siguen saltando entre hunks) |
 | `w` | alternar ajuste de línea de líneas largas y previsualizaciones de comentarios |
 | `i` | alternar previsualizaciones de comentarios en línea |
 | `\` | alternar barra lateral de archivos modificados |

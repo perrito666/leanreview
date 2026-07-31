@@ -11,6 +11,11 @@ func RenderUnified(f *FileDiff) []DisplayRow {
 	var rows []DisplayRow
 	for hi := range f.Hunks {
 		h := &f.Hunks[hi]
+		if hi > 0 {
+			// Hunks are disjoint excerpts; without the file in between, a
+			// visible boundary is what tells the reader they jumped.
+			rows = append(rows, DisplayRow{Separator: true})
+		}
 		rows = append(rows, DisplayRow{
 			Left: &DisplayCell{Kind: LineMetadata, Text: h.Header},
 		})

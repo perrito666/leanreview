@@ -97,6 +97,10 @@ func (m *Model) toggleFold() {
 	if f == nil {
 		return
 	}
+	if m.contextActive() {
+		m.setStatus("folding applies to the diff view (T to return)")
+		return
+	}
 	h := m.cursorHunkIndex()
 	k := foldKey(m.fileIdx, h)
 	m.folded[k] = !m.folded[k]

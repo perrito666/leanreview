@@ -138,6 +138,9 @@ type Forge interface {
 	Threads(ctx context.Context, ref PullRequestRef) ([]Thread, error)
 	CreateReview(ctx context.Context, ref PullRequestRef, event ReviewEvent, summary string, comments []ReviewComment) (*SubmittedReview, error)
 	Reply(ctx context.Context, ref PullRequestRef, commentID int64, body string) (*Comment, error)
+	// FileContent returns the raw content of path at rev (a commit id,
+	// typically the PR head) — the full-file context view's data source.
+	FileContent(ctx context.Context, ref PullRequestRef, path, rev string) ([]byte, error)
 }
 
 // ReviewComment is a single line comment expressed in host API terms.

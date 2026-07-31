@@ -72,6 +72,10 @@ pour Vim/Neovim.
   `--list` : le moteur de découverte (`gh` ou `glab`), le filtre de
   recherche de secours, et une table de filtres nommés sélectionnables sous
   la forme `--list :name` / `--list engine:name`.
+- `images` — rendu des images des commentaires : `auto` (protocole
+  kitty sur kitty/ghostty, `chafa` s'il est installé, désactivé sinon),
+  `kitty`, `chafa` ou `off`. Les URL distantes ne sont jamais téléchargées ;
+  elles s'affichent comme des étiquettes.
 - `author` — le nom attribué à vos réponses dans les
   [conversations d'échange de revue](exchange-format.md)
   (par défaut : `$USER`).
@@ -91,6 +95,7 @@ pour Vim/Neovim.
 | `LEANREVIEW_SYNTAX=0` | désactive la coloration syntaxique |
 | `NO_COLOR` | désactive toute couleur (thème mono) |
 | `LEANREVIEW_AUTHOR` | nom d'attribution des réponses (remplace `author`) |
+| `LEANREVIEW_IMAGES` | backend de rendu des images (remplace `images`) |
 | `LEANREVIEW_LOG` | chemin du fichier journal |
 
 ## État sur le disque

@@ -23,6 +23,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | Touche | Action |
 | --- | --- |
 | `t` | basculer unifié / scindé |
+| `T` | basculer le contexte du fichier complet autour du diff (chargement paresseux, mis en cache ; `]c`/`[c` sautent toujours entre les hunks) |
 | `w` | basculer le retour à la ligne pour les lignes longues et les aperçus de commentaires |
 | `i` | basculer les aperçus de commentaires en ligne |
 | `\` | basculer la barre latérale des fichiers modifiés |

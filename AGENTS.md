@@ -79,6 +79,19 @@ internal/config     defaults <- config file <- environment
 - **No TUI writes to stdout/stderr while running.** Logs go to the XDG log
   file; if it cannot open, the logger is discarded. Startup warnings print
   before the TUI takes the terminal.
+- **Context view.** T overlays hunks on the full file
+  (`diff.RenderUnifiedContext`): gap rows are deliberately uncommentable
+  (hosts anchor to diff positions), content is fetched lazily through
+  `Config.FetchContext` (never on file switch), and hunk identity in
+  context comes from row Sources — there are no header rows to count.
+  Content that fails verification against the hunks is rejected, never
+  rendered. The file cache (`internal/filecache`) keys by content identity
+  (blob id / head+path); there is no in-place invalidation by design.
+- **Thread box.** All comments/threads on a line share one box, oldest
+  first (`at` RFC 3339 sorts lexically). Image references render as
+  preformatted rows (`DisplayRow.Pre`) — kitty Unicode placeholders with a
+  one-shot payload transmission, chafa fallback, tag otherwise; remote URLs
+  are never fetched.
 - **ANSI-aware geometry.** Any string measuring/clipping must use
   `lipgloss.Width` / the `clip`/`pad` helpers, never `len()`. Input handling
   counts runes, never bytes.

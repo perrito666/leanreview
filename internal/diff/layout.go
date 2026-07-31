@@ -41,16 +41,28 @@ type DisplayRow struct {
 	// the line's own styling but carries no line numbers or Source, so
 	// navigation and selection treat the logical line as one unit.
 	Continuation bool
+
+	// Separator marks the boundary row drawn between hunks, so the reader can
+	// see where one excerpt ends and the next begins when the surrounding
+	// file context is not shown. Display-only: no Source, skipped by
+	// navigation.
+	Separator bool
+
+	// Pre marks an annotation text row whose content is preformatted terminal
+	// output (an image rendered to cells): renderers must clip it ANSI-aware
+	// and never wrap or restyle it. Meaningful only with Annotation set.
+	Pre bool
 }
 
 // AnnotationEdge distinguishes the border rows of a boxed annotation from its
-// text rows.
+// text rows. EdgeDivider separates items of a thread that share one box.
 type AnnotationEdge uint8
 
 const (
 	EdgeNone AnnotationEdge = iota
 	EdgeTop
 	EdgeBottom
+	EdgeDivider
 )
 
 // binaryPlaceholder returns a one-row informational rendering for binary files

@@ -20,6 +20,11 @@ func RenderSplit(f *FileDiff) []DisplayRow {
 	var rows []DisplayRow
 	for hi := range f.Hunks {
 		h := &f.Hunks[hi]
+		if hi > 0 {
+			// Same boundary rule as the unified projection: disjoint excerpts
+			// get a visible seam.
+			rows = append(rows, DisplayRow{Separator: true})
+		}
 		rows = append(rows, DisplayRow{Left: &DisplayCell{Kind: LineMetadata, Text: h.Header}})
 
 		lines := h.Lines

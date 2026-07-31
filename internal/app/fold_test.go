@@ -66,3 +66,33 @@ func TestFoldTogglesBack(t *testing.T) {
 		t.Errorf("unfolding did not restore rows (%d != %d)", len(m.rows()), full)
 	}
 }
+
+// TestHunkSeparatorRendersAndIsSkipped: without file context, hunk boundaries
+// get a visible rule, and the cursor glides over it in both directions.
+func TestHunkSeparatorRendersAndIsSkipped(t *testing.T) {
+	m := testModel(t)
+	if !strings.Contains(m.View(), "┄") {
+		t.Fatalf("no separator between hunks:\n%s", m.View())
+	}
+	rows := m.rows()
+	sep := -1
+	for i := range rows {
+		if rows[i].Separator {
+			sep = i
+			break
+		}
+	}
+	if sep < 0 {
+		t.Fatalf("no separator row in the projection")
+	}
+	// Land the cursor just before the separator and step over it.
+	m.cursor = sep - 1
+	m = key(m, "j")
+	if m.cursor == sep || m.rowAt(m.cursor).Separator {
+		t.Errorf("cursor rested on the separator going down")
+	}
+	m = key(m, "k")
+	if m.rowAt(m.cursor).Separator {
+		t.Errorf("cursor rested on the separator going up")
+	}
+}

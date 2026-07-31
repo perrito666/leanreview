@@ -38,6 +38,17 @@ ligne, et le fichier courant, la position et la disposition sur la seconde.
 les ajouts sur celui de droite, et un commentaire en brouillon encadré
 au-dessus du panneau de droite.*
 
+### Contexte du fichier complet
+
+`T` recadre la vue unifiée en fichier complet avec le diff superposé : les
+lignes des hunks restent surlignées (et commentables) tandis que les lignes
+environnantes se remplissent, et `]c`/`[c` continuent de sauter entre les
+hunks avec la vue centrée sur votre ligne. Le contenu n'est récupéré qu'à
+la première demande (depuis git — ou depuis la forge en mode PR), mis en
+cache sur disque avec une clé d'identité de contenu, et le cache est
+nettoyé par âge et taille au démarrage. `T` à nouveau revient à la vue
+diff seul, où un trait discret marque chaque frontière de hunk.
+
 ## Commenter
 
 Appuyez sur `c` sur une ligne — ou `v` pour sélectionner une plage (`V`
@@ -54,6 +65,14 @@ appariée vous commentez — la barre d'état affiche `[LEFT]`/`[RIGHT]`.
 Une sélection doit correspondre à une plage continue sur un seul côté ; les
 sélections traversant les deux côtés sont rejetées avant l'ouverture de
 l'éditeur.
+
+Tous les commentaires et fils d'une ligne partagent une seule boîte
+conteneur, du plus ancien au plus récent, si bien que la discussion se lit
+comme un seul fil. Les références d'images Markdown dans les commentaires
+sont rendues en ligne — graphiques kitty sur kitty/ghostty, art en
+cellules via `chafa` ailleurs (voir le réglage `images` dans la
+[configuration](../reference/configuration.md)) — et les URL distantes
+restent des étiquettes.
 
 ## Relire ses notes
 

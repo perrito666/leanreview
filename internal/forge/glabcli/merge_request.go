@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/perrito666/leanreview/internal/forge"
@@ -131,4 +132,15 @@ func writeChange(b *strings.Builder, ch changeJSON) {
 	if diff != "" && !strings.HasSuffix(diff, "\n") {
 		b.WriteByte('\n')
 	}
+}
+
+// FileContent fetches path at rev via the repository files raw endpoint;
+// GitLab addresses the file as one URL-encoded path segment, unlike GitHub's
+// slash-preserving contents API.
+func (c *Client) FileContent(ctx context.Context, ref forge.PullRequestRef, path, rev string) ([]byte, error) {
+	api := fmt.Sprintf("projects/%s/repository/files/%s/raw", projectPath(ref), url.PathEscape(path))
+	if rev != "" {
+		api += "?ref=" + url.QueryEscape(rev)
+	}
+	return c.run(ctx, nil, apiArgs(ref, api)...)
 }

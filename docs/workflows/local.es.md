@@ -37,6 +37,17 @@ línea y el archivo actual, la posición, y el diseño en la segunda.
 adiciones en el derecho, y un comentario en borrador enmarcado sobre el
 panel derecho.*
 
+### Contexto de archivo completo
+
+`T` re-enmarca la vista unificada como el archivo completo con el diff
+superpuesto: las líneas de los hunks siguen resaltadas (y comentables)
+mientras las líneas circundantes se rellenan, y `]c`/`[c` siguen saltando
+entre hunks con la vista centrada en tu línea. El contenido se descarga
+solo la primera vez que se pide (de git — o del forge en modo PR), se
+guarda en una caché en disco identificada por contenido, y la caché se
+limpia por antigüedad y tamaño al arrancar. `T` de nuevo vuelve a la vista
+de solo diff, donde una línea tenue marca cada frontera entre hunks.
+
 ## Comentar
 
 Presiona `c` en una línea — o `v` para seleccionar un rango (`V` toma todo
@@ -51,6 +62,14 @@ estás comentando — la barra de estado muestra `[LEFT]`/`[RIGHT]`.
 
 Una selección debe corresponder a un rango continuo en un solo lado; las
 selecciones que cruzan lados se rechazan antes de que se abra el editor.
+
+Todos los comentarios e hilos de una línea comparten una única caja
+contenedora, ordenados del más antiguo al más reciente, de modo que la
+discusión se lee como un solo hilo. Las referencias de imagen Markdown en
+los comentarios se renderizan en línea — gráficos kitty en kitty/ghostty,
+arte de celdas con `chafa` en otros casos (ver el ajuste `images` en la
+[configuración](../reference/configuration.md)) — y las URLs remotas quedan
+como etiquetas.
 
 ## Revisar tus notas
 

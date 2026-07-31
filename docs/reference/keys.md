@@ -23,6 +23,7 @@ Press `?` inside the TUI for this reference at any time.
 | Key | Action |
 | --- | --- |
 | `t` | toggle unified / split |
+| `T` | toggle full-file context around the diff (lazy fetch, cached; `]c`/`[c` still jump hunks) |
 | `w` | toggle wrapping of long lines and comment previews |
 | `i` | toggle inline comment previews |
 | `\` | toggle changed-files sidebar |

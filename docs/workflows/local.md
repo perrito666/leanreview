@@ -36,6 +36,16 @@ file, position, and layout on the second.
 *Split layout: deletions styled on the left panel, additions on the right,
 and a draft comment boxed over the right panel.*
 
+### Full-file context
+
+`T` re-frames the unified view as the whole file with the diff overlaid:
+hunk lines stay highlighted (and commentable) while the surrounding lines
+fill in, and `]c`/`[c` keep jumping between hunks with the view centered on
+your line. Content is fetched only when first requested (from git — or from
+the forge in PR mode), cached on disk keyed by content identity, and the
+cache is cleaned by age and size at startup. `T` again returns to the
+diff-only view, where a faint rule marks each hunk boundary.
+
 ## Commenting
 
 Press `c` on a line — or `v` to select a range (`V` grabs the whole changed
@@ -49,6 +59,12 @@ commenting on — the status bar shows `[LEFT]`/`[RIGHT]`.
 
 A selection must map onto one continuous range on one side; cross-side
 selections are rejected before the editor opens.
+
+All comments and threads on a line share one containing box, ordered
+oldest first, so the discussion reads as a single thread. Markdown image
+references in comment bodies render inline — kitty graphics on
+kitty/ghostty, `chafa` cell art elsewhere (see the `images`
+[setting](../reference/configuration.md)) — and remote URLs stay as tags.
 
 ## Reviewing your notes
 

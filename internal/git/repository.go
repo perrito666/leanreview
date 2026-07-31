@@ -9,7 +9,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -72,4 +74,24 @@ func dirOrCWD(dir string) string {
 		return "current directory"
 	}
 	return dir
+}
+
+// ShowFile returns the content of path at rev ("" reads the working tree
+// file, ":" the index) — the raw material of the full-file context view.
+func (r *Repository) ShowFile(ctx context.Context, rev, path string) ([]byte, error) {
+	if rev == "" {
+		return os.ReadFile(filepath.Join(r.Root, path))
+	}
+	return r.git(ctx, "show", rev+":"+path)
+}
+
+// BlobID returns the object id of path at rev — the content identity the
+// file cache keys on, so a change upstream changes the key instead of
+// requiring invalidation.
+func (r *Repository) BlobID(ctx context.Context, rev, path string) (string, error) {
+	out, err := r.git(ctx, "rev-parse", rev+":"+path)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }

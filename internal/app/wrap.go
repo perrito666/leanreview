@@ -62,7 +62,7 @@ func (m *Model) wrapRows(rows []diff.DisplayRow) []diff.DisplayRow {
 	out := make([]diff.DisplayRow, 0, len(rows))
 	for i := range rows {
 		r := rows[i]
-		if r.Annotation || isHeader(&r) {
+		if r.Annotation || r.Separator || isHeader(&r) {
 			out = append(out, r)
 			continue
 		}

@@ -38,6 +38,9 @@ func (f *recordingForge) CreateReview(_ context.Context, _ forge.PullRequestRef,
 	f.createdComments = cs
 	return &forge.SubmittedReview{ID: 42, URL: "http://x/42"}, nil
 }
+func (f *recordingForge) FileContent(context.Context, forge.PullRequestRef, string, string) ([]byte, error) {
+	return nil, errFake
+}
 func (f *recordingForge) Reply(_ context.Context, _ forge.PullRequestRef, id int64, body string) (*forge.Comment, error) {
 	if f.failReplyAt > 0 && len(f.replies)+1 == f.failReplyAt {
 		return nil, errFake

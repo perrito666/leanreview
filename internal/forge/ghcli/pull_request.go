@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/perrito666/leanreview/internal/forge"
 )
@@ -58,4 +60,24 @@ func (c *Client) Diff(ctx context.Context, ref forge.PullRequestRef) ([]byte, er
 		return nil, err
 	}
 	return out, nil
+}
+
+// FileContent fetches path at rev via the contents API with the raw media
+// type, so the bytes arrive verbatim instead of base64-wrapped JSON.
+func (c *Client) FileContent(ctx context.Context, ref forge.PullRequestRef, path, rev string) ([]byte, error) {
+	api := fmt.Sprintf("repos/%s/contents/%s", repoPath(ref), escapePath(path))
+	if rev != "" {
+		api += "?ref=" + url.QueryEscape(rev)
+	}
+	return c.run(ctx, nil, apiArgs(ref, api, "-H", "Accept: application/vnd.github.raw")...)
+}
+
+// escapePath escapes each path segment, keeping the separators: the contents
+// API addresses files by path inside the URL.
+func escapePath(p string) string {
+	parts := strings.Split(p, "/")
+	for i, s := range parts {
+		parts[i] = url.PathEscape(s)
+	}
+	return strings.Join(parts, "/")
 }

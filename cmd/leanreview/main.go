@@ -39,6 +39,7 @@ import (
 	"github.com/perrito666/leanreview/internal/config"
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/editor"
+	"github.com/perrito666/leanreview/internal/filecache"
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/forge/ghcli"
 	"github.com/perrito666/leanreview/internal/forge/glabcli"
@@ -203,6 +204,35 @@ func run(argv []string) error {
 		}
 	}
 
+	// Full-file context fetcher: resolves content by identity through the
+	// on-disk cache (opened here so its age/size cleanup runs at app start);
+	// nil when the source cannot provide file contents.
+	var fetchContext func(context.Context, string) ([]byte, error)
+	if cc, ok := src.(source.ContextContenter); ok {
+		fcache, ferr := filecache.Open()
+		if ferr != nil {
+			log.Printf("file cache disabled: %v", ferr)
+		}
+		fetchContext = func(ctx context.Context, path string) ([]byte, error) {
+			key := cc.ContextKey(ctx, path)
+			if key != "" && fcache != nil {
+				if data, ok := fcache.Get(key); ok {
+					return data, nil
+				}
+			}
+			data, err := cc.ContextContent(ctx, path)
+			if err != nil {
+				return nil, err
+			}
+			if key != "" && fcache != nil {
+				if err := fcache.Put(key, data); err != nil {
+					log.Printf("file cache put: %v", err)
+				}
+			}
+			return data, nil
+		}
+	}
+
 	// rawPatch is the literal diff text, needed to make exchange exports
 	// self-contained; nil when the source cannot produce one.
 	var rawPatch []byte
@@ -253,20 +283,22 @@ func run(argv []string) error {
 	}
 
 	model := app.New(app.Config{
-		Files:       files,
-		Title:       src.Title(),
-		HeadOID:     headOID,
-		Draft:       draft,
-		Store:       store,
-		Editor:      ed,
-		Theme:       ui.ThemeByName(cfg.Theme),
-		Highlighter: ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
-		Keys:        cfg.Keys,
-		Wrap:        cfg.Wrap,
-		WrapWidth:   cfg.WrapWidth,
-		PR:          prCtx,
-		RawPatch:    rawPatch,
-		Author:      cfg.Author,
+		Files:        files,
+		Title:        src.Title(),
+		HeadOID:      headOID,
+		Draft:        draft,
+		Store:        store,
+		Editor:       ed,
+		Theme:        ui.ThemeByName(cfg.Theme),
+		Highlighter:  ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
+		Keys:         cfg.Keys,
+		Wrap:         cfg.Wrap,
+		WrapWidth:    cfg.WrapWidth,
+		PR:           prCtx,
+		RawPatch:     rawPatch,
+		Author:       cfg.Author,
+		Images:       cfg.Images,
+		FetchContext: fetchContext,
 	})
 	if exSrc != nil {
 		// Every draft save also rewrites the conversation file, so quitting

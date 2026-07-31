@@ -36,6 +36,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.onSubmitResult(msg)
 		return m, nil
 
+	case contextContentMsg:
+		m.onContextContent(msg)
+		return m, nil
+
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 	}
@@ -109,9 +113,17 @@ func (m *Model) execute(cmd command) tea.Cmd {
 	case "prev-change":
 		m.prevChange(cmd.CountOr(1))
 	case "next-hunk":
-		m.nextHunk(cmd.CountOr(1))
+		if m.contextActive() {
+			m.contextNextHunk(cmd.CountOr(1))
+		} else {
+			m.nextHunk(cmd.CountOr(1))
+		}
 	case "prev-hunk":
-		m.prevHunk(cmd.CountOr(1))
+		if m.contextActive() {
+			m.contextPrevHunk(cmd.CountOr(1))
+		} else {
+			m.prevHunk(cmd.CountOr(1))
+		}
 	case "next-file":
 		m.nextFile(cmd.CountOr(1))
 	case "prev-file":
@@ -152,6 +164,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.fullPage(-1)
 	case "toggle-layout":
 		m.toggleLayout()
+	case "toggle-context":
+		return m.toggleContext()
 	case "sidebar":
 		m.toggleSidebar()
 	case "toggle-inline":
@@ -233,6 +247,8 @@ func (m *Model) toggleLayout() {
 	anchor := m.rowAt(m.cursor)
 	if m.layout == LayoutUnified {
 		m.layout = LayoutSplit
+		// The context projection is unified-shaped; leaving unified leaves it.
+		m.contextView = false
 	} else {
 		m.layout = LayoutUnified
 	}

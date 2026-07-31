@@ -22,6 +22,11 @@
       "description": "Chroma style name, or \"auto\" to match the terminal background (monokai on dark, github on light).",
       "type": "string"
     },
+    "images": {
+      "description": "Comment-image rendering: auto (kitty protocol on kitty/ghostty, chafa when installed, off otherwise), or an explicit backend.",
+      "type": "string",
+      "enum": ["auto", "kitty", "chafa", "off"]
+    },
     "theme": {
       "description": "TUI palette.",
       "type": "string",
@@ -76,7 +81,7 @@
           "page-down", "page-up", "pr-info", "prev-change", "prev-file",
           "prev-hunk", "prev-match", "quit", "reply", "scroll-left",
           "scroll-right", "search", "select", "select-block", "side-left",
-          "side-right", "sidebar", "submit", "toggle-fold", "toggle-inline",
+          "side-right", "sidebar", "submit", "toggle-context", "toggle-fold", "toggle-inline",
           "toggle-layout", "toggle-wrap", "up"
         ]
       }

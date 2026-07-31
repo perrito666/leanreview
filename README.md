@@ -64,7 +64,10 @@ notes back:
 
 2. **Navigate.** `j`/`k` move by line, `J`/`K` jump between changes, `]c`/`[c`
    between hunks, `]f`/`[f` between files. `t` toggles unified ↔ split, `\`
-   toggles the file sidebar, `za` folds a hunk, `/` searches.
+   toggles the file sidebar, `za` folds a hunk, `/` searches. `T` swaps the
+   diff for the whole file with the changes overlaid — fetched on first use,
+   cached, view centered on your line — and a faint rule marks hunk
+   boundaries when context is off.
 
 3. **Comment.** Press `c` on a line — or `v` to select a range (`V` grabs the
    whole changed block), then `c`. Your `$EDITOR` opens with a Markdown
@@ -244,6 +247,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `h` / `l`, `←` / `→` | scroll long lines (unified) / target side (split) |
 | `0` / `$` | scroll to line start / end |
 | `t` | toggle unified / split |
+| `T` | toggle full-file context around the diff (fetched lazily, cached) |
 | `w` | toggle wrapping of long lines and comment previews |
 | `i` | toggle inline comment previews |
 | `\` | toggle changed-files sidebar |

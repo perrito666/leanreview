@@ -33,6 +33,11 @@ near the start.
 | `at` | no | RFC 3339 creation timestamp. Set it — chronology helps across rounds. |
 | `replies` | no | `[{"author": "...", "body": "...", "at": "..."}]`, oldest first; `at` optional. |
 
+Markdown image references in `body`/reply text (`![alt](path)`) render
+inline in the TUI when the terminal supports it (kitty protocol or chafa);
+use paths relative to the repository root, and expect remote URLs to show
+as tags — leanreview never fetches the network for previews.
+
 ## Semantics that matter
 
 - **`dismissed` is final.** Keep the comment in the file, never act on it,

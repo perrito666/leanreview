@@ -72,6 +72,10 @@ para Vim/Neovim.
   para `--list`: el motor de descubrimiento (`gh` o `glab`), el filtro de
   búsqueda de respaldo, y un mapa de filtros con nombre seleccionables
   como `--list :name` / `--list engine:name`.
+- `images` — renderizado de imágenes en comentarios: `auto` (protocolo
+  kitty en kitty/ghostty, `chafa` si está instalado, desactivado en otro
+  caso), `kitty`, `chafa` u `off`. Las URLs remotas nunca se descargan; se
+  muestran como etiquetas.
 - `author` — el nombre con el que se atribuyen tus respuestas en las
   [conversaciones de intercambio de revisión](exchange-format.md)
   (por defecto: `$USER`).
@@ -91,6 +95,7 @@ para Vim/Neovim.
 | `LEANREVIEW_SYNTAX=0` | deshabilita el resaltado de sintaxis |
 | `NO_COLOR` | deshabilita todo el color (tema mono) |
 | `LEANREVIEW_AUTHOR` | nombre de atribución de respuestas (anula `author`) |
+| `LEANREVIEW_IMAGES` | backend de renderizado de imágenes (anula `images`) |
 | `LEANREVIEW_LOG` | ruta del archivo de log |
 
 ## Estado en disco
