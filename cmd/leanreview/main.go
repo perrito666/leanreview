@@ -755,16 +755,16 @@ func iterArgs(
 			isFlag := strings.HasPrefix(a, "-")
 			if isFlag {
 				flag = strFlagToCmdFlag(a)
-			}
-			if flag == flagUnknown {
-				if !yield(argument{
-					Name:     flag,
-					Value:    value,
-					HasValue: false,
-				}, fmt.Errorf("unknown flag %q", flag)) {
-					return
+				if flag == flagUnknown {
+					if !yield(argument{
+						Name:     flag,
+						Value:    value,
+						HasValue: false,
+					}, fmt.Errorf("unknown flag %q", a)) {
+						return
+					}
+					continue
 				}
-				continue
 			}
 			hasValue := isFlag && len(argv) > iA+1 && !strings.HasPrefix(argv[iA+1], "-")
 			if hasValue {
