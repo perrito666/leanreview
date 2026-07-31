@@ -63,6 +63,14 @@ las previsualizaciones). `e` lo edita, `dd` lo elimina.
 En diseño dividido, `h`/`l` eligen sobre qué lado de un cambio emparejado
 estás comentando — la barra de estado muestra `[LEFT]`/`[RIGHT]`.
 
+`R` en cambio **sugiere un cambio**, al estilo de GitHub: el editor se abre
+con las líneas seleccionadas dentro de un bloque ```` ```suggestion ```` —
+edita el bloque hasta tu reemplazo propuesto. Las sugerencias se muestran de
+forma diferenciada en la caja del hilo (una etiqueta más líneas de código en
+verde) y se envían como sugerencias aplicables nativas en GitHub (para
+GitLab se genera automáticamente la forma con rango en selecciones
+multilínea).
+
 Una selección debe corresponder a un rango continuo en un solo lado; las
 selecciones que cruzan lados se rechazan antes de que se abra el editor.
 

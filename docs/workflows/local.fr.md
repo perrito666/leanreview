@@ -65,6 +65,14 @@ supprime.
 En disposition scindée, `h`/`l` choisissent de quel côté d'une modification
 appariée vous commentez — la barre d'état affiche `[LEFT]`/`[RIGHT]`.
 
+`R` au contraire **suggère un changement**, à la GitHub : l'éditeur
+s'ouvre avec les lignes sélectionnées pré-remplies dans un bloc
+```` ```suggestion ```` — modifiez le bloc en votre remplacement proposé.
+Les suggestions s'affichent distinctement dans la boîte du fil (une
+étiquette plus des lignes de code en vert) et sont soumises comme
+suggestions nativement applicables sur GitHub (la forme à plage de GitLab
+est produite automatiquement pour les sélections multilignes).
+
 Une sélection doit correspondre à une plage continue sur un seul côté ; les
 sélections traversant les deux côtés sont rejetées avant l'ouverture de
 l'éditeur.

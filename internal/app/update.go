@@ -207,6 +207,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.selectBlock()
 	case "comment":
 		return m.startComment("")
+	case "suggest":
+		return m.startSuggestion()
 	case "edit":
 		return m.startEditUnderCursor()
 	case "files":

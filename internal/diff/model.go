@@ -87,6 +87,12 @@ type DiffLine struct {
 	Kind LineKind
 	Text string
 
+	// Raw is the line's original text when tab expansion changed it, and ""
+	// when Text is already verbatim. Display uses Text; anything that leaves
+	// the program as code — change suggestions especially — must use
+	// RawText, or the patch would silently swap tabs for spaces.
+	Raw string
+
 	// OldLine is the 1-based line number on the old side, or nil for additions.
 	OldLine *int
 	// NewLine is the 1-based line number on the new side, or nil for deletions.
@@ -140,4 +146,14 @@ func (f *FileDiff) LineAt(hunkIndex, lineIndex int) *DiffLine {
 		return nil
 	}
 	return &h.Lines[lineIndex]
+}
+
+// RawText returns the line's verbatim source text: the original bytes when
+// tab expansion altered the display form, Text otherwise. This is what code
+// leaving the program (suggestion bodies, patches) must be built from.
+func (l *DiffLine) RawText() string {
+	if l.Raw != "" {
+		return l.Raw
+	}
+	return l.Text
 }

@@ -40,6 +40,7 @@ Press `?` inside the TUI for this reference at any time.
 | --- | --- |
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
+| `R` | suggest a change — the editor opens with the selected code inside a ```` ```suggestion ```` fence; hosts render it applyable |
 | `e` | edit draft comment under cursor |
 | `x` | dismiss / restore comment under cursor (kept, never submitted) |
 | `r` | reply to the comment under cursor ([exchange conversations](exchange-format.md)) or its thread (PR mode) |

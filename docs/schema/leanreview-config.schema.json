@@ -90,6 +90,7 @@
           "page-down", "page-up", "pr-info", "prev-change", "prev-file",
           "prev-hunk", "prev-match", "quit", "reply", "scroll-left",
           "scroll-right", "search", "select", "select-block", "side-left",
+          "suggest",
           "side-right", "sidebar", "submit", "toggle-context", "toggle-fold", "toggle-inline", "toggle-syntax",
           "toggle-layout", "toggle-wrap", "up"
         ]

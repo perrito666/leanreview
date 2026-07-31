@@ -69,7 +69,7 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 	// discussion reads as a single thread instead of stacked fragments.
 	type item struct {
 		at     string // RFC 3339 sorts lexically = chronologically
-		texts  []string
+		lines  []annLine
 		images []string // image references found in the bodies
 	}
 	var items []item
@@ -93,34 +93,37 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 				if c.Author != "" {
 					author = "@" + c.Author + ": "
 				}
-				texts := []string{fmt.Sprintf("● %s%s%s", author, body(c.Body), state)}
+				lines := splitBodyLines("● "+author, body(c.Body))
+				if state != "" && len(lines) > 0 {
+					lines[0].text += state
+				}
 				images := imageRefs(c.Body)
 				for _, rp := range c.Replies {
 					who := rp.Author
 					if who == "" {
 						who = "reply"
 					}
-					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", who, body(rp.Body)))
+					lines = append(lines, splitBodyLines(fmt.Sprintf("  ↳ @%s: ", who), body(rp.Body))...)
 					images = append(images, imageRefs(rp.Body)...)
 				}
-				items = append(items, item{at: c.At, texts: texts, images: images})
+				items = append(items, item{at: c.At, lines: lines, images: images})
 			}
 		}
 		// Existing review threads (PR mode), with their replies inline.
 		if m.pr != nil {
 			for _, ti := range m.threadIndex[locKey(src.Path, src.Side, src.StartLine)] {
 				th := m.pr.Threads[ti]
-				texts := []string{fmt.Sprintf("◆ @%s: %s", th.Root.Author, body(th.Root.Body))}
+				lines := splitBodyLines(fmt.Sprintf("◆ @%s: ", th.Root.Author), body(th.Root.Body))
 				images := imageRefs(th.Root.Body)
 				for _, rp := range th.Replies {
-					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", rp.Author, body(rp.Body)))
+					lines = append(lines, splitBodyLines(fmt.Sprintf("  ↳ @%s: ", rp.Author), body(rp.Body))...)
 					images = append(images, imageRefs(rp.Body)...)
 				}
 				at := ""
 				if !th.Root.CreatedAt.IsZero() {
 					at = th.Root.CreatedAt.UTC().Format(time.RFC3339)
 				}
-				items = append(items, item{at: at, texts: texts, images: images})
+				items = append(items, item{at: at, lines: lines, images: images})
 			}
 		}
 	}
@@ -144,12 +147,29 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 				Edge:       diff.EdgeDivider,
 			})
 		}
-		for _, text := range it.texts {
-			for _, line := range m.wrapAnnotation(text) {
+		for _, ln := range it.lines {
+			switch ln.kind {
+			case annSuggestLabel:
 				rows = append(rows, diff.DisplayRow{
-					Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
+					Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: m.theme.Faint.Render("╌╌ " + ln.text + " ╌╌")},
 					Annotation: true,
+					Pre:        true,
 				})
+			case annSuggestCode:
+				// Suggested code renders like an addition — it IS the
+				// proposed new content — and never wraps (it is code).
+				rows = append(rows, diff.DisplayRow{
+					Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: m.theme.Addition.Render("+ " + ln.text)},
+					Annotation: true,
+					Pre:        true,
+				})
+			default:
+				for _, line := range m.wrapAnnotation(ln.text) {
+					rows = append(rows, diff.DisplayRow{
+						Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
+						Annotation: true,
+					})
+				}
 			}
 		}
 		rows = append(rows, m.imageRows(it.images)...)
