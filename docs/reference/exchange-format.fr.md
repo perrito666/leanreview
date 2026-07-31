@@ -104,7 +104,14 @@ intégré — voir [support éditeur](#editor-support).
 | `body` | oui | Texte du commentaire en Markdown. |
 | `state` | non | `active` (par défaut), `dismissed`, `orphaned`, ou `stale`. |
 | `snippet` | non | La ou les lignes de diff ancrées, à titre informatif. Recalculé si vide. |
-| `replies` | non | Réponses, de la plus ancienne à la plus récente : `{ "author", "body" }`. |
+| `at` | non | Horodatage de création au format RFC 3339. |
+| `replies` | non | Réponses, de la plus ancienne à la plus récente : `{ "author", "body", "at" }` (`at` optionnel). |
+
+Les horodatages sont optionnels mais font partie de la version 1 à dessein :
+les intermédiaires ne conservent pas les champs inconnus, donc tout ce qu'un
+aller-retour doit transporter doit exister dès le départ. Les réponses
+s'accumulent au fil des rondes, et leur chronologie fait partie de la
+conversation.
 
 ### États — le protocole de conversation
 
@@ -149,7 +156,7 @@ patch qu'ils intègrent ; le champ `snippet` existe pour que les lecteurs
 Quand leanreview ouvre un fichier d'échange, les modifications ont lieu dans
 la TUI et **chaque enregistrement de brouillon réécrit le fichier sur
 place** (quitter enregistre aussi). Ce qui suit survit à un aller-retour sans
-changement : les `id` des commentaires, les `author`, les `replies`, le
+changement : les `id` des commentaires, les `author`, les horodatages `at`, les `replies`, le
 `patch`, `title`, et `summary`. La TUI ne change que ce que l'humain a
 changé : les corps, les états, et l'ensemble des commentaires
 (ajoutés/supprimés).

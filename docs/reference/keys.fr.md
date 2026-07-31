@@ -40,6 +40,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | `c` | commenter la ligne ou la sélection (ouvre `$EDITOR`) |
 | `e` | modifier le commentaire en brouillon sous le curseur |
 | `x` | rejeter / restaurer le commentaire sous le curseur (conservé, jamais soumis) |
+| `r` | répondre au commentaire sous le curseur ([conversations d'échange](exchange-format.md)) ou à son fil (mode PR) |
 | `dd` | supprimer le commentaire sous le curseur |
 
 ## Mode pull request
@@ -47,7 +48,6 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | Touche | Action |
 | --- | --- |
 | `p` (ou `:pr`) | détails de la PR : titre, description, lien |
-| `r` | répondre au fil sous le curseur |
 | `s` | soumettre la revue (écran de confirmation) |
 
 ## Commandes

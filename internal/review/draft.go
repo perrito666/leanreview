@@ -7,6 +7,7 @@ package review
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"time"
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
@@ -60,6 +61,8 @@ type DraftComment struct {
 	// Author attributes an imported comment (review-exchange conversations:
 	// "assistant", a username). Empty for comments created in this TUI.
 	Author string `json:"author,omitempty"`
+	// At is the RFC 3339 creation time, round-tripped through exchanges.
+	At string `json:"at,omitempty"`
 	// Replies is the running exchange conversation on this comment. Distinct
 	// from ReplyTo (a PR-mode reply to a host thread): these travel with the
 	// comment through the exchange file.
@@ -87,7 +90,8 @@ func NewDraftReview(sourceKey, title, headOID string) *DraftReview {
 	}
 }
 
-// Add appends a comment, assigning it a fresh local id, and returns the id.
+// Add appends a comment, assigning it a fresh local id and stamping the
+// creation time (carried through exchange round trips), and returns the id.
 func (d *DraftReview) Add(loc diff.Location, body, snippet string) string {
 	id := newLocalID()
 	d.Comments = append(d.Comments, DraftComment{
@@ -96,6 +100,7 @@ func (d *DraftReview) Add(loc diff.Location, body, snippet string) string {
 		Body:     body,
 		Snippet:  snippet,
 		State:    DraftActive,
+		At:       time.Now().UTC().Format(time.RFC3339),
 	})
 	return id
 }

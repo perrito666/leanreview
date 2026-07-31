@@ -32,6 +32,10 @@ attributed (`@assistant`). Then:
 - `x` — **dismiss** a comment you disagree with. It stays in the file with
   `state: "dismissed"` so the model knows not to raise it again; `x` again
   restores it.
+- `r` — **reply** to a comment: answer a question, explain a dismissal, or
+  give direction without rewriting the model's words. Replies are
+  attributed to you (`author` in the config, `LEANREVIEW_AUTHOR`, or
+  `$USER`) and shown inside the comment's box.
 - `e` — edit a comment's body to refine or correct it.
 - `c` — add your own comments, exactly as in any review.
 - `dd` — delete outright (leaves no trace in the conversation).

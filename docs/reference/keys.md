@@ -40,6 +40,7 @@ Press `?` inside the TUI for this reference at any time.
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
 | `x` | dismiss / restore comment under cursor (kept, never submitted) |
+| `r` | reply to the comment under cursor ([exchange conversations](exchange-format.md)) or its thread (PR mode) |
 | `dd` | delete comment under cursor |
 
 ## Pull-request mode
@@ -47,7 +48,6 @@ Press `?` inside the TUI for this reference at any time.
 | Key | Action |
 | --- | --- |
 | `p` (or `:pr`) | PR details: title, description, link |
-| `r` | reply to thread under cursor |
 | `s` | submit review (confirmation screen) |
 
 ## Commands

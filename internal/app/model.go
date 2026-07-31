@@ -41,6 +41,10 @@ type Config struct {
 	// is what makes a review-exchange export (:export x.json) self-contained;
 	// nil disables that export form.
 	RawPatch []byte
+
+	// Author is the reviewer's name for attribution in review-exchange
+	// conversations (comment replies); empty falls back to "reviewer".
+	Author string
 }
 
 // Model is the root Bubble Tea model.
@@ -131,6 +135,8 @@ type Model struct {
 	// also refreshes.
 	rawPatch     []byte
 	exchangePath string
+	// author attributes this reviewer's exchange replies.
+	author string
 
 	ctx      context.Context
 	quitting bool
@@ -141,7 +147,11 @@ type pendingEdit struct {
 	snippet string
 	replyTo *int64
 	editing string // local id when editing an existing draft; "" when new
-	session *editor.Session
+	// replyToLocal is the draft comment a conversation reply attaches to
+	// (review-exchange flow); distinct from replyTo, which targets a host
+	// thread comment in PR mode.
+	replyToLocal string
+	session      *editor.Session
 }
 
 // New builds the initial model, filling in whatever cfg leaves unset: an
@@ -172,6 +182,7 @@ func New(cfg Config) *Model {
 		ctx:            context.Background(),
 		pr:             cfg.PR,
 		rawPatch:       cfg.RawPatch,
+		author:         cfg.Author,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)

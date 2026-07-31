@@ -41,6 +41,7 @@ momento.
 | `c` | comentar en línea o selección (abre `$EDITOR`) |
 | `e` | editar comentario en borrador bajo el cursor |
 | `x` | descartar / restaurar comentario bajo el cursor (se conserva, nunca se envía) |
+| `r` | responder al comentario bajo el cursor ([conversaciones de intercambio](exchange-format.md)) o a su hilo (modo PR) |
 | `dd` | eliminar comentario bajo el cursor |
 
 ## Modo pull-request
@@ -48,7 +49,6 @@ momento.
 | Tecla | Acción |
 | --- | --- |
 | `p` (o `:pr`) | detalles del PR: título, descripción, enlace |
-| `r` | responder al hilo bajo el cursor |
 | `s` | enviar revisión (pantalla de confirmación) |
 
 ## Comandos

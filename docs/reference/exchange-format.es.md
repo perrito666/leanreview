@@ -104,7 +104,14 @@ git), y permite que los editores resalten el diff incrustado — ver
 | `body` | sí | Texto del comentario en Markdown. |
 | `state` | no | `active` (por defecto), `dismissed`, `orphaned`, o `stale`. |
 | `snippet` | no | La(s) línea(s) del diff ancladas, informativo. Se recalcula cuando está vacío. |
-| `replies` | no | Respuestas de seguimiento, de más antigua a más reciente: `{ "author", "body" }`. |
+| `at` | no | Marca de tiempo de creación en RFC 3339. |
+| `replies` | no | Respuestas de seguimiento, de más antigua a más reciente: `{ "author", "body", "at" }` (`at` opcional). |
+
+Las marcas de tiempo son opcionales pero forman parte de la versión 1 a
+propósito: los intermediarios no conservan campos desconocidos, así que todo
+lo que un viaje de ida y vuelta deba transportar tiene que existir desde el
+principio. Las respuestas se acumulan entre rondas, y su cronología es parte
+de la conversación.
 
 ### Estados — el protocolo de la conversación
 
@@ -150,7 +157,7 @@ LLM) puedan detectar discrepancias de un vistazo.
 Cuando leanreview abre un archivo de intercambio, las ediciones ocurren en
 la TUI y **cada guardado de borrador reescribe el archivo en su lugar**
 (salir también guarda). Lo siguiente sobrevive intacto a una ida y vuelta:
-los `id` de comentario, los `author`, las `replies`, el `patch`, el
+los `id` de comentario, los `author`, las marcas `at`, las `replies`, el `patch`, el
 `title`, y el `summary`. La TUI cambia solo lo que el humano cambió:
 cuerpos, estados, y el conjunto de comentarios (los añadidos/eliminados).
 

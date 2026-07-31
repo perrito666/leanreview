@@ -10,17 +10,21 @@ import (
 	"github.com/perrito666/leanreview/internal/review"
 )
 
-// startReplyUnderCursor begins a reply to the first thread anchored at the
-// cursor line. Replies are staged as draft comments (with ReplyTo set) and
-// posted when the review is submitted.
+// startReplyUnderCursor begins a reply at the cursor line: to the first host
+// review thread there (PR mode — staged as a draft with ReplyTo, posted on
+// submission), or, when no thread applies, to the draft comment there (a
+// review-exchange conversation reply, appended to the comment and carried
+// through the file). One key, two conversation media.
 func (m *Model) startReplyUnderCursor() tea.Cmd {
-	if !m.prActive() {
-		m.setStatus("replies require pull-request mode")
-		return nil
+	var idxs []int
+	if m.prActive() {
+		idxs = m.threadsAt(m.cursor)
 	}
-	idxs := m.threadsAt(m.cursor)
 	if len(idxs) == 0 {
-		m.setStatus("no thread to reply to on this line")
+		if ids := m.commentIDsAt(m.cursor); len(ids) > 0 {
+			return m.startDraftReply(ids[len(ids)-1])
+		}
+		m.setStatus("nothing to reply to on this line")
 		return nil
 	}
 	th := m.pr.Threads[idxs[0]]
@@ -47,6 +51,36 @@ func (m *Model) startReplyUnderCursor() tea.Cmd {
 	m.mode = ModeExternalEditor
 	c := m.editor.Cmd(m.ctx, sess.Path)
 	return tea.ExecProcess(c, func(err error) tea.Msg { return editorFinishedMsg{err} })
+}
+
+// startDraftReply opens the editor for a conversation reply to the draft
+// comment with the given local id. The reply travels with the comment
+// through the exchange file rather than being a comment of its own, so the
+// other side reads it in context.
+func (m *Model) startDraftReply(localID string) tea.Cmd {
+	c := m.draft.Get(localID)
+	if c == nil {
+		return nil
+	}
+	who := c.Author
+	if who == "" {
+		who = "you"
+	}
+	tctx := editor.TemplateContext{
+		File:    c.Location.Path,
+		Lines:   lineRefString(c.Location),
+		Side:    c.Location.Side.String(),
+		ReplyTo: fmt.Sprintf("comment by @%s: %s", who, firstLine(c.Body)),
+	}
+	sess, err := editor.NewSession(editor.BuildTemplate(tctx, ""), "reply-"+localID)
+	if err != nil {
+		m.setError(err)
+		return nil
+	}
+	m.inflight = &pendingEdit{replyToLocal: localID, session: sess}
+	m.mode = ModeExternalEditor
+	cc := m.editor.Cmd(m.ctx, sess.Path)
+	return tea.ExecProcess(cc, func(err error) tea.Msg { return editorFinishedMsg{err} })
 }
 
 // beginSubmit sets the review event and opens the confirmation screen.

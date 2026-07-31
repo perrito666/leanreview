@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -395,6 +396,25 @@ func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 	}
 	if strings.TrimSpace(body) == "" {
 		m.setStatus("comment discarded (empty)")
+		return nil
+	}
+	if pe.replyToLocal != "" {
+		c := m.draft.Get(pe.replyToLocal)
+		if c == nil {
+			m.setStatus("comment disappeared before the reply landed")
+			return nil
+		}
+		author := m.author
+		if author == "" {
+			author = "reviewer"
+		}
+		c.Replies = append(c.Replies, review.ReviewReply{
+			Author: author,
+			Body:   body,
+			At:     time.Now().UTC().Format(time.RFC3339),
+		})
+		m.saveDraft()
+		m.setStatus("reply added to the conversation")
 		return nil
 	}
 	if pe.editing != "" {

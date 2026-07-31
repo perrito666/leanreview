@@ -34,6 +34,11 @@ diff qu'ils commentent, attribués (`@assistant`). Ensuite :
 - `x` — **rejeter** un commentaire avec lequel vous êtes en désaccord. Il
   reste dans le fichier avec `state: "dismissed"` pour que le modèle sache
   ne pas le soulever à nouveau ; `x` à nouveau le restaure.
+- `r` — **répondre** à un commentaire : répondre à une question, expliquer
+  un rejet ou donner une consigne sans réécrire les mots du modèle. Les
+  réponses vous sont attribuées (`author` dans la configuration,
+  `LEANREVIEW_AUTHOR` ou `$USER`) et s'affichent dans la boîte du
+  commentaire.
 - `e` — modifier le corps d'un commentaire pour l'affiner ou le corriger.
 - `c` — ajouter vos propres commentaires, exactement comme dans n'importe
   quelle revue.

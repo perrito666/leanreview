@@ -30,7 +30,8 @@ near the start.
 | `body` | yes | Markdown. |
 | `state` | no | `active` (default) / `dismissed` / `orphaned` / `stale`. You write `active`; humans produce `dismissed`. |
 | `snippet` | no | The anchored line's exact text. Fill it: it is the error-detector for wrong line numbers. |
-| `replies` | no | `[{"author": "...", "body": "..."}]`, oldest first. |
+| `at` | no | RFC 3339 creation timestamp. Set it — chronology helps across rounds. |
+| `replies` | no | `[{"author": "...", "body": "...", "at": "..."}]`, oldest first; `at` optional. |
 
 ## Semantics that matter
 

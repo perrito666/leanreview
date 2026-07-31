@@ -34,6 +34,11 @@ diff que comentan, atribuidos (`@assistant`). Luego:
 - `x` — **descarta** un comentario con el que no estés de acuerdo.
   Permanece en el archivo con `state: "dismissed"` para que el modelo sepa
   que no debe volver a plantearlo; `x` de nuevo lo restaura.
+- `r` — **responde** a un comentario: contesta una pregunta, explica un
+  descarte o da indicaciones sin reescribir las palabras del modelo. Las
+  respuestas se atribuyen a ti (`author` en la configuración,
+  `LEANREVIEW_AUTHOR` o `$USER`) y se muestran dentro de la caja del
+  comentario.
 - `e` — edita el cuerpo de un comentario para refinarlo o corregirlo.
 - `c` — añade tus propios comentarios, igual que en cualquier revisión.
 - `dd` — elimina definitivamente (no deja rastro en la conversación).

@@ -82,6 +82,11 @@
           "description": "The diff line(s) the comment anchors to, for human/LLM readability. Informational: leanreview recomputes it from the patch when empty and trusts path/side/line for anchoring.",
           "type": "string"
         },
+        "at": {
+          "description": "Optional RFC 3339 creation timestamp.",
+          "type": "string",
+          "format": "date-time"
+        },
         "replies": {
           "description": "Follow-up messages on this comment, oldest first.",
           "type": "array",
@@ -90,7 +95,12 @@
             "required": ["body"],
             "properties": {
               "author": { "type": "string" },
-              "body": { "type": "string" }
+              "body": { "type": "string" },
+              "at": {
+                "description": "Optional RFC 3339 timestamp; replies accumulate across rounds, so chronology is part of the conversation.",
+                "type": "string",
+                "format": "date-time"
+              }
             },
             "additionalProperties": true
           }

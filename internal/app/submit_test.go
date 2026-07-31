@@ -188,7 +188,7 @@ func TestReplyRequiresThread(t *testing.T) {
 	if cmd := m.startReplyUnderCursor(); cmd != nil {
 		t.Errorf("expected no editor command when there is no thread")
 	}
-	if !strings.Contains(m.status, "no thread") {
+	if !strings.Contains(m.status, "nothing to reply to") {
 		t.Errorf("status = %q", m.status)
 	}
 }

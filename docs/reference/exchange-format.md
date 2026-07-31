@@ -97,7 +97,13 @@ see [editor support](#editor-support).
 | `body` | yes | Markdown comment text. |
 | `state` | no | `active` (default), `dismissed`, `orphaned`, or `stale`. |
 | `snippet` | no | The anchored diff line(s), informational. Recomputed when empty. |
-| `replies` | no | Follow-ups, oldest first: `{ "author", "body" }`. |
+| `at` | no | RFC 3339 creation timestamp. |
+| `replies` | no | Follow-ups, oldest first: `{ "author", "body", "at" }` (`at` optional). |
+
+Timestamps are optional but part of version 1 on purpose: intermediaries do
+not preserve unknown fields, so anything a round trip must carry has to
+exist from the start. Replies accumulate across rounds, making their
+chronology part of the conversation.
 
 ### States — the conversation protocol
 
@@ -137,9 +143,10 @@ glance.
 
 When leanreview opens an exchange file, edits happen in the TUI and **every
 draft save rewrites the file in place** (quitting saves). The following
-survive a round trip untouched: comment `id`s, `author`s, `replies`, the
-`patch`, `title`, and `summary`. The TUI changes only what the human changed:
-bodies, states, and the set of comments (added/deleted ones).
+survive a round trip untouched: comment `id`s, `author`s, `at` timestamps,
+`replies`, the `patch`, `title`, and `summary`. The TUI changes only what
+the human changed: bodies, states, replies they authored (`r` on a comment),
+and the set of comments (added/deleted ones).
 
 Output is deterministic: two-space indentation, stable key order, one diff
 line per patch element, trailing newline. Successive round trips of an

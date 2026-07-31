@@ -255,6 +255,7 @@ func run(argv []string) error {
 		WrapWidth:   cfg.WrapWidth,
 		PR:          prCtx,
 		RawPatch:    rawPatch,
+		Author:      cfg.Author,
 	})
 	if exSrc != nil {
 		// Every draft save also rewrites the conversation file, so quitting

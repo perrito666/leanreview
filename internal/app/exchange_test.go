@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/perrito666/leanreview/internal/diff"
+	"github.com/perrito666/leanreview/internal/editor"
 	"github.com/perrito666/leanreview/internal/review"
 )
 
@@ -80,8 +81,41 @@ func TestImportedAuthorShownInPreview(t *testing.T) {
 	if !strings.Contains(out, "@assistant:") {
 		t.Errorf("imported author missing from preview:\n%s", out)
 	}
-	if !strings.Contains(out, "+1 reply") {
-		t.Errorf("reply count missing from preview")
+	// Replies render inside the same box, attributed.
+	if !strings.Contains(out, "↳ @human: ok") {
+		t.Errorf("reply missing from the comment box:\n%s", out)
+	}
+}
+
+// TestReplyToDraftFlow: r on a draft comment opens the editor; the finished
+// body lands as an attributed, timestamped reply on that comment.
+func TestReplyToDraftFlow(t *testing.T) {
+	m := testModel(t)
+	m.author = "hduran"
+	m.cursor = mustFindRow(t, m, diff.SideRight, 72)
+	loc, snip, _ := m.buildLocation()
+	id := m.draft.Add(loc, "from the model", snip)
+	m.draft.Get(id).Author = "assistant"
+
+	sess, err := editor.NewSession("<!-- header -->\n\ndisagree, this is intentional\n", "reply")
+	if err != nil {
+		t.Fatalf("session: %v", err)
+	}
+	m.inflight = &pendingEdit{replyToLocal: id, session: sess}
+	m.mode = ModeExternalEditor
+	m.onEditorFinished(editorFinishedMsg{})
+
+	c := m.draft.Get(id)
+	if len(c.Replies) != 1 {
+		t.Fatalf("reply not recorded: %+v", c.Replies)
+	}
+	r := c.Replies[0]
+	if r.Author != "hduran" || r.Body != "disagree, this is intentional" || r.At == "" {
+		t.Errorf("reply = %+v, want attributed and timestamped", r)
+	}
+	// Still one comment: a conversation reply is not a new draft.
+	if len(m.draft.Comments) != 1 {
+		t.Errorf("reply created a new comment: %d", len(m.draft.Comments))
 	}
 }
 

@@ -93,14 +93,22 @@ type ExchangeComment struct {
 	// Snippet is the diff line the comment anchors to; informational for
 	// readers, recomputed from the patch on import when empty.
 	Snippet string `json:"snippet,omitempty"`
+	// At is an optional RFC 3339 creation timestamp (see ReviewReply.At for
+	// why it is part of version 1).
+	At string `json:"at,omitempty"`
 	// Replies is the running conversation on this comment, oldest first.
 	Replies []ReviewReply `json:"replies,omitempty"`
 }
 
-// ReviewReply is one follow-up message on a comment.
+// ReviewReply is one follow-up message on a comment. At is an optional
+// RFC 3339 timestamp: replies accumulate across rounds, and chronology is
+// part of the conversation. It exists in version 1 deliberately —
+// intermediaries do not preserve unknown fields, so anything a round trip
+// must carry has to be in the format from the start.
 type ReviewReply struct {
 	Author string `json:"author,omitempty"`
 	Body   string `json:"body"`
+	At     string `json:"at,omitempty"` // RFC 3339
 }
 
 // IsExchange sniffs whether data looks like an exchange document rather than a
@@ -180,6 +188,7 @@ func (e *Exchange) ToDraft(sourceKey string, files []diff.FileDiff) *DraftReview
 			Snippet:  snippet,
 			State:    state,
 			Author:   c.Author,
+			At:       c.At,
 			Replies:  c.Replies,
 		})
 	}
@@ -207,6 +216,7 @@ func FromDraft(d *DraftReview, patch []byte) *Exchange {
 			Body:      c.Body,
 			State:     c.State.String(),
 			Snippet:   c.Snippet,
+			At:        c.At,
 			Replies:   c.Replies,
 		})
 	}

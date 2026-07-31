@@ -256,7 +256,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `x` | dismiss / restore comment under cursor (kept, never submitted) |
 | `dd` | delete comment under cursor |
 | `p` | PR details: title, description, link (PR mode) |
-| `r` | reply to thread under cursor (PR mode) |
+| `r` | reply to comment under cursor (or its thread in PR mode) |
 | `s` | submit review (PR mode) |
 | `:w` | save drafts |
 | `:export FILE` | export comments (`.json`: review exchange, else Markdown) |

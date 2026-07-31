@@ -60,6 +60,16 @@ func ExportMarkdown(d *DraftReview) string {
 				fmt.Fprintf(&b, "```%s\n%s\n```\n\n", lang, strings.TrimRight(c.Snippet, "\n"))
 			}
 			b.WriteString(blockquote(c.Body))
+			// Replies continue the same quote block so the conversation reads
+			// as one unit, each attributed on its own marker line.
+			for _, r := range c.Replies {
+				who := r.Author
+				if who == "" {
+					who = "reply"
+				}
+				b.WriteString("\n>\n")
+				b.WriteString(blockquote(fmt.Sprintf("↳ @%s: %s", who, strings.TrimRight(r.Body, "\n"))))
+			}
 			b.WriteString("\n\n")
 		}
 	}
