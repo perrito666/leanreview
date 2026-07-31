@@ -6,8 +6,12 @@ func TestRenderUnifiedRowsMatchLines(t *testing.T) {
 	f := loadFixture(t, "simple.diff")[0]
 	rows := RenderUnified(&f)
 
-	var content, headers int
+	var content, headers, seps int
 	for _, r := range rows {
+		if r.Separator {
+			seps++
+			continue
+		}
 		if r.Left != nil && r.Left.Kind == LineMetadata && r.Right == nil {
 			headers++
 			continue
@@ -19,6 +23,9 @@ func TestRenderUnifiedRowsMatchLines(t *testing.T) {
 	}
 	if headers != len(f.Hunks) {
 		t.Errorf("headers = %d, want %d", headers, len(f.Hunks))
+	}
+	if seps != len(f.Hunks)-1 {
+		t.Errorf("separators = %d, want one between each pair of hunks (%d)", seps, len(f.Hunks)-1)
 	}
 	var wantContent int
 	for _, h := range f.Hunks {

@@ -37,7 +37,7 @@ func (m *Model) moveLine(delta int) {
 		dir = -1
 	}
 	rows := m.rows()
-	skip := func(i int) bool { return rows[i].Annotation || rows[i].Continuation }
+	skip := func(i int) bool { return displayOnly(&rows[i]) }
 	for m.cursor >= 0 && m.cursor < len(rows) && skip(m.cursor) {
 		m.cursor += dir
 	}
@@ -63,16 +63,23 @@ func (m *Model) firstLine() { m.cursor = 0; m.clampCursor() }
 
 // lastLine jumps the cursor to the last row of the file, mirroring firstLine;
 // the clampCursor call is what actually scrolls the viewport to the tail.
-// Display-only rows (annotation boxes, wrapped continuations) at the tail are
-// skipped so G rests on a real line, as every other motion guarantees.
+// Display-only rows (annotation boxes, wrapped continuations, separators) at
+// the tail are skipped so G rests on a real line, as every other motion
+// guarantees.
 func (m *Model) lastLine() {
 	rows := m.rows()
 	i := len(rows) - 1
-	for i > 0 && (rows[i].Annotation || rows[i].Continuation) {
+	for i > 0 && displayOnly(&rows[i]) {
 		i--
 	}
 	m.cursor = i
 	m.clampCursor()
+}
+
+// displayOnly reports whether a row is pure presentation — annotation boxes,
+// wrapped continuations, hunk separators — that the cursor must glide over.
+func displayOnly(r *diff.DisplayRow) bool {
+	return r.Annotation || r.Continuation || r.Separator
 }
 
 // nextChange moves to the next row that is an addition or deletion.

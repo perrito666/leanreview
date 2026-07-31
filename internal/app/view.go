@@ -192,6 +192,12 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 		return m.renderAnnotation(r, isCursor)
 	}
 
+	// Hunk boundary: a faint rule so disjoint excerpts read as disjoint. It
+	// must render before anything dereferences cells — separators carry none.
+	if r.Separator {
+		return m.theme.Faint.Render(pad(strings.Repeat("┄", cw), cw))
+	}
+
 	// Every non-annotation row gets a 2-column gutter signalling comments:
 	// ● draft comment(s), ◆ existing review thread(s).
 	glyph := " "

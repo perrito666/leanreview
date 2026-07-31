@@ -41,6 +41,12 @@ type DisplayRow struct {
 	// the line's own styling but carries no line numbers or Source, so
 	// navigation and selection treat the logical line as one unit.
 	Continuation bool
+
+	// Separator marks the boundary row drawn between hunks, so the reader can
+	// see where one excerpt ends and the next begins when the surrounding
+	// file context is not shown. Display-only: no Source, skipped by
+	// navigation.
+	Separator bool
 }
 
 // AnnotationEdge distinguishes the border rows of a boxed annotation from its
