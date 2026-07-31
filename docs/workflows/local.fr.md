@@ -46,8 +46,11 @@ environnantes se remplissent, et `]c`/`[c` continuent de sauter entre les
 hunks avec la vue centrée sur votre ligne. Le contenu n'est récupéré qu'à
 la première demande (depuis git — ou depuis la forge en mode PR), mis en
 cache sur disque avec une clé d'identité de contenu, et le cache est
-nettoyé par âge et taille au démarrage. `T` à nouveau revient à la vue
-diff seul, où un trait discret marque chaque frontière de hunk.
+nettoyé par âge et taille au démarrage. Dans le fichier complet, chaque hunk est
+encadré — un trait discret plus son en-tête `@@` là où il commence, un
+trait là où il finit — pour que l'étendue de l'extrait revu reste
+évidente. `T` à nouveau revient à la vue diff seul, où un trait discret
+marque chaque frontière de hunk.
 
 ## Commenter
 

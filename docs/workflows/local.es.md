@@ -45,8 +45,11 @@ mientras las líneas circundantes se rellenan, y `]c`/`[c` siguen saltando
 entre hunks con la vista centrada en tu línea. El contenido se descarga
 solo la primera vez que se pide (de git — o del forge en modo PR), se
 guarda en una caché en disco identificada por contenido, y la caché se
-limpia por antigüedad y tamaño al arrancar. `T` de nuevo vuelve a la vista
-de solo diff, donde una línea tenue marca cada frontera entre hunks.
+limpia por antigüedad y tamaño al arrancar. Dentro del archivo completo, cada hunk
+queda delimitado — una línea tenue más su cabecera `@@` donde empieza y
+otra línea donde termina — para que la extensión del fragmento revisado
+sea evidente. `T` de nuevo vuelve a la vista de solo diff, donde una línea
+tenue marca cada frontera entre hunks.
 
 ## Comentar
 

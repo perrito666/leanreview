@@ -89,10 +89,28 @@ func TestRenderUnifiedContextCoversWholeFile(t *testing.T) {
 		t.Errorf("rows: hunk=%d gap=%d dels=%d — context view must contain all three", hunkRows, gapRows, dels)
 	}
 
-	// No headers and no separators in context view.
+	// Every hunk is bracketed: a rule + its @@ header on entry, a rule on
+	// exit — the reviewed excerpt's extent stays visible inside the file.
+	headers, seps := 0, 0
 	for _, r := range rows {
-		if r.Separator || isHeaderLike(&r) {
-			t.Errorf("context view must not contain header/separator rows")
+		if r.Separator {
+			seps++
+		}
+		if isHeaderLike(&r) {
+			headers++
+		}
+	}
+	if headers != len(f.Hunks) {
+		t.Errorf("headers = %d, want one per hunk (%d)", headers, len(f.Hunks))
+	}
+	if seps != 2*len(f.Hunks) {
+		t.Errorf("boundary rules = %d, want %d (entry+exit per hunk)", seps, 2*len(f.Hunks))
+	}
+	// Structure: the row before each header is a rule (this fixture's hunks
+	// start mid-file), and each hunk's last sourced row is followed by one.
+	for i, r := range rows {
+		if isHeaderLike(&r) && (i == 0 || !rows[i-1].Separator) {
+			t.Errorf("header at %d not preceded by a boundary rule", i)
 		}
 	}
 
