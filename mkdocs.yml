@@ -51,11 +51,13 @@ plugins:
             GitHub pull requests: Pull requests de GitHub
             GitLab merge requests: Merge requests de GitLab
             Discovery: Descubrimiento
+            LLM review loop: Ciclo de revisión con LLM
             Concepts: Conceptos
             Reference: Referencia
             Keys: Teclas
             Command line: Línea de comandos
             Configuration: Configuración
+            Exchange format: Formato de intercambio
         - locale: fr
           name: Français
           build: true
@@ -66,11 +68,13 @@ plugins:
             GitHub pull requests: Pull requests GitHub
             GitLab merge requests: Merge requests GitLab
             Discovery: Découverte
+            LLM review loop: Boucle de revue avec LLM
             Concepts: Concepts
             Reference: Référence
             Keys: Touches
             Command line: Ligne de commande
             Configuration: Configuration
+            Exchange format: Format d'échange
 
 nav:
   - Home: index.md
@@ -79,8 +83,10 @@ nav:
       - GitHub pull requests: workflows/github.md
       - GitLab merge requests: workflows/gitlab.md
       - Discovery: workflows/discovery.md
+      - LLM review loop: workflows/llm-loop.md
   - Concepts: concepts.md
   - Reference:
       - Keys: reference/keys.md
       - Command line: reference/cli.md
       - Configuration: reference/configuration.md
+      - Exchange format: reference/exchange-format.md

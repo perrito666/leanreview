@@ -39,6 +39,7 @@ Press `?` inside the TUI for this reference at any time.
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
+| `x` | dismiss / restore comment under cursor (kept, never submitted) |
 | `dd` | delete comment under cursor |
 
 ## Pull-request mode
@@ -54,7 +55,7 @@ Press `?` inside the TUI for this reference at any time.
 | Command | Action |
 | --- | --- |
 | `:w` | save drafts |
-| `:export FILE` | export comments as Markdown |
+| `:export FILE` | export comments (`.json`: [review exchange](exchange-format.md), else Markdown) |
 | `:comment` / `:approve` / `:request` | open submission with that event |
 | `:q` / `q` | quit |
 

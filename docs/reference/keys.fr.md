@@ -39,6 +39,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | `v` / `V` | sélectionner des lignes / le bloc modifié |
 | `c` | commenter la ligne ou la sélection (ouvre `$EDITOR`) |
 | `e` | modifier le commentaire en brouillon sous le curseur |
+| `x` | rejeter / restaurer le commentaire sous le curseur (conservé, jamais soumis) |
 | `dd` | supprimer le commentaire sous le curseur |
 
 ## Mode pull request
@@ -54,7 +55,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | Commande | Action |
 | --- | --- |
 | `:w` | enregistrer les brouillons |
-| `:export FILE` | exporter les commentaires en Markdown |
+| `:export FILE` | exporter les commentaires (`.json` : [échange de revue](exchange-format.md), sinon Markdown) |
 | `:comment` / `:approve` / `:request` | ouvrir la soumission avec cet événement |
 | `:q` / `q` | quitter |
 

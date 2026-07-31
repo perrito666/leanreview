@@ -101,6 +101,20 @@ Drafts persist automatically (`:w` forces a save, quitting saves too) and
 reload the next time you open the same source. `leanreview --discard <target>`
 deletes a saved draft.
 
+## Reviewing with an LLM
+
+leanreview can be the human half of an offline review conversation: an LLM
+writes its review into a self-contained `*.review.json`
+([exchange format](https://perrito666.github.io/leanreview/reference/exchange-format/)),
+you triage it in the TUI (`x` dismisses, `e` edits, `c` adds), and the file
+— rewritten in place as you work — goes back to the model as its
+instructions. A ready-made agent skill lives in
+[`skills/leanreview-loop/`](skills/leanreview-loop/), and
+[`editors/`](editors/) ships Vim/Neovim, VS Code, and JetBrains support for
+the format. See the
+[LLM review loop](https://perrito666.github.io/leanreview/workflows/llm-loop/)
+docs.
+
 ## Discovering what to review
 
 `--list` finds open requests and lets you pick one:
@@ -239,12 +253,13 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
+| `x` | dismiss / restore comment under cursor (kept, never submitted) |
 | `dd` | delete comment under cursor |
 | `p` | PR details: title, description, link (PR mode) |
 | `r` | reply to thread under cursor (PR mode) |
 | `s` | submit review (PR mode) |
 | `:w` | save drafts |
-| `:export FILE` | export comments as Markdown |
+| `:export FILE` | export comments (`.json`: review exchange, else Markdown) |
 | `:comment` / `:approve` / `:request` | open submission with that event |
 | `:q` / `q` | quit |
 | `?` | help |
