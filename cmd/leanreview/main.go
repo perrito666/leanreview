@@ -297,6 +297,7 @@ func run(argv []string) error {
 		PR:           prCtx,
 		RawPatch:     rawPatch,
 		Author:       cfg.Author,
+		Images:       cfg.Images,
 		FetchContext: fetchContext,
 	})
 	if exSrc != nil {

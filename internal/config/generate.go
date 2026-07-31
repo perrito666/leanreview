@@ -19,6 +19,7 @@ type baseline struct {
 	Syntax      bool              `json:"syntax"`
 	SyntaxStyle string            `json:"syntax_style"`
 	Theme       string            `json:"theme"`
+	Images      string            `json:"images"`
 	TabWidth    int               `json:"tab_width"`
 	Context     int               `json:"context"`
 	Wrap        bool              `json:"wrap"`
@@ -41,6 +42,7 @@ func BaselineJSON(keys map[string]string) ([]byte, error) {
 		SyntaxStyle: "auto",
 		Syntax:      true,
 		Theme:       "default",
+		Images:      "auto",
 		TabWidth:    4,
 		Context:     3,
 		Wrap:        true,

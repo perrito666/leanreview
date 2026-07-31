@@ -41,6 +41,10 @@ type Config struct {
 	// WrapWidth caps the wrap point in the unified layout (split layouts wrap
 	// at the side panel width).
 	WrapWidth int
+	// Images selects comment-image rendering: "auto" (kitty protocol on
+	// kitty/ghostty, chafa when installed, off otherwise), "kitty", "chafa",
+	// or "off". Detection is heuristic; the setting is the escape hatch.
+	Images string
 	// Author attributes this reviewer's replies in review-exchange
 	// conversations. Defaults to $USER; the config file and
 	// LEANREVIEW_AUTHOR override it.
@@ -69,6 +73,7 @@ type fileConfig struct {
 	Wrap        *bool             `json:"wrap"`
 	WrapWidth   *int              `json:"wrap_width"`
 	Author      *string           `json:"author"`
+	Images      *string           `json:"images"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -83,6 +88,7 @@ func Load() Config {
 		Wrap:        true,
 		WrapWidth:   120,
 		Author:      os.Getenv("USER"),
+		Images:      "auto",
 		LogPath:     logPath(),
 	}
 
@@ -128,6 +134,9 @@ func Load() Config {
 		if fc.Author != nil && *fc.Author != "" {
 			c.Author = *fc.Author
 		}
+		if fc.Images != nil && *fc.Images != "" {
+			c.Images = *fc.Images
+		}
 	}
 
 	// Environment overrides the file.
@@ -139,6 +148,9 @@ func Load() Config {
 	}
 	if v := os.Getenv("LEANREVIEW_AUTHOR"); v != "" {
 		c.Author = v
+	}
+	if v := os.Getenv("LEANREVIEW_IMAGES"); v != "" {
+		c.Images = v
 	}
 	// LEANREVIEW_LOG is already honoured by logPath(); no second read needed.
 

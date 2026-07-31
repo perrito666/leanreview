@@ -22,6 +22,11 @@
       "description": "Chroma style name, or \"auto\" to match the terminal background (monokai on dark, github on light).",
       "type": "string"
     },
+    "images": {
+      "description": "Comment-image rendering: auto (kitty protocol on kitty/ghostty, chafa when installed, off otherwise), or an explicit backend.",
+      "type": "string",
+      "enum": ["auto", "kitty", "chafa", "off"]
+    },
     "theme": {
       "description": "TUI palette.",
       "type": "string",

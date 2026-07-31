@@ -46,6 +46,9 @@ type Config struct {
 	// full-file context view (T). nil disables the toggle for this source.
 	FetchContext func(ctx context.Context, path string) ([]byte, error)
 
+	// Images selects comment-image rendering: auto, kitty, chafa, or off.
+	Images string
+
 	// Author is the reviewer's name for attribution in review-exchange
 	// conversations (comment replies); empty falls back to "reviewer".
 	Author string
@@ -76,6 +79,9 @@ type Model struct {
 	// highlighter renders source syntax; hlCache memoizes per (path,text).
 	highlighter *ui.Highlighter
 	hlCache     map[string]string
+
+	// images renders comment-thread image references (kitty/chafa/off).
+	images *ui.ImageRenderer
 
 	cursor  int // index into the current file's rows
 	top     int // first visible row (vertical scroll offset)
@@ -202,6 +208,7 @@ func New(cfg Config) *Model {
 		author:         cfg.Author,
 		contextRows:    map[int][]diff.DisplayRow{},
 		fetchContext:   cfg.FetchContext,
+		images:         ui.NewImageRenderer(cfg.Images),
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -189,4 +191,56 @@ func TestSplitDividerContinuesThroughBox(t *testing.T) {
 			t.Errorf("split divider missing at col %d of box row: %q", div, plain)
 		}
 	}
+}
+
+// TestCommentImageFallbackTag: with images off, an image reference degrades
+// to a visible tag — never to silence.
+func TestCommentImageFallbackTag(t *testing.T) {
+	m := testModel(t)
+	m.images = ui.NewImageRenderer("off")
+	m.cursor = mustFindRow(t, m, diff.SideRight, 72)
+	loc, snip, _ := m.buildLocation()
+	m.draft.Add(loc, "see ![screenshot](docs/shot.png) for the glitch", snip)
+	if !strings.Contains(m.View(), "[image: docs/shot.png]") {
+		t.Errorf("image tag missing from the box:\n%s", m.View())
+	}
+}
+
+// TestCommentImageRendersPreRows: with a graphical backend, image rows enter
+// the box as preformatted rows and remote URLs stay tags.
+func TestCommentImageRendersPreRows(t *testing.T) {
+	m := testModel(t)
+	m.images = ui.NewImageRenderer("kitty")
+	path := writeTestPNG(t)
+	m.cursor = mustFindRow(t, m, diff.SideRight, 72)
+	loc, snip, _ := m.buildLocation()
+	m.draft.Add(loc, "local ![a]("+path+") and remote ![b](https://x.test/i.png)", snip)
+
+	pre := 0
+	for _, r := range m.rows() {
+		if r.Annotation && r.Pre {
+			pre++
+		}
+	}
+	if pre == 0 {
+		t.Fatalf("no preformatted image rows in the box")
+	}
+	if !strings.Contains(m.View(), "[image: https://x.test/i.png]") {
+		t.Errorf("remote image must stay a tag (no network fetches)")
+	}
+}
+
+func writeTestPNG(t *testing.T) string {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 20, 10))
+	path := filepath.Join(t.TempDir(), "a.png")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if err := png.Encode(f, img); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }

@@ -2,10 +2,12 @@ package app
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/reflow/wrap"
 
@@ -56,8 +58,9 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 	// share ONE containing box, ordered oldest first, so the line's whole
 	// discussion reads as a single thread instead of stacked fragments.
 	type item struct {
-		at    string // RFC 3339 sorts lexically = chronologically
-		texts []string
+		at     string // RFC 3339 sorts lexically = chronologically
+		texts  []string
+		images []string // image references found in the bodies
 	}
 	var items []item
 
@@ -81,14 +84,16 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 					author = "@" + c.Author + ": "
 				}
 				texts := []string{fmt.Sprintf("● %s%s%s", author, body(c.Body), state)}
+				images := imageRefs(c.Body)
 				for _, rp := range c.Replies {
 					who := rp.Author
 					if who == "" {
 						who = "reply"
 					}
 					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", who, body(rp.Body)))
+					images = append(images, imageRefs(rp.Body)...)
 				}
-				items = append(items, item{at: c.At, texts: texts})
+				items = append(items, item{at: c.At, texts: texts, images: images})
 			}
 		}
 		// Existing review threads (PR mode), with their replies inline.
@@ -135,12 +140,66 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 				})
 			}
 		}
+		rows = append(rows, m.imageRows(it.images)...)
 	}
 	rows = append(rows, diff.DisplayRow{
 		Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
 		Annotation: true,
 		Edge:       diff.EdgeBottom,
 	})
+	return rows
+}
+
+// imageRefTargets caps how many images render per thread item — a wall of
+// screenshots would drown the diff the comment is about.
+const maxImagesPerItem = 3
+
+// imageRefs extracts Markdown image targets from a comment body. Remote URLs
+// are kept as references (rendered as tags — leanreview never fetches the
+// network for a preview); local paths resolve relative to the working
+// directory.
+func imageRefs(body string) []string {
+	matches := imageRefRe.FindAllStringSubmatch(body, maxImagesPerItem)
+	var out []string
+	for _, m := range matches {
+		out = append(out, m[1])
+	}
+	return out
+}
+
+var imageRefRe = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
+
+// imageRows renders each referenced image into preformatted box rows, or a
+// textual tag when the image cannot (or must not) be rendered: remote URLs,
+// missing files, and terminals with images off all degrade to the tag rather
+// than to silence — the reader should always learn the image exists.
+func (m *Model) imageRows(refs []string) []diff.DisplayRow {
+	var rows []diff.DisplayRow
+	_, inner := m.annotationLayout()
+	for _, ref := range refs {
+		tag := func() {
+			rows = append(rows, diff.DisplayRow{
+				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: "  [image: " + ref + "]"},
+				Annotation: true,
+			})
+		}
+		if strings.HasPrefix(ref, "http://") || strings.HasPrefix(ref, "https://") {
+			tag()
+			continue
+		}
+		lines, ok := m.images.Render(ref, inner-2, 12)
+		if !ok {
+			tag()
+			continue
+		}
+		for _, ln := range lines {
+			rows = append(rows, diff.DisplayRow{
+				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: "  " + ln},
+				Annotation: true,
+				Pre:        true,
+			})
+		}
+	}
 	return rows
 }
 
@@ -224,6 +283,12 @@ func (m *Model) renderAnnotation(r *diff.DisplayRow, isCursor bool) string {
 		return pad(pre+m.theme.Faint.Render("├"+strings.Repeat("┄", inner+2)+"┤"), cw)
 	default:
 		side := m.theme.Faint.Render("│")
+		if r.Pre {
+			// Preformatted (image) rows carry their own escapes: clip
+			// ANSI-aware, pad to the frame, restyle nothing.
+			text := pad(ansi.Truncate(r.Left.Text, inner, ""), inner)
+			return pad(pre+side+" "+text+" "+side, cw)
+		}
 		text := m.theme.Comment.Render(pad(clip(r.Left.Text, inner), inner))
 		return pad(pre+side+" "+text+" "+side, cw)
 	}

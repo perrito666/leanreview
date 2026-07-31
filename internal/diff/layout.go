@@ -47,6 +47,11 @@ type DisplayRow struct {
 	// file context is not shown. Display-only: no Source, skipped by
 	// navigation.
 	Separator bool
+
+	// Pre marks an annotation text row whose content is preformatted terminal
+	// output (an image rendered to cells): renderers must clip it ANSI-aware
+	// and never wrap or restyle it. Meaningful only with Annotation set.
+	Pre bool
 }
 
 // AnnotationEdge distinguishes the border rows of a boxed annotation from its
