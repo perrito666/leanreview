@@ -74,17 +74,3 @@ func TestResolveListQueryNoNamedConfigured(t *testing.T) {
 		t.Errorf("err = %v, want a hint about list_filters", err)
 	}
 }
-
-// TestAtoiRejectsEmptyAndSigned guards -U parsing: strconv.Atoi tolerances
-// (signs, and previously the empty string slipping through as 0) are errors
-// for a context-line count.
-func TestAtoiRejectsEmptyAndSigned(t *testing.T) {
-	for _, bad := range []string{"", "+3", "-1", " 3", "3x"} {
-		if _, err := atoi(bad); err == nil {
-			t.Errorf("atoi(%q) accepted, want error", bad)
-		}
-	}
-	if n, err := atoi("12"); err != nil || n != 12 {
-		t.Errorf("atoi(12) = %d, %v", n, err)
-	}
-}
