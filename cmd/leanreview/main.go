@@ -670,6 +670,15 @@ var flagsToNames = map[cmdFlag]string{
 	flagCheckConfig: "--check-config",
 }
 
+// flagsWithValue marks the flags that consume the following argument; every
+// other flag is boolean, so what follows it is a positional (--list's
+// engine/filter and any review target arrive that way).
+var flagsWithValue = map[cmdFlag]bool{
+	flagBase:    true,
+	flagContext: true,
+	flagExport:  true,
+}
+
 // runInitConfig writes the baseline config — every setting at its default,
 // the full default keymap spelled out, and a $schema reference for editor
 // validation — refusing to touch an existing file: a generator must never be
@@ -745,6 +754,7 @@ func iterArgs(
 ) iter.Seq2[argument, error] {
 	return func(yield func(argument, error) bool) {
 		skip := false
+		positionalOnly := false
 		for iA, a := range argv {
 			if skip {
 				skip = false
@@ -752,9 +762,20 @@ func iterArgs(
 			}
 			var flag cmdFlag
 			var value string
-			isFlag := strings.HasPrefix(a, "-")
+			if a == "--" && !positionalOnly {
+				// The conventional end-of-flags separator: consumed, and
+				// everything after it is a positional even when it starts
+				// with a dash (targets can be git revisions like "-foo").
+				positionalOnly = true
+				continue
+			}
+			isFlag := !positionalOnly && strings.HasPrefix(a, "-")
 			if isFlag {
 				flag = strFlagToCmdFlag(a)
+				if flag == flagNoFlag {
+					// A bare "-" is not a flag but the stdin target.
+					isFlag = false
+				}
 				if flag == flagUnknown {
 					if !yield(argument{
 						Name:     flag,
@@ -766,7 +787,7 @@ func iterArgs(
 					continue
 				}
 			}
-			hasValue := isFlag && len(argv) > iA+1 && !strings.HasPrefix(argv[iA+1], "-")
+			hasValue := isFlag && flagsWithValue[flag] && len(argv) > iA+1 && !strings.HasPrefix(argv[iA+1], "-")
 			if hasValue {
 				value = argv[iA+1]
 				skip = true
