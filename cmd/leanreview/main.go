@@ -771,6 +771,10 @@ func iterArgs(
 				value = argv[iA+1]
 				skip = true
 			}
+			if !isFlag {
+				value = a
+				hasValue = true
+			}
 
 			if !yield(argument{
 				Name:     flag,
