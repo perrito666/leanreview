@@ -1,0 +1,65 @@
+# Revisar un pull request de GitHub
+
+Requiere [`gh`](https://cli.github.com/) autenticado con `gh auth login`.
+Los hosts Enterprise funcionan a través de la propia autenticación de `gh`.
+
+## Abrir un pull request
+
+```bash
+leanreview 418                                   # infers owner/repo from origin
+leanreview owner/repo#418
+leanreview https://github.com/owner/repo/pull/418
+```
+
+leanreview obtiene el **diff canónico** del PR a través de `gh` — la
+representación exacta a la que GitHub ancla los comentarios de revisión,
+de modo que las posiciones siempre coinciden con lo que muestra GitHub —
+más los metadatos del PR y sus hilos de revisión existentes.
+
+La primera línea de la barra de título muestra una insignia `gh`, la
+referencia del PR, y su título.
+
+## La superposición del pull request
+
+Presiona `p` (o `:pr`) para ver los detalles del pull request: título,
+autor, ramas, URL, y la descripción renderizada como Markdown con estilo.
+`j`/`k` desplazan, `esc`/`p` cierra.
+
+![Superposición de detalles del PR](../screens/pr-overlay.svg)
+
+## Hilos y respuestas
+
+Los hilos de revisión existentes aparecen como marcadores `◆` en la
+columna, con el comentario raíz previsualizado en línea. En una línea
+marcada:
+
+- `Enter` abre el hilo completo (raíz, respuestas, indicadores de
+  resuelto/desactualizado).
+- `r` redacta una respuesta en tu editor. Las respuestas quedan en
+  borrador y se publican cuando envías.
+
+`C` lista tus borradores y, debajo de ellos, todos los hilos existentes.
+
+## Enviar
+
+`s` (o `:comment` / `:approve` / `:request`) abre la pantalla de envío:
+
+![Confirmación de envío](../screens/submit.svg)
+
+Elige el evento con `c`/`a`/`R`, luego `y` envía. Todos los comentarios de
+línea en borrador se suben como **una revisión atómica**; las respuestas en
+borrador se publican en sus hilos después. Nada se envía nunca antes de
+esta confirmación.
+
+Si una respuesta falla después de que se creó la revisión, todo lo que
+GitHub ya haya aceptado se elimina de tus borradores — reintentar solo
+envía lo que aún está pendiente, nunca una revisión duplicada.
+
+## Cuando el HEAD del PR se mueve
+
+Si aterrizan nuevos commits entre tus sesiones, los borradores guardados se
+re-anclan al nuevo diff comparando el contexto circundante capturado de
+cada comentario (siguiendo renombrados), reubicando solo cuando hay una
+coincidencia única. Los comentarios que no se pueden ubicar quedan
+marcados como **huérfanos**, excluidos del envío, y se conservan para que
+los reubiques — ver [Conceptos](../concepts.md).

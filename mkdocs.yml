@@ -1,0 +1,86 @@
+site_name: leanreview
+site_description: A terminal code-review client for patches, local git, GitHub, and GitLab.
+site_url: https://perrito666.github.io/leanreview/
+repo_url: https://github.com/perrito666/leanreview
+repo_name: perrito666/leanreview
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.sections
+    - navigation.footer
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - tables
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: es
+          name: Español
+          build: true
+          nav_translations:
+            Home: Inicio
+            Workflows: Flujos de trabajo
+            Without a forge: Sin forge
+            GitHub pull requests: Pull requests de GitHub
+            GitLab merge requests: Merge requests de GitLab
+            Discovery: Descubrimiento
+            Concepts: Conceptos
+            Reference: Referencia
+            Keys: Teclas
+            Command line: Línea de comandos
+            Configuration: Configuración
+        - locale: fr
+          name: Français
+          build: true
+          nav_translations:
+            Home: Accueil
+            Workflows: Flux de travail
+            Without a forge: Sans forge
+            GitHub pull requests: Pull requests GitHub
+            GitLab merge requests: Merge requests GitLab
+            Discovery: Découverte
+            Concepts: Concepts
+            Reference: Référence
+            Keys: Touches
+            Command line: Ligne de commande
+            Configuration: Configuration
+
+nav:
+  - Home: index.md
+  - Workflows:
+      - Without a forge: workflows/local.md
+      - GitHub pull requests: workflows/github.md
+      - GitLab merge requests: workflows/gitlab.md
+      - Discovery: workflows/discovery.md
+  - Concepts: concepts.md
+  - Reference:
+      - Keys: reference/keys.md
+      - Command line: reference/cli.md
+      - Configuration: reference/configuration.md
