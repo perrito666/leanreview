@@ -42,19 +42,22 @@ func (m *Model) rows() []diff.DisplayRow {
 // unified; with wrapping off, only the first line is shown (clipped).
 func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 	var rows []diff.DisplayRow
-	add := func(text string) {
-		// Each preview renders as a bordered box: an edge row above and below
-		// the wrapped text rows (see renderAnnotation for the drawing).
+	// Each preview renders as one bordered box: an edge row above and below
+	// the wrapped text rows (see renderAnnotation for the drawing). A comment
+	// and its conversation replies share a box — they are one exchange.
+	add := func(texts ...string) {
 		rows = append(rows, diff.DisplayRow{
 			Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
 			Annotation: true,
 			Edge:       diff.EdgeTop,
 		})
-		for _, line := range m.wrapAnnotation(text) {
-			rows = append(rows, diff.DisplayRow{
-				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
-				Annotation: true,
-			})
+		for _, text := range texts {
+			for _, line := range m.wrapAnnotation(text) {
+				rows = append(rows, diff.DisplayRow{
+					Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: line},
+					Annotation: true,
+				})
+			}
 		}
 		rows = append(rows, diff.DisplayRow{
 			Left:       &diff.DisplayCell{Kind: diff.LineMetadata},
@@ -82,7 +85,21 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 				if c.State != 0 {
 					state = " [" + c.State.String() + "]"
 				}
-				add(fmt.Sprintf("● %s%s", body(c.Body), state))
+				// Imported (exchange) comments carry an author worth showing;
+				// the reviewer's own drafts do not.
+				author := ""
+				if c.Author != "" {
+					author = "@" + c.Author + ": "
+				}
+				texts := []string{fmt.Sprintf("● %s%s%s", author, body(c.Body), state)}
+				for _, r := range c.Replies {
+					who := r.Author
+					if who == "" {
+						who = "reply"
+					}
+					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", who, body(r.Body)))
+				}
+				add(texts...)
 			}
 		}
 		// Existing review threads (PR mode).

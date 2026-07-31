@@ -155,15 +155,25 @@ func run(argv []string) error {
 		return nil
 	}
 
+	// A review-exchange source seeds its draft from the document itself: the
+	// file is the medium both sides of the conversation share, so it wins
+	// over anything the local store remembers for this key.
+	exSrc, _ := src.(*source.ExchangeSource)
+
 	// Load or create the draft for this source.
-	draft, err := store.Load(src.Key())
-	if err != nil {
+	var draft *review.DraftReview
+	if exSrc != nil {
+		draft = exSrc.Exchange().ToDraft(src.Key(), files)
+		if draft.Title == "" {
+			draft.Title = src.Title()
+		}
+	} else if draft, err = store.Load(src.Key()); err != nil {
 		log.Printf("load draft: %v", err)
 	}
 	headOID := src.HeadOID(ctx)
 	if draft == nil {
 		draft = review.NewDraftReview(src.Key(), src.Title(), headOID)
-	} else {
+	} else if exSrc == nil {
 		draft.SourceKey = src.Key()
 		if draft.Title == "" {
 			draft.Title = src.Title()
@@ -182,10 +192,24 @@ func run(argv []string) error {
 		}
 	}
 
-	// Non-interactive export: write drafts as Markdown and exit.
+	// rawPatch is the literal diff text, needed to make exchange exports
+	// self-contained; nil when the source cannot produce one.
+	var rawPatch []byte
+	if rp, ok := src.(source.RawPatcher); ok {
+		if rawPatch, err = rp.RawPatch(ctx); err != nil {
+			log.Printf("raw patch: %v", err)
+			rawPatch = nil
+		}
+	}
+
+	// Non-interactive export: write drafts (Markdown, or a review-exchange
+	// document for .json destinations) and exit.
 	if opts.exportPath != "" {
-		md := review.ExportMarkdown(draft)
-		if err := os.WriteFile(opts.exportPath, []byte(md), 0o644); err != nil {
+		out, err := review.RenderExport(opts.exportPath, draft, rawPatch)
+		if err != nil {
+			return fmt.Errorf("export: %w", err)
+		}
+		if err := os.WriteFile(opts.exportPath, out, 0o644); err != nil {
 			return fmt.Errorf("export: %w", err)
 		}
 		abs, _ := filepath.Abs(opts.exportPath)
@@ -230,7 +254,14 @@ func run(argv []string) error {
 		Wrap:        cfg.Wrap,
 		WrapWidth:   cfg.WrapWidth,
 		PR:          prCtx,
+		RawPatch:    rawPatch,
+		Author:      cfg.Author,
 	})
+	if exSrc != nil {
+		// Every draft save also rewrites the conversation file, so quitting
+		// the TUI leaves the exchange ready for the other side to read.
+		model.SetExchangeWriteback(exSrc.Path())
+	}
 
 	prog := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := prog.Run(); err != nil {

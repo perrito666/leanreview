@@ -41,6 +41,10 @@ type Config struct {
 	// WrapWidth caps the wrap point in the unified layout (split layouts wrap
 	// at the side panel width).
 	WrapWidth int
+	// Author attributes this reviewer's replies in review-exchange
+	// conversations. Defaults to $USER; the config file and
+	// LEANREVIEW_AUTHOR override it.
+	Author string
 	// LogPath is where diagnostic logs are written (never stdout).
 	LogPath string
 	// Warning carries a non-fatal startup problem (e.g. a malformed config
@@ -64,6 +68,7 @@ type fileConfig struct {
 	ListFilters map[string]string `json:"list_filters"`
 	Wrap        *bool             `json:"wrap"`
 	WrapWidth   *int              `json:"wrap_width"`
+	Author      *string           `json:"author"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -77,6 +82,7 @@ func Load() Config {
 		ListEngine:  "gh",
 		Wrap:        true,
 		WrapWidth:   120,
+		Author:      os.Getenv("USER"),
 		LogPath:     logPath(),
 	}
 
@@ -119,6 +125,9 @@ func Load() Config {
 		if fc.WrapWidth != nil && *fc.WrapWidth > 0 {
 			c.WrapWidth = *fc.WrapWidth
 		}
+		if fc.Author != nil && *fc.Author != "" {
+			c.Author = *fc.Author
+		}
 	}
 
 	// Environment overrides the file.
@@ -127,6 +136,9 @@ func Load() Config {
 	}
 	if os.Getenv("LEANREVIEW_SYNTAX") == "0" || os.Getenv("NO_COLOR") != "" {
 		c.Syntax = false
+	}
+	if v := os.Getenv("LEANREVIEW_AUTHOR"); v != "" {
+		c.Author = v
 	}
 	// LEANREVIEW_LOG is already honoured by logPath(); no second read needed.
 

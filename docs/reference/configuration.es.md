@@ -43,6 +43,9 @@ una advertencia impresa al iniciar.
   para `--list`: el motor de descubrimiento (`gh` o `glab`), el filtro de
   búsqueda de respaldo, y un mapa de filtros con nombre seleccionables
   como `--list :name` / `--list engine:name`.
+- `author` — el nombre con el que se atribuyen tus respuestas en las
+  [conversaciones de intercambio de revisión](exchange-format.md)
+  (por defecto: `$USER`).
 - `wrap` / `wrap_width` — ajuste de línea de líneas largas del diff y
   previsualizaciones de comentarios (activado por defecto, `w` alterna).
   El código hace ajuste de línea duro en el borde de la columna, los
@@ -58,6 +61,7 @@ una advertencia impresa al iniciar.
 | `LEANREVIEW_EDITOR` | comando del editor (anula el archivo de configuración) |
 | `LEANREVIEW_SYNTAX=0` | deshabilita el resaltado de sintaxis |
 | `NO_COLOR` | deshabilita todo el color (tema mono) |
+| `LEANREVIEW_AUTHOR` | nombre de atribución de respuestas (anula `author`) |
 | `LEANREVIEW_LOG` | ruta del archivo de log |
 
 ## Estado en disco

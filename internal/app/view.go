@@ -39,6 +39,8 @@ func (m *Model) View() string {
 		return m.frame(m.threadReaderView())
 	case ModePR:
 		return m.frame(m.prInfoView())
+	case ModeConvo:
+		return m.frame(m.convoView())
 	}
 
 	if len(m.files) == 0 {

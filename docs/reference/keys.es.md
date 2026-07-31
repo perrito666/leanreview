@@ -31,7 +31,7 @@ momento.
 | `/`, `n`, `N` | buscar texto en el diff, coincidencia siguiente / anterior |
 | `f` | selector de archivos |
 | `C` | lista de comentarios |
-| `Enter` | abrir lector de hilo (en una línea `◆`), si no, lista de comentarios |
+| `Enter` | abrir conversación (línea `●`: editar/borrar respuestas) / hilo (línea `◆`), si no, lista de comentarios |
 
 ## Revisión
 
@@ -40,6 +40,8 @@ momento.
 | `v` / `V` | seleccionar líneas / bloque modificado |
 | `c` | comentar en línea o selección (abre `$EDITOR`) |
 | `e` | editar comentario en borrador bajo el cursor |
+| `x` | descartar / restaurar comentario bajo el cursor (se conserva, nunca se envía) |
+| `r` | responder al comentario bajo el cursor ([conversaciones de intercambio](exchange-format.md)) o a su hilo (modo PR) |
 | `dd` | eliminar comentario bajo el cursor |
 
 ## Modo pull-request
@@ -47,7 +49,6 @@ momento.
 | Tecla | Acción |
 | --- | --- |
 | `p` (o `:pr`) | detalles del PR: título, descripción, enlace |
-| `r` | responder al hilo bajo el cursor |
 | `s` | enviar revisión (pantalla de confirmación) |
 
 ## Comandos
@@ -55,7 +56,7 @@ momento.
 | Comando | Acción |
 | --- | --- |
 | `:w` | guardar borradores |
-| `:export FILE` | exportar comentarios como Markdown |
+| `:export FILE` | exportar comentarios (`.json`: [intercambio de revisión](exchange-format.md), si no, Markdown) |
 | `:comment` / `:approve` / `:request` | abrir envío con ese evento |
 | `:q` / `q` | salir |
 

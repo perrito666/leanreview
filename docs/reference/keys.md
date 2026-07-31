@@ -30,7 +30,7 @@ Press `?` inside the TUI for this reference at any time.
 | `/`, `n`, `N` | search diff text, next / previous match |
 | `f` | file picker |
 | `C` | comment list |
-| `Enter` | open thread reader (on a `◆` line), else comment list |
+| `Enter` | open conversation (`●` line: edit/delete replies) / thread (`◆` line), else comment list |
 
 ## Review
 
@@ -39,6 +39,8 @@ Press `?` inside the TUI for this reference at any time.
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |
+| `x` | dismiss / restore comment under cursor (kept, never submitted) |
+| `r` | reply to the comment under cursor ([exchange conversations](exchange-format.md)) or its thread (PR mode) |
 | `dd` | delete comment under cursor |
 
 ## Pull-request mode
@@ -46,7 +48,6 @@ Press `?` inside the TUI for this reference at any time.
 | Key | Action |
 | --- | --- |
 | `p` (or `:pr`) | PR details: title, description, link |
-| `r` | reply to thread under cursor |
 | `s` | submit review (confirmation screen) |
 
 ## Commands
@@ -54,7 +55,7 @@ Press `?` inside the TUI for this reference at any time.
 | Command | Action |
 | --- | --- |
 | `:w` | save drafts |
-| `:export FILE` | export comments as Markdown |
+| `:export FILE` | export comments (`.json`: [review exchange](exchange-format.md), else Markdown) |
 | `:comment` / `:approve` / `:request` | open submission with that event |
 | `:q` / `q` | quit |
 

@@ -68,6 +68,14 @@ internal/config     defaults <- config file <- environment
   submission, never silently dropped.
 - **Hand-rolled markdown.** `internal/ui/markdown.go` deliberately renders a
   small subset; do not add glamour or another renderer dependency for it.
+- **Review exchange format.** `internal/review/exchange.go` implements the
+  versioned `*.review.json` conversation format (spec:
+  `docs/reference/exchange-format.md`, schema: `docs/schema/`). The patch is
+  an array of lines on the wire (readability/diffability); readers accept a
+  string too. Dismissed comments are kept, never submitted, never dropped.
+  Format changes are spec changes: update the spec, the schema, the editor
+  grammars in `editors/`, and the skill in `skills/leanreview-loop/`
+  together, and bump the version only for incompatible changes.
 - **No TUI writes to stdout/stderr while running.** Logs go to the XDG log
   file; if it cannot open, the logger is discarded. Startup warnings print
   before the TUI takes the terminal.

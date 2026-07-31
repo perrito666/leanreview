@@ -39,6 +39,8 @@ warning printed on startup.
 - `list_engine` / `list_filter` / `list_filters` — defaults for `--list`:
   the discovery engine (`gh` or `glab`), the fallback search filter, and a
   map of named filters selectable as `--list :name` / `--list engine:name`.
+- `author` — the name attributed to your replies in
+  [review-exchange conversations](exchange-format.md) (default: `$USER`).
 - `wrap` / `wrap_width` — wrapping of long diff lines and comment previews
   (default on, `w` toggles). Code wraps hard at the column edge, comments at
   word boundaries; in unified layout the wrap point is
@@ -52,6 +54,7 @@ warning printed on startup.
 | `LEANREVIEW_EDITOR` | editor command (overrides the config file) |
 | `LEANREVIEW_SYNTAX=0` | disable syntax highlighting |
 | `NO_COLOR` | disable all color (mono theme) |
+| `LEANREVIEW_AUTHOR` | reply attribution name (overrides `author`) |
 | `LEANREVIEW_LOG` | log file path |
 
 ## State on disk

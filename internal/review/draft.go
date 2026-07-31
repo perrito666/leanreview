@@ -7,6 +7,7 @@ package review
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"time"
 
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
@@ -22,6 +23,9 @@ const (
 	DraftStale
 	// DraftOrphaned: the location no longer resolves and needs manual repositioning.
 	DraftOrphaned
+	// DraftDismissed: a human rejected the comment. It is kept (so the other
+	// side of a review conversation can see the verdict) but never submitted.
+	DraftDismissed
 )
 
 // String returns the lowercase state label shown next to a comment in the
@@ -33,6 +37,8 @@ func (s DraftState) String() string {
 		return "stale"
 	case DraftOrphaned:
 		return "orphaned"
+	case DraftDismissed:
+		return "dismissed"
 	default:
 		return "active"
 	}
@@ -51,6 +57,16 @@ type DraftComment struct {
 	// export does not depend on the diff still being loaded.
 	Snippet string     `json:"snippet"`
 	State   DraftState `json:"state"`
+
+	// Author attributes an imported comment (review-exchange conversations:
+	// "assistant", a username). Empty for comments created in this TUI.
+	Author string `json:"author,omitempty"`
+	// At is the RFC 3339 creation time, round-tripped through exchanges.
+	At string `json:"at,omitempty"`
+	// Replies is the running exchange conversation on this comment. Distinct
+	// from ReplyTo (a PR-mode reply to a host thread): these travel with the
+	// comment through the exchange file.
+	Replies []ReviewReply `json:"replies,omitempty"`
 }
 
 // DraftReview is the full set of pending comments for one source, plus the
@@ -74,7 +90,8 @@ func NewDraftReview(sourceKey, title, headOID string) *DraftReview {
 	}
 }
 
-// Add appends a comment, assigning it a fresh local id, and returns the id.
+// Add appends a comment, assigning it a fresh local id and stamping the
+// creation time (carried through exchange round trips), and returns the id.
 func (d *DraftReview) Add(loc diff.Location, body, snippet string) string {
 	id := newLocalID()
 	d.Comments = append(d.Comments, DraftComment{
@@ -83,6 +100,7 @@ func (d *DraftReview) Add(loc diff.Location, body, snippet string) string {
 		Body:     body,
 		Snippet:  snippet,
 		State:    DraftActive,
+		At:       time.Now().UTC().Format(time.RFC3339),
 	})
 	return id
 }

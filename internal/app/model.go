@@ -36,6 +36,15 @@ type Config struct {
 	// the CLI); WrapWidth caps the unified wrap point (0 means the default).
 	Wrap      bool
 	WrapWidth int
+
+	// RawPatch is the literal diff text, when the source can provide it. It
+	// is what makes a review-exchange export (:export x.json) self-contained;
+	// nil disables that export form.
+	RawPatch []byte
+
+	// Author is the reviewer's name for attribution in review-exchange
+	// conversations (comment replies); empty falls back to "reviewer".
+	Author string
 }
 
 // Model is the root Bubble Tea model.
@@ -109,6 +118,10 @@ type Model struct {
 	threadIndex map[string][]int
 	// threadView holds the thread indices shown in the thread reader.
 	threadView []int
+	// convoID/convoSel drive the draft-conversation reader: the comment shown
+	// and the selected item (0 = the comment, 1.. = its replies).
+	convoID  string
+	convoSel int
 	// prScroll is the vertical scroll offset of the PR details overlay.
 	prScroll int
 
@@ -120,6 +133,15 @@ type Model struct {
 	// inflight carries the location/snippet while the external editor is open.
 	inflight *pendingEdit
 
+	// rawPatch and exchangePath support review-exchange conversations: the
+	// literal diff for self-contained exports, and (when the session was
+	// opened from an exchange file) the writeback target every draft save
+	// also refreshes.
+	rawPatch     []byte
+	exchangePath string
+	// author attributes this reviewer's exchange replies.
+	author string
+
 	ctx      context.Context
 	quitting bool
 }
@@ -129,7 +151,13 @@ type pendingEdit struct {
 	snippet string
 	replyTo *int64
 	editing string // local id when editing an existing draft; "" when new
-	session *editor.Session
+	// replyToLocal is the draft comment a conversation reply attaches to
+	// (review-exchange flow); distinct from replyTo, which targets a host
+	// thread comment in PR mode. editReplyAt, when set, is the index of an
+	// existing reply being edited rather than a new one being appended.
+	replyToLocal string
+	editReplyAt  *int
+	session      *editor.Session
 }
 
 // New builds the initial model, filling in whatever cfg leaves unset: an
@@ -159,6 +187,8 @@ func New(cfg Config) *Model {
 		wrapWidth:      cfg.WrapWidth,
 		ctx:            context.Background(),
 		pr:             cfg.PR,
+		rawPatch:       cfg.RawPatch,
+		author:         cfg.Author,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
@@ -179,6 +209,11 @@ func New(cfg Config) *Model {
 // Init implements tea.Model. All data arrives fully loaded through Config, so
 // there is no startup command to run.
 func (m *Model) Init() tea.Cmd { return nil }
+
+// SetExchangeWriteback makes every draft save also rewrite the review-exchange
+// file at path, keeping the on-disk conversation current without an explicit
+// export step — the file is the contract with the other side of the review.
+func (m *Model) SetExchangeWriteback(path string) { m.exchangePath = path }
 
 // rawRows returns the unfolded display rows for the current file and layout,
 // cached. Folding is applied on top by rows().

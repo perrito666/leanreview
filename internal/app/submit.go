@@ -10,17 +10,21 @@ import (
 	"github.com/perrito666/leanreview/internal/review"
 )
 
-// startReplyUnderCursor begins a reply to the first thread anchored at the
-// cursor line. Replies are staged as draft comments (with ReplyTo set) and
-// posted when the review is submitted.
+// startReplyUnderCursor begins a reply at the cursor line: to the first host
+// review thread there (PR mode — staged as a draft with ReplyTo, posted on
+// submission), or, when no thread applies, to the draft comment there (a
+// review-exchange conversation reply, appended to the comment and carried
+// through the file). One key, two conversation media.
 func (m *Model) startReplyUnderCursor() tea.Cmd {
-	if !m.prActive() {
-		m.setStatus("replies require pull-request mode")
-		return nil
+	var idxs []int
+	if m.prActive() {
+		idxs = m.threadsAt(m.cursor)
 	}
-	idxs := m.threadsAt(m.cursor)
 	if len(idxs) == 0 {
-		m.setStatus("no thread to reply to on this line")
+		if ids := m.commentIDsAt(m.cursor); len(ids) > 0 {
+			return m.startDraftReply(ids[len(ids)-1])
+		}
+		m.setStatus("nothing to reply to on this line")
 		return nil
 	}
 	th := m.pr.Threads[idxs[0]]
@@ -49,6 +53,44 @@ func (m *Model) startReplyUnderCursor() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg { return editorFinishedMsg{err} })
 }
 
+// startDraftReply opens the editor for a new conversation reply to the draft
+// comment with the given local id. The reply travels with the comment
+// through the exchange file rather than being a comment of its own, so the
+// other side reads it in context.
+func (m *Model) startDraftReply(localID string) tea.Cmd {
+	c := m.draft.Get(localID)
+	if c == nil {
+		return nil
+	}
+	return m.openReplyEditor(c, &pendingEdit{replyToLocal: localID}, "")
+}
+
+// openReplyEditor launches the editor for a conversation reply — pe carries
+// whether the finish appends a new reply or updates an existing one, initial
+// seeds the buffer (the current body when editing).
+func (m *Model) openReplyEditor(c *review.DraftComment, pe *pendingEdit, initial string) tea.Cmd {
+	who := c.Author
+	if who == "" {
+		who = "you"
+	}
+	tctx := editor.TemplateContext{
+		File:    c.Location.Path,
+		Lines:   lineRefString(c.Location),
+		Side:    c.Location.Side.String(),
+		ReplyTo: fmt.Sprintf("comment by @%s: %s", who, firstLine(c.Body)),
+	}
+	sess, err := editor.NewSession(editor.BuildTemplate(tctx, initial), "reply-"+c.LocalID)
+	if err != nil {
+		m.setError(err)
+		return nil
+	}
+	pe.session = sess
+	m.inflight = pe
+	m.mode = ModeExternalEditor
+	cc := m.editor.Cmd(m.ctx, sess.Path)
+	return tea.ExecProcess(cc, func(err error) tea.Msg { return editorFinishedMsg{err} })
+}
+
 // beginSubmit sets the review event and opens the confirmation screen.
 func (m *Model) beginSubmit(event forge.ReviewEvent) {
 	if !m.prActive() {
@@ -68,16 +110,19 @@ type submitCounts struct {
 	NewComments int // submittable line comments (active, non-reply)
 	Replies     int
 	Orphaned    int // non-reply comments with no valid location; not submitted
+	Dismissed   int // comments a human rejected; kept locally, never submitted
 }
 
 // submitCounts tallies the draft's comments by how doSubmit will treat them:
-// replies posted individually, orphaned drafts skipped, the rest submitted as
-// new review comments.
+// replies posted individually, orphaned and dismissed drafts skipped, the
+// rest submitted as new review comments.
 func (m *Model) submitCounts() submitCounts {
 	var c submitCounts
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
 		switch {
+		case cm.State == review.DraftDismissed:
+			c.Dismissed++
 		case cm.ReplyTo != nil:
 			c.Replies++
 		case cm.State == review.DraftOrphaned:
@@ -122,6 +167,10 @@ func (m *Model) doSubmit() tea.Cmd {
 	var commentIDs []string
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
+		if cm.State == review.DraftDismissed {
+			// Rejected by a human: stays in the conversation, never submits.
+			continue
+		}
 		if cm.ReplyTo != nil {
 			replies = append(replies, struct {
 				to   int64

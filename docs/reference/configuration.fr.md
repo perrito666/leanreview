@@ -43,6 +43,9 @@ un avertissement affiché au démarrage.
   `--list` : le moteur de découverte (`gh` ou `glab`), le filtre de
   recherche de secours, et une table de filtres nommés sélectionnables sous
   la forme `--list :name` / `--list engine:name`.
+- `author` — le nom attribué à vos réponses dans les
+  [conversations d'échange de revue](exchange-format.md)
+  (par défaut : `$USER`).
 - `wrap` / `wrap_width` — retour à la ligne des lignes de diff longues et
   des aperçus de commentaires (activé par défaut, `w` bascule). Le code
   revient à la ligne strictement au bord de la colonne, les commentaires
@@ -58,6 +61,7 @@ un avertissement affiché au démarrage.
 | `LEANREVIEW_EDITOR` | commande de l'éditeur (remplace le fichier de configuration) |
 | `LEANREVIEW_SYNTAX=0` | désactive la coloration syntaxique |
 | `NO_COLOR` | désactive toute couleur (thème mono) |
+| `LEANREVIEW_AUTHOR` | nom d'attribution des réponses (remplace `author`) |
 | `LEANREVIEW_LOG` | chemin du fichier journal |
 
 ## État sur le disque

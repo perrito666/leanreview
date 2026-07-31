@@ -26,6 +26,9 @@ const (
 	ModeThread
 	// ModePR shows the pull-request details (title, description, URL).
 	ModePR
+	// ModeConvo shows a focused reader for a draft comment's conversation,
+	// where individual replies can be edited and deleted.
+	ModeConvo
 	// ModeExternalEditor is a placeholder state while the editor is open.
 	ModeExternalEditor
 )
@@ -48,6 +51,8 @@ func (m Mode) String() string {
 		return "THREAD"
 	case ModePR:
 		return "PR"
+	case ModeConvo:
+		return "CONVERSATION"
 	case ModeExternalEditor:
 		return "EDITOR"
 	default:

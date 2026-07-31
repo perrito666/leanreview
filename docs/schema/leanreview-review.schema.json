@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://perrito666.github.io/leanreview/schema/leanreview-review.schema.json",
+  "title": "leanreview review exchange",
+  "description": "A self-contained review conversation: a unified diff plus the comments on it, passed between tools (typically an LLM reviewer and the leanreview TUI). Version 1.",
+  "type": "object",
+  "required": ["leanreview_review", "patch", "comments"],
+  "properties": {
+    "leanreview_review": {
+      "description": "Format version. Readers MUST reject versions they do not know. The key doubles as the content-sniffing marker, so it should appear early in the document.",
+      "type": "integer",
+      "const": 1
+    },
+    "title": {
+      "description": "Human-readable review title, shown in the leanreview title bar.",
+      "type": "string"
+    },
+    "summary": {
+      "description": "Review-level overview or verdict. Round-trips into the review summary used on submission.",
+      "type": "string"
+    },
+    "patch": {
+      "description": "The unified diff the comments anchor to. Writers MUST emit the array-of-lines form (one diff line per element, no trailing newline element); readers MUST also accept a single string for leniency.",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+    "comments": {
+      "description": "The conversation. May be empty on a first, comment-less exchange.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/comment" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "comment": {
+      "type": "object",
+      "required": ["path", "side", "start_line", "body"],
+      "properties": {
+        "id": {
+          "description": "Stable identity across round trips so editors can correlate changes. Writers SHOULD set one; leanreview assigns a random id when absent and preserves existing ids.",
+          "type": "string"
+        },
+        "author": {
+          "description": "Free-form attribution (e.g. \"assistant\", a username). Shown next to imported comments in the TUI.",
+          "type": "string"
+        },
+        "path": {
+          "description": "File path exactly as it appears in the embedded patch (new path for RIGHT, old path accepted for LEFT).",
+          "type": "string"
+        },
+        "side": {
+          "description": "Which image of the diff the lines refer to: LEFT = old/deleted, RIGHT = new/added or context. Case-insensitive; unrecognised values are read as RIGHT.",
+          "type": "string",
+          "enum": ["LEFT", "RIGHT", "left", "right"]
+        },
+        "start_line": {
+          "description": "1-based line number in the chosen image of the embedded patch.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "description": "Inclusive end of a multi-line span; defaults to start_line.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "body": {
+          "description": "The comment text, Markdown.",
+          "type": "string"
+        },
+        "state": {
+          "description": "Conversation state. \"active\" (default): stands and should be acted on. \"dismissed\": a human rejected it — do NOT act on it, but keep it. \"orphaned\": no longer anchors to the diff. \"stale\": may need re-anchoring.",
+          "type": "string",
+          "enum": ["active", "dismissed", "orphaned", "stale"]
+        },
+        "snippet": {
+          "description": "The diff line(s) the comment anchors to, for human/LLM readability. Informational: leanreview recomputes it from the patch when empty and trusts path/side/line for anchoring.",
+          "type": "string"
+        },
+        "at": {
+          "description": "Optional RFC 3339 creation timestamp.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "replies": {
+          "description": "Follow-up messages on this comment, oldest first.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["body"],
+            "properties": {
+              "author": { "type": "string" },
+              "body": { "type": "string" },
+              "at": {
+                "description": "Optional RFC 3339 timestamp; replies accumulate across rounds, so chronology is part of the conversation.",
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

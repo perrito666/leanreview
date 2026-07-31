@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -82,6 +83,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case ModePR:
 		m.handlePRKey(key)
 		return m, nil
+	case ModeConvo:
+		return m, m.handleConvoKey(key)
 	}
 
 	cmd, ready := m.pending.Feed(key, m.keymap)
@@ -193,6 +196,8 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.openPRInfo()
 	case "delete-comment":
 		m.deleteCommentUnderCursor()
+	case "dismiss":
+		m.dismissComment()
 	case "toggle-fold":
 		m.toggleFold()
 	case "expand-all":
@@ -203,8 +208,12 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.clearSelection()
 		m.clearSearch()
 	case "open":
+		// Priority: host threads (PR mode), then the draft conversation on
+		// this line, then the comment list.
 		if m.prActive() && len(m.threadsAt(m.cursor)) > 0 {
 			m.openThreadReader()
+		} else if len(m.commentIDsAt(m.cursor)) > 0 {
+			m.openConversation()
 		} else {
 			m.openComments()
 		}
@@ -395,6 +404,35 @@ func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 		m.setStatus("comment discarded (empty)")
 		return nil
 	}
+	if pe.replyToLocal != "" {
+		c := m.draft.Get(pe.replyToLocal)
+		if c == nil {
+			m.setStatus("comment disappeared before the reply landed")
+			return nil
+		}
+		if pe.editReplyAt != nil {
+			// Editing an existing reply: replace the body, keep the author
+			// and timestamp — polishing a message is not re-sending it.
+			if i := *pe.editReplyAt; i >= 0 && i < len(c.Replies) {
+				c.Replies[i].Body = body
+				m.saveDraft()
+				m.setStatus("reply updated")
+			}
+			return nil
+		}
+		author := m.author
+		if author == "" {
+			author = "reviewer"
+		}
+		c.Replies = append(c.Replies, review.ReviewReply{
+			Author: author,
+			Body:   body,
+			At:     time.Now().UTC().Format(time.RFC3339),
+		})
+		m.saveDraft()
+		m.setStatus("reply added to the conversation")
+		return nil
+	}
 	if pe.editing != "" {
 		if c := m.draft.Get(pe.editing); c != nil {
 			c.Body = body
@@ -416,13 +454,26 @@ func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 	return nil
 }
 
-// saveDraft persists the draft when a store and key are available.
+// saveDraft persists the draft when a store and key are available. In an
+// exchange session it also rewrites the conversation file, so the on-disk
+// document is current the moment the TUI exits — no separate export step.
 func (m *Model) saveDraft() {
-	if m.store == nil || m.draft == nil || m.draft.SourceKey == "" {
+	if m.draft == nil {
 		return
 	}
-	if err := m.store.Save(m.draft); err != nil {
-		m.setError(fmt.Errorf("save drafts: %w", err))
+	if m.store != nil && m.draft.SourceKey != "" {
+		if err := m.store.Save(m.draft); err != nil {
+			m.setError(fmt.Errorf("save drafts: %w", err))
+		}
+	}
+	if m.exchangePath != "" {
+		out, err := review.RenderExport(m.exchangePath, m.draft, m.rawPatch)
+		if err == nil {
+			err = os.WriteFile(m.exchangePath, out, 0o644)
+		}
+		if err != nil {
+			m.setError(fmt.Errorf("write review exchange: %w", err))
+		}
 	}
 }
 
@@ -503,12 +554,40 @@ func (m *Model) runCmdline(line string) tea.Cmd {
 	return nil
 }
 
-// exportMarkdown writes the draft review to path as markdown, echoing the
-// absolute path in the status bar so the user can find a file created from a
-// relative :export argument.
+// dismissComment toggles the draft under the cursor between active and
+// dismissed. Dismissal (unlike dd) keeps the comment: in a review-exchange
+// conversation the verdict itself is information the other side needs.
+func (m *Model) dismissComment() {
+	ids := m.commentIDsAt(m.cursor)
+	if len(ids) == 0 {
+		m.setStatus("no draft comment under cursor to dismiss")
+		return
+	}
+	c := m.draft.Get(ids[len(ids)-1])
+	if c == nil {
+		return
+	}
+	if c.State == review.DraftDismissed {
+		c.State = review.DraftActive
+		m.setStatus("comment restored")
+	} else {
+		c.State = review.DraftDismissed
+		m.setStatus("comment dismissed (x restores, dd deletes)")
+	}
+	m.saveDraft()
+}
+
+// exportMarkdown writes the draft review to path — Markdown, or the review
+// exchange document for .json destinations — echoing the absolute path in the
+// status bar so the user can find a file created from a relative :export
+// argument.
 func (m *Model) exportMarkdown(path string) {
-	md := review.ExportMarkdown(m.draft)
-	if err := os.WriteFile(path, []byte(md), 0o644); err != nil {
+	out, err := review.RenderExport(path, m.draft, m.rawPatch)
+	if err != nil {
+		m.setError(fmt.Errorf("export: %w", err))
+		return
+	}
+	if err := os.WriteFile(path, out, 0o644); err != nil {
 		m.setError(fmt.Errorf("export: %w", err))
 		return
 	}

@@ -1,0 +1,39 @@
+{
+  "name": "leanreview-exchange",
+  "displayName": "leanreview review exchange",
+  "description": "Diff highlighting and schema validation for leanreview *.review.json review-exchange files.",
+  "version": "1.0.0",
+  "publisher": "leanreview",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/perrito666/leanreview"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "lreview",
+        "aliases": ["leanreview exchange"],
+        "extensions": [".review.json"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lreview",
+        "scopeName": "source.lreview",
+        "path": "./syntaxes/lreview.tmLanguage.json"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "*.review.json",
+        "url": "https://perrito666.github.io/leanreview/schema/leanreview-review.schema.json"
+      }
+    ]
+  }
+}
