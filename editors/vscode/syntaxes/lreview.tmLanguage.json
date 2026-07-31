@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "leanreview exchange",
+  "scopeName": "source.lreview",
+  "patterns": [
+    { "include": "#diff-lines" },
+    { "include": "source.json" }
+  ],
+  "repository": {
+    "diff-lines": {
+      "comment": "The canonical exchange format puts one diff line per JSON array element on its own physical line; match those whole lines before the JSON grammar claims them as plain strings.",
+      "patterns": [
+        {
+          "name": "meta.diff.header.lreview",
+          "match": "^\\s*\"diff --git .*\",?$",
+          "captures": { "0": { "name": "meta.diff.header.from-file" } }
+        },
+        {
+          "name": "meta.diff.header.lreview",
+          "match": "^\\s*\"(---|\\+\\+\\+) .*\",?$",
+          "captures": { "0": { "name": "meta.diff.header.to-file" } }
+        },
+        {
+          "name": "meta.diff.range.lreview",
+          "match": "^\\s*\"@@ .*\",?$",
+          "captures": { "0": { "name": "meta.diff.range.unified" } }
+        },
+        {
+          "name": "markup.inserted.diff.lreview",
+          "match": "^\\s*\"\\+(?![+\"]).*\",?$"
+        },
+        {
+          "name": "markup.deleted.diff.lreview",
+          "match": "^\\s*\"-(?![-\"]).*\",?$"
+        }
+      ]
+    }
+  }
+}

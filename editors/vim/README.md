@@ -1,0 +1,43 @@
+# Vim / Neovim support for review-exchange files
+
+Adds a `lreview` filetype for `*.review.json`: JSON highlighting with diff
+colors (added/removed/hunk lines) layered over the embedded `patch` array.
+
+## Install
+
+Copy (or symlink) the two directories into your runtime path:
+
+```bash
+# Vim
+cp -r ftdetect syntax ~/.vim/
+
+# Neovim
+cp -r ftdetect syntax ~/.config/nvim/
+```
+
+Or with a plugin manager, point it at the `editors/vim` directory of this
+repository (it is a standard runtimepath layout).
+
+## Schema validation (optional, Neovim)
+
+If you use `jsonls` via lspconfig, map the published schema for completions
+and validation:
+
+```lua
+require('lspconfig').jsonls.setup {
+  settings = {
+    json = {
+      schemas = {
+        {
+          fileMatch = { '*.review.json' },
+          url = 'https://perrito666.github.io/leanreview/schema/leanreview-review.schema.json',
+        },
+      },
+    },
+  },
+}
+```
+
+Note: `jsonls` attaches to the `json` filetype; either add `lreview` to the
+server's `filetypes`, or skip the custom filetype and keep plain `json` if
+you prefer validation over diff colors.
