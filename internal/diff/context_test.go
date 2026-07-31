@@ -129,3 +129,26 @@ func TestRenderUnifiedContextRejectsWrongContent(t *testing.T) {
 func isHeaderLike(r *DisplayRow) bool {
 	return r.Left != nil && r.Left.Kind == LineMetadata && r.Right == nil
 }
+
+// TestRenderUnifiedContextExpandsTabs is the regression for the guard
+// misfiring on tab-indented files: the parser stores hunk text tab-expanded,
+// so raw fetched content must be normalized before comparison — otherwise
+// every indented line reports "different revision".
+func TestRenderUnifiedContextExpandsTabs(t *testing.T) {
+	patch := "diff --git a/f.go b/f.go\n--- a/f.go\n+++ b/f.go\n@@ -1,3 +1,3 @@\n func f() {\n-\tolder()\n+\tnewer()\n }\n"
+	files, err := ParsePatchBytes([]byte(patch))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	// Raw file content with REAL tabs, as git show would return it.
+	content := []byte("func f() {\n\tnewer()\n}\n")
+	rows, err := RenderUnifiedContext(&files[0], content)
+	if err != nil {
+		t.Fatalf("tab-indented content rejected: %v", err)
+	}
+	for _, r := range rows {
+		if r.Left != nil && strings.Contains(r.Left.Text, "\t") {
+			t.Errorf("row text carries a raw tab: %q", r.Left.Text)
+		}
+	}
+}

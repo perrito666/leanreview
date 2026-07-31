@@ -21,7 +21,10 @@ func RenderUnifiedContext(f *FileDiff, content []byte) ([]DisplayRow, error) {
 	if f.IsBinary {
 		return nil, fmt.Errorf("binary file has no textual context")
 	}
-	lines := strings.Split(strings.TrimRight(string(content), "\n"), "\n")
+	// Normalize to the parser's display form (tab expansion) — hunk Text was
+	// normalized at parse time, and comparing raw bytes against it would
+	// misfire on every tab-indented line.
+	lines := strings.Split(strings.TrimRight(string(NormalizeContent(content)), "\n"), "\n")
 
 	var rows []DisplayRow
 	newPos := 1 // next new-side line not yet emitted

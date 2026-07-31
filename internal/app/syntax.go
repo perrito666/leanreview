@@ -104,7 +104,9 @@ func (m *Model) fileLines(side diff.Side) ([]string, bool) {
 		return nil, false
 	}
 	f := m.currentFile()
-	lines := m.highlighter.ContentLines(sidePath(f, side), content)
+	// Normalize like the parser does, so highlighted lines align with hunk
+	// text (and never emit raw tabs into width-measured rows).
+	lines := m.highlighter.ContentLines(sidePath(f, side), diff.NormalizeContent(content))
 	m.hlFileLines[key] = lines
 	return lines, lines != nil
 }
