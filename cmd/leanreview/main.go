@@ -570,9 +570,9 @@ func parseArgs(argv []string) (options, error) {
 			o.discard = true
 		case flagList:
 			o.list = true
-		case a == "--init-config":
+		case flagInitConfig:
 			o.initConfig = true
-		case a == "--check-config":
+		case flagCheckConfig:
 			o.checkConfig = true
 		case flagHelp:
 			return o, errHelp
@@ -637,31 +637,39 @@ const (
 	flagList
 	flagHelp
 	flagVersion
+	flagInitConfig
+	flagCheckConfig
 )
 
 var namesToFlags = map[string]cmdFlag{
-	"base":    flagBase,
-	"staged":  flagStaged,
-	"context": flagContext,
-	"U":       flagContext,
-	"export":  flagExport,
-	"discard": flagDiscard,
-	"list":    flagList,
-	"help":    flagHelp,
-	"h":       flagHelp,
-	"version": flagVersion,
-	"v":       flagVersion,
+	"base":         flagBase,
+	"staged":       flagStaged,
+	"context":      flagContext,
+	"U":            flagContext,
+	"export":       flagExport,
+	"discard":      flagDiscard,
+	"list":         flagList,
+	"help":         flagHelp,
+	"h":            flagHelp,
+	"version":      flagVersion,
+	"v":            flagVersion,
+	"init-config":  flagInitConfig,
+	"check-config": flagCheckConfig,
 }
 
 var flagsToNames = map[cmdFlag]string{
-	flagBase:    "--base",
-	flagStaged:  "--staged",
-	flagContext: "--context/-U",
-	flagExport:  "--export",
-	flagDiscard: "--discard",
-	flagList:    "--list",
-	flagHelp:    "--help/-h",
-	flagVersion: "--version/-v",
+	flagBase:        "--base",
+	flagStaged:      "--staged",
+	flagContext:     "--context/-U",
+	flagExport:      "--export",
+	flagDiscard:     "--discard",
+	flagList:        "--list",
+	flagHelp:        "--help/-h",
+	flagVersion:     "--version/-v",
+	flagInitConfig:  "--init-config",
+	flagCheckConfig: "--check-config",
+}
+
 // runInitConfig writes the baseline config — every setting at its default,
 // the full default keymap spelled out, and a $schema reference for editor
 // validation — refusing to touch an existing file: a generator must never be
@@ -709,17 +717,6 @@ func runCheckConfig() error {
 		fmt.Println("  - " + p)
 	}
 	return fmt.Errorf("%s: %d problem(s)", path, len(problems))
-}
-
-// next consumes the value following a flag in argv, advancing the caller's
-// loop index past it so value-taking flags work in the hand-rolled parser.
-// flag is only used to name the offender in the error.
-func next(argv []string, i *int, flag string) (string, error) {
-	if *i+1 >= len(argv) {
-		return "", fmt.Errorf("%s requires a value", flag)
-	}
-	*i++
-	return argv[*i], nil
 }
 
 type argument struct {
