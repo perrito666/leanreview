@@ -68,16 +68,19 @@ type submitCounts struct {
 	NewComments int // submittable line comments (active, non-reply)
 	Replies     int
 	Orphaned    int // non-reply comments with no valid location; not submitted
+	Dismissed   int // comments a human rejected; kept locally, never submitted
 }
 
 // submitCounts tallies the draft's comments by how doSubmit will treat them:
-// replies posted individually, orphaned drafts skipped, the rest submitted as
-// new review comments.
+// replies posted individually, orphaned and dismissed drafts skipped, the
+// rest submitted as new review comments.
 func (m *Model) submitCounts() submitCounts {
 	var c submitCounts
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
 		switch {
+		case cm.State == review.DraftDismissed:
+			c.Dismissed++
 		case cm.ReplyTo != nil:
 			c.Replies++
 		case cm.State == review.DraftOrphaned:
@@ -122,6 +125,10 @@ func (m *Model) doSubmit() tea.Cmd {
 	var commentIDs []string
 	for i := range m.draft.Comments {
 		cm := &m.draft.Comments[i]
+		if cm.State == review.DraftDismissed {
+			// Rejected by a human: stays in the conversation, never submits.
+			continue
+		}
 		if cm.ReplyTo != nil {
 			replies = append(replies, struct {
 				to   int64

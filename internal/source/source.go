@@ -18,6 +18,7 @@ import (
 	"github.com/perrito666/leanreview/internal/diff"
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/git"
+	"github.com/perrito666/leanreview/internal/review"
 )
 
 // ReviewSource is a resolved, ready-to-load set of changes under review.
@@ -108,11 +109,16 @@ type patchSource struct {
 // newPatchFileSource reads the whole patch up front (Files may be called more
 // than once, and the file could change or vanish mid-session). The key hashes
 // the absolute path, so reviewing the same file from a different working
-// directory resumes the same draft.
+// directory resumes the same draft. A file that sniffs as a review-exchange
+// document opens as an ExchangeSource instead — same argument shape, richer
+// session.
 func newPatchFileSource(path string) (ReviewSource, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read patch %s: %w", path, err)
+	}
+	if review.IsExchange(data) {
+		return newExchangeSource(path, data)
 	}
 	abs, _ := filepath.Abs(path)
 	return &patchSource{
@@ -124,7 +130,9 @@ func newPatchFileSource(path string) (ReviewSource, error) {
 
 // newStdinSource captures stdin in full at resolution time — a pipe cannot be
 // re-read later. With no path to identify the patch, the key hashes the
-// content itself: feeding the same patch again resumes its draft.
+// content itself: feeding the same patch again resumes its draft. Exchange
+// documents are refused here: the conversation must be written back, and a
+// pipe has no place to write to.
 func newStdinSource(r io.Reader) (ReviewSource, error) {
 	if r == nil {
 		return nil, fmt.Errorf("no stdin available for \"-\"")
@@ -132,6 +140,9 @@ func newStdinSource(r io.Reader) (ReviewSource, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("read stdin: %w", err)
+	}
+	if review.IsExchange(data) {
+		return nil, fmt.Errorf("review exchanges cannot be read from stdin — pass the file path so the conversation can be written back")
 	}
 	return &patchSource{
 		title: "stdin",
@@ -145,6 +156,9 @@ func newStdinSource(r io.Reader) (ReviewSource, error) {
 func (p *patchSource) Files(context.Context) ([]diff.FileDiff, error) {
 	return diff.ParsePatchBytes(p.data)
 }
+
+// RawPatch returns the captured patch verbatim, enabling exchange export.
+func (p *patchSource) RawPatch(context.Context) ([]byte, error) { return p.data, nil }
 
 // Title (the base filename, or "stdin") is shown in the title bar.
 func (p *patchSource) Title() string { return p.title }
@@ -215,6 +229,12 @@ func (g *gitSource) Files(ctx context.Context) ([]diff.FileDiff, error) {
 		return nil, nil
 	}
 	return diff.ParsePatchBytes(raw)
+}
+
+// RawPatch re-runs the diff and returns it verbatim, enabling exchange export
+// — the same bytes Files parses, so exported line numbers stay consistent.
+func (g *gitSource) RawPatch(ctx context.Context) ([]byte, error) {
+	return g.repo.Diff(ctx, g.spec)
 }
 
 // Title is the diff spec's description (e.g. "HEAD", "staged", "main..HEAD"),

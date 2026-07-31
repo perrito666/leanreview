@@ -22,6 +22,9 @@ const (
 	DraftStale
 	// DraftOrphaned: the location no longer resolves and needs manual repositioning.
 	DraftOrphaned
+	// DraftDismissed: a human rejected the comment. It is kept (so the other
+	// side of a review conversation can see the verdict) but never submitted.
+	DraftDismissed
 )
 
 // String returns the lowercase state label shown next to a comment in the
@@ -33,6 +36,8 @@ func (s DraftState) String() string {
 		return "stale"
 	case DraftOrphaned:
 		return "orphaned"
+	case DraftDismissed:
+		return "dismissed"
 	default:
 		return "active"
 	}
@@ -51,6 +56,14 @@ type DraftComment struct {
 	// export does not depend on the diff still being loaded.
 	Snippet string     `json:"snippet"`
 	State   DraftState `json:"state"`
+
+	// Author attributes an imported comment (review-exchange conversations:
+	// "assistant", a username). Empty for comments created in this TUI.
+	Author string `json:"author,omitempty"`
+	// Replies is the running exchange conversation on this comment. Distinct
+	// from ReplyTo (a PR-mode reply to a host thread): these travel with the
+	// comment through the exchange file.
+	Replies []ReviewReply `json:"replies,omitempty"`
 }
 
 // DraftReview is the full set of pending comments for one source, plus the

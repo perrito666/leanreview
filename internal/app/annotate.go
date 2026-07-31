@@ -82,7 +82,17 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 				if c.State != 0 {
 					state = " [" + c.State.String() + "]"
 				}
-				add(fmt.Sprintf("● %s%s", body(c.Body), state))
+				// Imported (exchange) comments carry an author worth showing;
+				// the reviewer's own drafts do not.
+				author := ""
+				if c.Author != "" {
+					author = "@" + c.Author + ": "
+				}
+				extra := ""
+				if n := len(c.Replies); n > 0 {
+					extra = fmt.Sprintf("  (+%d repl%s)", n, plural(n, "y", "ies"))
+				}
+				add(fmt.Sprintf("● %s%s%s%s", author, body(c.Body), state, extra))
 			}
 		}
 		// Existing review threads (PR mode).

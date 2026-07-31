@@ -36,6 +36,11 @@ type Config struct {
 	// the CLI); WrapWidth caps the unified wrap point (0 means the default).
 	Wrap      bool
 	WrapWidth int
+
+	// RawPatch is the literal diff text, when the source can provide it. It
+	// is what makes a review-exchange export (:export x.json) self-contained;
+	// nil disables that export form.
+	RawPatch []byte
 }
 
 // Model is the root Bubble Tea model.
@@ -120,6 +125,13 @@ type Model struct {
 	// inflight carries the location/snippet while the external editor is open.
 	inflight *pendingEdit
 
+	// rawPatch and exchangePath support review-exchange conversations: the
+	// literal diff for self-contained exports, and (when the session was
+	// opened from an exchange file) the writeback target every draft save
+	// also refreshes.
+	rawPatch     []byte
+	exchangePath string
+
 	ctx      context.Context
 	quitting bool
 }
@@ -159,6 +171,7 @@ func New(cfg Config) *Model {
 		wrapWidth:      cfg.WrapWidth,
 		ctx:            context.Background(),
 		pr:             cfg.PR,
+		rawPatch:       cfg.RawPatch,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
@@ -179,6 +192,11 @@ func New(cfg Config) *Model {
 // Init implements tea.Model. All data arrives fully loaded through Config, so
 // there is no startup command to run.
 func (m *Model) Init() tea.Cmd { return nil }
+
+// SetExchangeWriteback makes every draft save also rewrite the review-exchange
+// file at path, keeping the on-disk conversation current without an explicit
+// export step — the file is the contract with the other side of the review.
+func (m *Model) SetExchangeWriteback(path string) { m.exchangePath = path }
 
 // rawRows returns the unfolded display rows for the current file and layout,
 // cached. Folding is applied on top by rows().

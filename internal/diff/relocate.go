@@ -24,7 +24,7 @@ const anchorContext = 3
 // candidates match — or none do — the location is reported as orphaned and left
 // unchanged so the reviewer can decide.
 func Relocate(files []FileDiff, loc Location) (Location, RelocateResult) {
-	f := findFileFor(files, loc.Path)
+	f := FindFileFor(files, loc.Path)
 	if f == nil {
 		return loc, RelocateOrphaned
 	}
@@ -68,9 +68,10 @@ func Relocate(files []FileDiff, loc Location) (Location, RelocateResult) {
 	return loc, RelocateOrphaned
 }
 
-// findFileFor returns the file whose old or new path matches path (so a comment
-// made before a rename still finds its file).
-func findFileFor(files []FileDiff, path string) *FileDiff {
+// FindFileFor returns the file whose old or new path matches path (so a comment
+// made before a rename still finds its file). Exported because exchange import
+// needs the same rename-tolerant lookup when anchoring foreign comments.
+func FindFileFor(files []FileDiff, path string) *FileDiff {
 	for i := range files {
 		if files[i].NewPath == path || files[i].OldPath == path || files[i].Path() == path {
 			return &files[i]

@@ -64,6 +64,12 @@ func (s *PRSource) Files(ctx context.Context) ([]diff.FileDiff, error) {
 	return diff.ParsePatchBytes(raw)
 }
 
+// RawPatch returns the host's canonical diff verbatim, enabling exchange
+// export with the exact bytes review positions are anchored to.
+func (s *PRSource) RawPatch(ctx context.Context) ([]byte, error) {
+	return s.forge.Diff(ctx, s.ref)
+}
+
 // Threads fetches existing review threads for the PR.
 func (s *PRSource) Threads(ctx context.Context) ([]forge.Thread, error) {
 	return s.forge.Threads(ctx, s.ref)

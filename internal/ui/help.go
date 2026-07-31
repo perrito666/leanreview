@@ -33,6 +33,7 @@ func HelpText() string {
    V             select current changed block
    c             comment on line / selection
    e             edit draft comment under cursor
+   x             dismiss / restore comment under cursor
    dd            delete comment under cursor
 
  Pull-request mode
@@ -45,7 +46,7 @@ func HelpText() string {
 
  Commands
    :w            save drafts
-   :export FILE  export comments as Markdown
+   :export FILE  export comments (.json: review exchange, else Markdown)
    :q            quit
    ?             toggle this help
 

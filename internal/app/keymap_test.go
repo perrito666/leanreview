@@ -51,9 +51,9 @@ func TestUnbindKey(t *testing.T) {
 func TestUnknownActionIgnored(t *testing.T) {
 	// An override to a non-existent action is ignored; the key keeps... nothing,
 	// but must not panic and must not bind.
-	m := keymapModel(t, map[string]string{"x": "does-not-exist"})
-	if m.keymap["x"] != "" {
-		t.Errorf("unknown action should not be bound, got %q", m.keymap["x"])
+	m := keymapModel(t, map[string]string{"o": "does-not-exist"})
+	if m.keymap["o"] != "" {
+		t.Errorf("unknown action should not be bound, got %q", m.keymap["o"])
 	}
 }
 
