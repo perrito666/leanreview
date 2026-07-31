@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/perrito666/leanreview/internal/diff"
@@ -23,6 +25,7 @@ type reviewCommentJSON struct {
 	StartLine    *int                   `json:"start_line"`
 	Side         string                 `json:"side"`
 	InReplyToID  *int64                 `json:"in_reply_to_id"`
+	BodyHTML     string                 `json:"body_html"`
 }
 
 // comment adapts the GitHub payload into the forge-neutral Comment; the
@@ -32,7 +35,7 @@ func (rc reviewCommentJSON) comment() forge.Comment {
 	return forge.Comment{
 		ID:        rc.ID,
 		Author:    rc.User.Login,
-		Body:      rc.Body,
+		Body:      resolveAttachments(rc.Body, rc.BodyHTML),
 		CreatedAt: rc.CreatedAt,
 		URL:       rc.HTMLURL,
 	}
@@ -70,7 +73,10 @@ func (rc reviewCommentJSON) location() *diff.Location {
 // diff (line is null but original_line is set).
 func (c *Client) Threads(ctx context.Context, ref forge.PullRequestRef) ([]forge.Thread, error) {
 	path := fmt.Sprintf("repos/%s/pulls/%d/comments", repoPath(ref), ref.Number)
-	out, err := c.run(ctx, nil, apiArgs(ref, path, "--paginate")...)
+	// full+json adds body_html, whose <img> tags carry SIGNED asset URLs —
+	// the only programmatic route to user-attachments content (the raw asset
+	// URLs are session-gated and serve an HTML viewer to API credentials).
+	out, err := c.run(ctx, nil, apiArgs(ref, path, "--paginate", "-H", "Accept: application/vnd.github.full+json")...)
 	if err != nil {
 		return nil, err
 	}
@@ -116,4 +122,35 @@ func (c *Client) Reply(ctx context.Context, ref forge.PullRequestRef, commentID 
 	}
 	cm := rc.comment()
 	return &cm, nil
+}
+
+// attachmentAssetRe matches the session-gated attachment URLs GitHub writes
+// into comment bodies; imgSrcRe extracts image sources from the rendered
+// body_html, where the same assets appear as signed, anonymously fetchable
+// private-user-images URLs whose filenames embed the asset's UUID.
+var (
+	attachmentAssetRe = regexp.MustCompile(`https://github\.com/user-attachments/assets/([a-f0-9-]+)`)
+	imgSrcRe          = regexp.MustCompile(`<img[^>]*\bsrc="([^"]+)"`)
+)
+
+// resolveAttachments rewrites session-gated user-attachments URLs in a
+// comment body to the signed URLs from its rendered HTML, matched by the
+// asset UUID embedded in the signed filename. Assets without a match are
+// left untouched (they degrade to a visible tag downstream). This is what
+// makes comment images fetchable at all: the raw asset URLs answer API
+// tokens with an HTML viewer page.
+func resolveAttachments(body, bodyHTML string) string {
+	if bodyHTML == "" || !strings.Contains(body, "user-attachments/assets/") {
+		return body
+	}
+	srcs := imgSrcRe.FindAllStringSubmatch(bodyHTML, -1)
+	return attachmentAssetRe.ReplaceAllStringFunc(body, func(asset string) string {
+		uuid := attachmentAssetRe.FindStringSubmatch(asset)[1]
+		for _, m := range srcs {
+			if strings.Contains(m[1], uuid) {
+				return m[1]
+			}
+		}
+		return asset
+	})
 }

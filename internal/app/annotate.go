@@ -54,6 +54,9 @@ func (m *Model) rows() []diff.DisplayRow {
 // unified; with wrapping off, only each item's first line is shown (clipped).
 func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 	body := func(s string) string {
+		// Image markup renders as its own rows; showing the raw tag text too
+		// (GitHub's <img width=... src=...> blobs especially) is pure noise.
+		s = stripImageMarkup(s)
 		if m.wrapText {
 			return strings.TrimRight(s, "\n")
 		}
@@ -108,14 +111,16 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 			for _, ti := range m.threadIndex[locKey(src.Path, src.Side, src.StartLine)] {
 				th := m.pr.Threads[ti]
 				texts := []string{fmt.Sprintf("◆ @%s: %s", th.Root.Author, body(th.Root.Body))}
+				images := imageRefs(th.Root.Body)
 				for _, rp := range th.Replies {
 					texts = append(texts, fmt.Sprintf("  ↳ @%s: %s", rp.Author, body(rp.Body)))
+					images = append(images, imageRefs(rp.Body)...)
 				}
 				at := ""
 				if !th.Root.CreatedAt.IsZero() {
 					at = th.Root.CreatedAt.UTC().Format(time.RFC3339)
 				}
-				items = append(items, item{at: at, texts: texts})
+				items = append(items, item{at: at, texts: texts, images: images})
 			}
 		}
 	}
@@ -161,20 +166,49 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 // screenshots would drown the diff the comment is about.
 const maxImagesPerItem = 3
 
-// imageRefs extracts Markdown image targets from a comment body. Remote URLs
-// are kept as references (rendered as tags — leanreview never fetches the
-// network for a preview); local paths resolve relative to the working
-// directory.
+// imageRefs extracts image targets from a comment body — both Markdown
+// (![alt](src)) and raw HTML <img src="..."> tags, which is how GitHub
+// embeds pasted attachments in review comments. Local paths resolve
+// relative to the working directory; remote URLs render only when a forge
+// attachment fetcher exists (PR mode), and as tags otherwise.
 func imageRefs(body string) []string {
-	matches := imageRefRe.FindAllStringSubmatch(body, maxImagesPerItem)
 	var out []string
-	for _, m := range matches {
+	for _, m := range imageRefRe.FindAllStringSubmatch(body, maxImagesPerItem) {
 		out = append(out, m[1])
+	}
+	for _, m := range htmlImgRe.FindAllStringSubmatch(body, maxImagesPerItem-len(out)) {
+		out = append(out, m[1])
+	}
+	if len(out) > maxImagesPerItem {
+		out = out[:maxImagesPerItem]
 	}
 	return out
 }
 
-var imageRefRe = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
+// stripImageMarkup removes image syntax from display text — the image (or
+// its tag) renders as its own rows, and a raw <img width=... src=...> blob
+// wrapped across box lines is exactly the noise this replaces. The alt text
+// survives when present.
+func stripImageMarkup(body string) string {
+	body = imageRefAltRe.ReplaceAllString(body, "$1")
+	body = htmlImgRe.ReplaceAllStringFunc(body, func(tag string) string {
+		// GitHub stamps alt="Image" on every paste; repeating that above the
+		// image row (or its tag) is pure duplication — keep only alts that
+		// say something.
+		if m := htmlAltRe.FindStringSubmatch(tag); m != nil && m[1] != "" && !strings.EqualFold(m[1], "image") {
+			return "[" + m[1] + "]"
+		}
+		return ""
+	})
+	return strings.TrimSpace(body)
+}
+
+var (
+	imageRefRe    = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
+	imageRefAltRe = regexp.MustCompile(`!(\[[^\]]*\])\(([^)\s]+)\)`)
+	htmlImgRe     = regexp.MustCompile(`<img[^>]*\bsrc="([^"]+)"[^>]*/?>`)
+	htmlAltRe     = regexp.MustCompile(`\balt="([^"]*)"`)
+)
 
 // imageRows renders each referenced image into preformatted box rows, or a
 // textual tag when the image cannot (or must not) be rendered: remote URLs,
@@ -184,17 +218,38 @@ func (m *Model) imageRows(refs []string) []diff.DisplayRow {
 	var rows []diff.DisplayRow
 	_, inner := m.annotationLayout()
 	for _, ref := range refs {
+		suffix := ""
 		tag := func() {
 			rows = append(rows, diff.DisplayRow{
-				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: "  [image: " + ref + "]"},
+				Left:       &diff.DisplayCell{Kind: diff.LineMetadata, Text: "  [image: " + ref + suffix + "]"},
 				Annotation: true,
 			})
 		}
-		if strings.HasPrefix(ref, "http://") || strings.HasPrefix(ref, "https://") {
+		if !m.images.Enabled() {
+			// Say WHY it is a tag — "install chafa" is the fix most users
+			// need and would otherwise never learn from a bare tag.
+			suffix = " — no image renderer; install chafa or use kitty/ghostty"
 			tag()
 			continue
 		}
-		lines, ok := m.images.Render(ref, inner-2, 12)
+		path := ref
+		if isRemoteRef(ref) {
+			// Forge attachments are fetched (authenticated, cached) into
+			// local files; anything not yet — or not fetchable — stays a tag.
+			local, state := m.imageFiles[ref], ""
+			switch {
+			case local != "":
+				path = local
+			case m.imagePending[ref]:
+				state = " (fetching…)"
+			}
+			if path == ref {
+				suffix = state
+				tag()
+				continue
+			}
+		}
+		lines, ok := m.images.Render(path, inner-2, 12)
 		if !ok {
 			tag()
 			continue

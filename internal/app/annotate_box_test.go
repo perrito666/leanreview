@@ -201,8 +201,10 @@ func TestCommentImageFallbackTag(t *testing.T) {
 	m.cursor = mustFindRow(t, m, diff.SideRight, 72)
 	loc, snip, _ := m.buildLocation()
 	m.draft.Add(loc, "see ![screenshot](docs/shot.png) for the glitch", snip)
-	if !strings.Contains(m.View(), "[image: docs/shot.png]") {
-		t.Errorf("image tag missing from the box:\n%s", m.View())
+	// The tag names the image AND why it is not rendered — a bare tag never
+	// teaches the user that installing chafa fixes it.
+	if !strings.Contains(m.View(), "[image: docs/shot.png") || !strings.Contains(m.View(), "no image renderer") {
+		t.Errorf("image tag with renderer hint missing from the box:\n%s", m.View())
 	}
 }
 

@@ -23,8 +23,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
 	"os"
@@ -233,6 +238,45 @@ func run(argv []string) error {
 		}
 	}
 
+	// Attachment fetcher: comment images (GitHub user-attachments, GitLab
+	// uploads) resolved through the forge's authentication, cached on disk
+	// by URL — the URL is the content identity for attachment links.
+	var fetchImage func(context.Context, string) ([]byte, error)
+	if prSrc != nil {
+		fcache, ferr := filecache.Open()
+		if ferr != nil {
+			log.Printf("file cache disabled: %v", ferr)
+		}
+		fetchImage = func(ctx context.Context, url string) ([]byte, error) {
+			// Signed URLs rotate their query (JWT) on every rendering; the
+			// path is the asset's stable identity, so the cache key drops the
+			// query or the cache would miss every session.
+			key := "attachment-" + attachmentCacheKey(url)
+			if fcache != nil {
+				if data, ok := fcache.Get(key); ok {
+					return data, nil
+				}
+			}
+			data, err := prSrc.Attachment(ctx, url)
+			if err != nil {
+				log.Printf("attachment %s: %v", url, err)
+				return nil, err
+			}
+			if !looksLikeImage(data) {
+				// An HTML viewer page or error body must never be cached and
+				// served as an "image" forever after.
+				log.Printf("attachment %s: response is not an image", url)
+				return nil, fmt.Errorf("attachment is not an image")
+			}
+			if fcache != nil {
+				if err := fcache.Put(key, data); err != nil {
+					log.Printf("file cache put: %v", err)
+				}
+			}
+			return data, nil
+		}
+	}
+
 	// rawPatch is the literal diff text, needed to make exchange exports
 	// self-contained; nil when the source cannot produce one.
 	var rawPatch []byte
@@ -301,6 +345,7 @@ func run(argv []string) error {
 		ChangeColors: cfg.ChangeColors,
 		ChangeTint:   cfg.ChangeTint,
 		FetchContext: fetchContext,
+		FetchImage:   fetchImage,
 	})
 	if exSrc != nil {
 		// Every draft save also rewrites the conversation file, so quitting
@@ -664,4 +709,21 @@ func openLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+}
+
+// attachmentCacheKey strips the query string from an attachment URL: signed
+// URLs rotate their token on every rendering while the path identifies the
+// asset, so caching by full URL would never hit.
+func attachmentCacheKey(url string) string {
+	if i := strings.IndexByte(url, '?'); i >= 0 {
+		return url[:i]
+	}
+	return url
+}
+
+// looksLikeImage sniffs whether bytes decode as a supported raster image —
+// the guard that keeps HTML error pages out of the attachment cache.
+func looksLikeImage(data []byte) bool {
+	_, _, err := image.DecodeConfig(bytes.NewReader(data))
+	return err == nil
 }

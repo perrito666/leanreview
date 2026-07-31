@@ -70,6 +70,13 @@ func (s *PRSource) RawPatch(ctx context.Context) ([]byte, error) {
 	return s.forge.Diff(ctx, s.ref)
 }
 
+// Attachment fetches a comment-attachment URL through the forge's
+// authentication — comment images on private repos are unreachable without
+// it.
+func (s *PRSource) Attachment(ctx context.Context, url string) ([]byte, error) {
+	return s.forge.Attachment(ctx, s.ref, url)
+}
+
 // Threads fetches existing review threads for the PR.
 func (s *PRSource) Threads(ctx context.Context) ([]forge.Thread, error) {
 	return s.forge.Threads(ctx, s.ref)

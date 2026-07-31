@@ -90,8 +90,11 @@ internal/config     defaults <- config file <- environment
 - **Thread box.** All comments/threads on a line share one box, oldest
   first (`at` RFC 3339 sorts lexically). Image references render as
   preformatted rows (`DisplayRow.Pre`) — kitty Unicode placeholders with a
-  one-shot payload transmission, chafa fallback, tag otherwise; remote URLs
-  are never fetched.
+  one-shot payload transmission, chafa fallback, tag otherwise. Comment
+  bodies are scanned for both Markdown and HTML <img> image syntax (GitHub
+  pastes the latter); forge attachments fetch through the adapter's auth
+  (Forge.Attachment) once per URL into session files, cached by URL —
+  other remote URLs are never fetched.
 - **Two-pass syntax highlighting.** Whole-file passes per side
   (`Highlighter.ContentLines`): deletions index the old-file pass,
   everything else the new — that is what makes multi-line constructs color
