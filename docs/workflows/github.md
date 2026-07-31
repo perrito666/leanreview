@@ -28,7 +28,13 @@ URL, and the description rendered as styled Markdown. `j`/`k` scroll,
 
 Below the description, the overlay lists the PR's **conversation** — the
 general comments that anchor to the request rather than to a line — oldest
-first, with authors and timestamps.
+first, with authors and timestamps. Images attached to the description or
+to conversation comments render right in the overlay.
+
+![The conversation in the overlay, with its image rendered](../screens/pr-overlay-kitty.png)
+
+*A general conversation comment carrying a photo, drawn in the overlay on
+ghostty via the kitty graphics protocol.*
 
 ## Threads and replies
 

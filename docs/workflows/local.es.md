@@ -90,9 +90,12 @@ remotas quedan como etiquetas.
 
 ![La foto renderizada dentro de la caja del hilo](../screens/comment-image.svg)
 
-*…y la caja del hilo renderizándola como arte de celdas con chafa. En kitty
-o ghostty se dibuja la imagen real, mediante el protocolo gráfico de
-kitty.*
+*…y la caja del hilo renderizándola como arte de celdas con chafa.*
+
+![El mismo comentario en ghostty, dibujado con el protocolo gráfico de kitty](../screens/comment-image-kitty.png)
+
+*El mismo comentario en ghostty: el protocolo gráfico de kitty dibuja la
+foto real dentro de la caja del hilo.*
 
 ## Revisar tus notas
 

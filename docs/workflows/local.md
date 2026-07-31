@@ -83,9 +83,12 @@ the forge's authentication and cached; other remote URLs stay as tags.
 
 ![The photo rendered inside the thread box](../screens/comment-image.svg)
 
-*…and the thread box rendering it as cell art via chafa. On kitty or
-ghostty the actual image is drawn instead, through the kitty graphics
-protocol.*
+*…and the thread box rendering it as cell art via chafa.*
+
+![The same comment on ghostty, drawn via the kitty graphics protocol](../screens/comment-image-kitty.png)
+
+*The same comment on ghostty: the kitty graphics protocol draws the real
+photo inside the thread box.*
 
 ## Reviewing your notes
 

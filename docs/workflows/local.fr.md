@@ -93,9 +93,12 @@ les autres URL distantes restent des étiquettes.
 
 ![La photo rendue dans la boîte du fil](../screens/comment-image.svg)
 
-*…et la boîte du fil la rendant en art de cellules via chafa. Sur kitty ou
-ghostty, l'image réelle est dessinée à la place, via le protocole graphique
-kitty.*
+*…et la boîte du fil la rendant en art de cellules via chafa.*
+
+![Le même commentaire sur ghostty, dessiné via le protocole graphique kitty](../screens/comment-image-kitty.png)
+
+*Le même commentaire sur ghostty : le protocole graphique kitty dessine la
+photo réelle dans la boîte du fil.*
 
 ## Relire ses notes
 
