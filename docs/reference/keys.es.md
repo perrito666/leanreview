@@ -40,6 +40,7 @@ momento.
 | `v` / `V` | seleccionar líneas / bloque modificado |
 | `c` | comentar en línea o selección (abre `$EDITOR`) |
 | `e` | editar comentario en borrador bajo el cursor |
+| `x` | descartar / restaurar comentario bajo el cursor (se conserva, nunca se envía) |
 | `dd` | eliminar comentario bajo el cursor |
 
 ## Modo pull-request
@@ -55,7 +56,7 @@ momento.
 | Comando | Acción |
 | --- | --- |
 | `:w` | guardar borradores |
-| `:export FILE` | exportar comentarios como Markdown |
+| `:export FILE` | exportar comentarios (`.json`: [intercambio de revisión](exchange-format.md), si no, Markdown) |
 | `:comment` / `:approve` / `:request` | abrir envío con ese evento |
 | `:q` / `q` | salir |
 
