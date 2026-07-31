@@ -84,6 +84,16 @@ round trips produce meaningful line-level text diffs (the conversation file
 itself is often kept in git), and lets editors highlight the embedded diff —
 see [editor support](#editor-support).
 
+### Escaping
+
+There is no format-level quoting: escaping is owned entirely by the JSON
+codec. Quotes, backslashes, tabs, control characters, and non-ASCII text in
+diff lines are ordinary JSON string escapes and round-trip byte-exactly.
+Writers **should** disable HTML escaping (emit `<`, `>`, `&` literally —
+e.g. Go's `SetEscapeHTML(false)`) so code stays readable; `<`-style
+escapes are nevertheless valid JSON, and readers treat both spellings
+identically.
+
 ## Comments
 
 | Field | Required | Meaning |

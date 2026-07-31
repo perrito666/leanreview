@@ -113,6 +113,36 @@ func TestExchangeRoundTrip(t *testing.T) {
 	}
 }
 
+// TestExchangeEscaping: quoting is owned entirely by the JSON codec — a diff
+// full of quotes, backslashes, tabs, and HTML-significant characters must
+// round-trip byte-exactly, and the canonical output must keep <, >, & as
+// written (no \u003c HTML escapes) so the embedded patch stays readable.
+func TestExchangeEscaping(t *testing.T) {
+	patch := "diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1 +1,4 @@\n-old \"quoted\" line\n+if a < b && c > d {\n+\tpath := \"C:\\\\tmp\\\\x\"\n+\ts := `naïve — ünïcode`\n"
+	e := &Exchange{Version: ExchangeVersion, Patch: PatchText(patch),
+		Comments: []ExchangeComment{{Path: "f", Side: "RIGHT", StartLine: 1, Body: "note with \"quotes\" & <tags>"}}}
+	out, err := MarshalExchange(e)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if strings.Contains(string(out), `\u003c`) || strings.Contains(string(out), `\u0026`) {
+		t.Errorf("canonical output HTML-escapes code characters:\n%s", out)
+	}
+	if !strings.Contains(string(out), `"+if a < b && c > d {"`) {
+		t.Errorf("diff line not stored as written:\n%s", out)
+	}
+	e2, err := ParseExchange(out)
+	if err != nil {
+		t.Fatalf("reparse: %v", err)
+	}
+	if string(e2.Patch) != patch {
+		t.Errorf("round trip not byte-exact:\n got %q\nwant %q", e2.Patch, patch)
+	}
+	if e2.Comments[0].Body != e.Comments[0].Body {
+		t.Errorf("comment body altered: %q", e2.Comments[0].Body)
+	}
+}
+
 func TestParseExchangeRejectsBadDocuments(t *testing.T) {
 	if _, err := ParseExchange([]byte(`{"leanreview_review": 99, "patch": "x"}`)); err == nil {
 		t.Errorf("unknown version accepted")

@@ -48,9 +48,19 @@ type PatchText string
 
 // MarshalJSON emits the canonical line-array form. The trailing newline is
 // implicit (restored by UnmarshalJSON), so the array never ends with an empty
-// element.
+// element. It must build its own non-HTML-escaping encoder: a marshaler's
+// output is embedded verbatim by the outer encoder, so escaping baked in
+// here (json.Marshal's default < for <) could not be undone by
+// MarshalExchange and would riddle real code diffs with escapes.
 func (p PatchText) MarshalJSON() ([]byte, error) {
-	return json.Marshal(strings.Split(strings.TrimRight(string(p), "\n"), "\n"))
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(strings.Split(strings.TrimRight(string(p), "\n"), "\n")); err != nil {
+		return nil, err
+	}
+	// Encode appends a newline; this is an embedded value, not a document.
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }
 
 // UnmarshalJSON accepts the canonical array-of-lines or a single string.
@@ -225,13 +235,22 @@ func FromDraft(d *DraftReview, patch []byte) *Exchange {
 
 // MarshalExchange renders the document with stable indentation so successive
 // round trips produce reviewable text diffs — the conversation itself is
-// often kept in version control or pasted into chat.
+// often kept in version control or pasted into chat. HTML escaping is
+// disabled: code diffs are full of <, >, and &, and encoding/json's default
+// < form would make the embedded patch unreadable for no benefit (this
+// is a file format, not an HTML embedding). All other escaping is standard
+// JSON string escaping — quotes, backslashes, tabs, and control characters
+// in the diff survive round trips byte-exactly because the codec, not the
+// format, owns quoting.
 func MarshalExchange(e *Exchange) ([]byte, error) {
-	out, err := json.MarshalIndent(e, "", "  ")
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(e); err != nil {
 		return nil, err
 	}
-	return append(out, '\n'), nil
+	return buf.Bytes(), nil
 }
 
 // RenderExport renders the draft for the given destination path: the exchange

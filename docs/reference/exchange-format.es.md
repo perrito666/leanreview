@@ -91,6 +91,17 @@ nivel de línea (el propio archivo de conversación suele guardarse en
 git), y permite que los editores resalten el diff incrustado — ver
 [soporte de editor](#editor-support).
 
+### Escapado
+
+No hay entrecomillado a nivel de formato: el escapado pertenece por
+completo al códec JSON. Comillas, barras invertidas, tabuladores,
+caracteres de control y texto no ASCII en las líneas del diff son escapes
+ordinarios de cadenas JSON y sobreviven el viaje de ida y vuelta byte a
+byte. Los escritores **deberían** desactivar el escapado HTML (emitir `<`,
+`>`, `&` literalmente — p. ej. `SetEscapeHTML(false)` en Go) para que el
+código siga siendo legible; los escapes tipo `\u003c` son de todos modos
+JSON válido, y los lectores tratan ambas formas de manera idéntica.
+
 ## Comentarios
 
 | Campo | Requerido | Significado |

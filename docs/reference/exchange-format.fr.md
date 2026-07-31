@@ -91,6 +91,18 @@ significatifs ligne par ligne (le fichier de conversation lui-même est
 souvent conservé dans git), et permet aux éditeurs de surligner le diff
 intégré — voir [support éditeur](#editor-support).
 
+### Échappement
+
+Il n'y a pas de mise entre guillemets propre au format : l'échappement
+appartient entièrement au codec JSON. Guillemets, antislashs, tabulations,
+caractères de contrôle et texte non ASCII dans les lignes du diff sont des
+échappements de chaînes JSON ordinaires et survivent à l'aller-retour
+octet pour octet. Les rédacteurs **devraient** désactiver l'échappement
+HTML (émettre `<`, `>`, `&` littéralement — p. ex. `SetEscapeHTML(false)`
+en Go) pour que le code reste lisible ; les échappements de type `\u003c`
+restent néanmoins du JSON valide, et les lecteurs traitent les deux
+écritures de façon identique.
+
 ## Commentaires
 
 | Champ | Requis | Signification |
