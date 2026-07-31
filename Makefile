@@ -36,3 +36,11 @@ fmt:
 ## clean: remove the built binary
 clean:
 	rm -f $(BINARY)
+
+## screens: regenerate the documentation screenshots (requires freeze)
+screens:
+	LEANREVIEW_SCREENS_DIR=$(CURDIR)/docs/screens go test ./internal/app -run TestGenerateScreens
+	for f in docs/screens/*.ansi; do \
+		freeze $$f --output $${f%.ansi}.svg --font.family "JetBrains Mono" --font.size 13 --padding 20 --background "#171717"; \
+	done
+	rm -f docs/screens/*.ansi
