@@ -24,6 +24,35 @@ una advertencia impresa al iniciar.
 }
 ```
 
+## Generar y validar
+
+Empieza desde una base completa en lugar de un archivo en blanco:
+
+```bash
+leanreview --init-config     # escribe el archivo de arriba con todos los
+                             # valores por defecto, el mapa de teclas
+                             # completo y una referencia $schema
+```
+
+El mapa `keys` generado lista **todas** las asignaciones por defecto, así
+que reasignar es editar, no adivinar. El generador se niega a sobrescribir
+un archivo existente.
+
+Valida en cualquier momento:
+
+```bash
+leanreview --check-config    # informa errores de tipeo, acciones
+                             # desconocidas y valores inválidos; salida
+                             # distinta de cero si hay problemas
+```
+
+Los editores también validan: la referencia `$schema` apunta al
+[esquema de configuración](../schema/leanreview-config.schema.json)
+publicado, dando validación y autocompletado (incluidos los nombres de
+acción para `keys`) en VS Code y JetBrains sin configuración — consulta
+[`editors/`](https://github.com/perrito666/leanreview/tree/main/editors)
+para Vim/Neovim.
+
 ## Ajustes
 
 - `editor` — comando del editor (interpretado como línea de comando, p.

@@ -24,6 +24,8 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `--export FILE` | écrire les commentaires en brouillon en Markdown et quitter |
 | `--discard` | supprimer le brouillon enregistré pour cette source et quitter |
 | `--list [engine] [filter]` | découvrir les PR/MR ouvertes et en choisir une à revoir (table brute si redirigé via un tube) |
+| `--init-config` | écrire une configuration de base (toutes les valeurs par défaut + le keymap complet) et quitter |
+| `--check-config` | valider le fichier de configuration, signaler les problèmes et quitter |
 | `-h, --help` | afficher l'aide |
 | `-v, --version` | afficher la version et quitter |
 

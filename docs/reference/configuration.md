@@ -23,6 +23,33 @@ warning printed on startup.
 }
 ```
 
+## Generating and validating
+
+Start from a complete baseline instead of a blank file:
+
+```bash
+leanreview --init-config     # writes the file above with every default,
+                             # the full keymap, and a $schema reference
+```
+
+The generated `keys` map lists **every** default binding, so remapping is an
+edit, not a guessing game. The generator refuses to overwrite an existing
+file.
+
+Validate at any time:
+
+```bash
+leanreview --check-config    # reports typos, unknown actions, bad values;
+                             # non-zero exit when problems exist
+```
+
+Editors validate too: the `$schema` reference points at the published
+[config schema](../schema/leanreview-config.schema.json), giving validation
+and completion (including action names for `keys`) in VS Code and JetBrains
+out of the box — see
+[`editors/`](https://github.com/perrito666/leanreview/tree/main/editors)
+for Vim/Neovim setup.
+
 ## Settings
 
 - `editor` — editor command (parsed as a command line, e.g. `code --wait`).

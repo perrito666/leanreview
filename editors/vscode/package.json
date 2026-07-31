@@ -33,6 +33,10 @@
       {
         "fileMatch": "*.review.json",
         "url": "https://perrito666.github.io/leanreview/schema/leanreview-review.schema.json"
+      },
+      {
+        "fileMatch": "**/leanreview/config.json",
+        "url": "https://perrito666.github.io/leanreview/schema/leanreview-config.schema.json"
       }
     ]
   }
