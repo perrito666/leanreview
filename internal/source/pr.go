@@ -115,20 +115,29 @@ func (s *PRSource) HeadOID(context.Context) string {
 	return s.pr.HeadOID
 }
 
-// ContextKey is head-commit + path: PR file content is immutable per head,
-// so a force-push or new commit changes the key rather than any cache state.
-func (s *PRSource) ContextKey(_ context.Context, path string) string {
-	if s.pr == nil || s.pr.HeadOID == "" {
+// contextOID picks the commit holding the requested side's content: the PR
+// head for the new side, the base for the old.
+func (s *PRSource) contextOID(side diff.Side) string {
+	if s.pr == nil {
 		return ""
 	}
-	return fmt.Sprintf("pr-%s-%s-%s", s.ref.String(), s.pr.HeadOID, path)
+	if side == diff.SideLeft {
+		return s.pr.BaseOID
+	}
+	return s.pr.HeadOID
 }
 
-// ContextContent fetches the file at the PR head through the forge.
-func (s *PRSource) ContextContent(ctx context.Context, path string) ([]byte, error) {
-	rev := ""
-	if s.pr != nil {
-		rev = s.pr.HeadOID
+// ContextKey is commit + path: PR file content is immutable per commit, so a
+// force-push or new commit changes the key rather than any cache state.
+func (s *PRSource) ContextKey(_ context.Context, path string, side diff.Side) string {
+	oid := s.contextOID(side)
+	if oid == "" {
+		return ""
 	}
-	return s.forge.FileContent(ctx, s.ref, path, rev)
+	return fmt.Sprintf("pr-%s-%s-%s", s.ref.String(), oid, path)
+}
+
+// ContextContent fetches the file at the side's commit through the forge.
+func (s *PRSource) ContextContent(ctx context.Context, path string, side diff.Side) ([]byte, error) {
+	return s.forge.FileContent(ctx, s.ref, path, s.contextOID(side))
 }

@@ -260,11 +260,17 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 		return m.theme.Search.Render(glyph + " " + plain)
 	case m.layout == LayoutSplit:
 		return m.theme.Marker.Render(glyph) + " " + m.renderSplitStyled(r, nw, inner)
-	case m.highlighter.Enabled():
+	case m.syntaxActive() && !(m.changeColors == changeColorsDiff && isChangeKind(kindOf(r))):
 		return m.theme.Marker.Render(glyph) + " " + m.renderHighlighted(r, nw, inner)
 	default:
 		return m.theme.Marker.Render(glyph) + " " + m.styleFor(kindOf(r)).Render(plain)
 	}
+}
+
+// isChangeKind reports whether a kind is an addition or deletion — the lines
+// change_colors: "diff" paints classically instead of with syntax.
+func isChangeKind(k diff.LineKind) bool {
+	return k == diff.LineAddition || k == diff.LineDeletion
 }
 
 // renderSplitStyled draws a split row styling each side by its own kind, so a
@@ -272,32 +278,61 @@ func (m *Model) renderRow(idx int, r *diff.DisplayRow, nw int, inSel bool) strin
 // panel red and the right panel green instead of one color spanning both.
 func (m *Model) renderSplitStyled(r *diff.DisplayRow, nw, width int) string {
 	half := splitHalf(width, nw)
-	lNum, lText, lKind := strings.Repeat(" ", nw), "", diff.LineContext
-	if r.Left != nil {
-		lNum = numStr(r.Left.LineNumber, nw)
-		lText = m.hcut(r.Left.Text)
-		lKind = r.Left.Kind
-	}
-	rNum, rText, rKind := strings.Repeat(" ", nw), "", diff.LineContext
-	if r.Right != nil {
-		rNum = numStr(r.Right.LineNumber, nw)
-		rText = m.hcut(r.Right.Text)
-		rKind = r.Right.Kind
-	}
-	left := m.styleFor(lKind).Render(fmt.Sprintf("%s %s", lNum, pad(clip(lText, half), half)))
-	right := m.styleFor(rKind).Render(fmt.Sprintf("%s %s", rNum, clip(rText, half)))
+	left := m.splitCell(r.Left, diff.SideLeft, nw, half, true)
+	right := m.splitCell(r.Right, diff.SideRight, nw, half, false)
 	return pad(left+m.theme.Faint.Render(" │ ")+right, width)
 }
 
-// renderHighlighted draws a unified content row at the given width: a dim
-// number gutter, a diff-colored sign, and syntax-highlighted source text. This
-// is the order the design calls for: source text → syntax spans → horizontal
-// clip → assembly.
-func (m *Model) renderHighlighted(r *diff.DisplayRow, nw, width int) string {
-	path := ""
-	if f := m.currentFile(); f != nil {
-		path = f.Path()
+// splitCell renders one side of a split row: classic kind coloring, or —
+// with syntax active and not overridden by change_colors "diff" — the side's
+// whole-file/stitched highlight pass, tinted for changed lines. The old side
+// indexes the old-file pass, which is what makes deletions color correctly.
+func (m *Model) splitCell(c *diff.DisplayCell, side diff.Side, nw, half int, padRight bool) string {
+	num := strings.Repeat(" ", nw)
+	text, kind := "", diff.LineContext
+	if c != nil {
+		num = numStr(c.LineNumber, nw)
+		text = m.hcut(c.Text)
+		kind = c.Kind
 	}
+	body := clip(text, half)
+	if padRight {
+		body = pad(body, half)
+	}
+	if c != nil && m.syntaxActive() && !(m.changeColors == changeColorsDiff && isChangeKind(kind)) {
+		if hl := m.sideHighlight(c, side); hl != "" {
+			body = clip(m.hcut(hl), half)
+			if padRight {
+				body = pad(body, half)
+			}
+			if tint, ok := m.tintFor(kind); ok {
+				body = tint(body)
+			}
+			return fmt.Sprintf("%s %s", num, body)
+		}
+	}
+	return m.styleFor(kind).Render(fmt.Sprintf("%s %s", num, body))
+}
+
+// sideHighlight looks a cell's line up in its side's whole-file pass, or ""
+// when the content is not available — split rendering then falls back to the
+// classic colors rather than mixing passes of unknown provenance.
+func (m *Model) sideHighlight(c *diff.DisplayCell, side diff.Side) string {
+	if c.LineNumber == nil {
+		return ""
+	}
+	if lines, ok := m.fileLines(side); ok && *c.LineNumber >= 1 && *c.LineNumber <= len(lines) {
+		return lines[*c.LineNumber-1]
+	}
+	return ""
+}
+
+// renderHighlighted draws a unified content row at the given width: a dim
+// number gutter, a diff-colored sign, and syntax-highlighted source text —
+// sourced from the whole-file pass when content is available, the stitched
+// hunk pass otherwise (see syntaxLineFor). Changed lines in syntax mode may
+// carry a faint background tint so the diff identity survives the colors.
+func (m *Model) renderHighlighted(r *diff.DisplayRow, nw, width int) string {
 	gutter := m.theme.Gutter.Render(fmt.Sprintf("%s %s ", numStr(r.Left.LineNumber, nw), numStr(r.Right.LineNumber, nw)))
 	signCh := signFor(r.Left.Kind)
 	if r.Continuation {
@@ -309,7 +344,10 @@ func (m *Model) renderHighlighted(r *diff.DisplayRow, nw, width int) string {
 	if avail < 1 {
 		avail = 1
 	}
-	text := ansi.Truncate(m.hcut(m.highlight(path, r.Left.Text)), avail, "")
+	text := pad(ansi.Truncate(m.hcut(m.syntaxLineFor(r)), avail, ""), avail)
+	if tint, ok := m.tintFor(kindOf(r)); ok {
+		text = tint(text)
+	}
 	return pad(gutter+sign+text, width)
 }
 

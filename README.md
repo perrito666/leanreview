@@ -248,6 +248,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `0` / `$` | scroll to line start / end |
 | `t` | toggle unified / split |
 | `T` | toggle full-file context around the diff (fetched lazily, cached) |
+| `S` | cycle syntax coloring: red/green changes · syntax everywhere (tinted) · off |
 | `w` | toggle wrapping of long lines and comment previews |
 | `i` | toggle inline comment previews |
 | `\` | toggle changed-files sidebar |

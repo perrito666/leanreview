@@ -24,6 +24,7 @@ Press `?` inside the TUI for this reference at any time.
 | --- | --- |
 | `t` | toggle unified / split |
 | `T` | toggle full-file context around the diff (lazy fetch, cached; `]c`/`[c` still jump hunks) |
+| `S` | cycle syntax coloring: red/green changes · syntax everywhere (tinted) · off |
 | `w` | toggle wrapping of long lines and comment previews |
 | `i` | toggle inline comment previews |
 | `\` | toggle changed-files sidebar |

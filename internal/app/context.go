@@ -10,9 +10,11 @@ import (
 // update loop; fetching runs as a tea.Cmd so the TUI never blocks on git or
 // the network.
 type contextContentMsg struct {
-	fileIdx int
-	data    []byte
-	err     error
+	fileIdx    int
+	side       diff.Side
+	forContext bool // true: the context view requested it; false: highlighting
+	data       []byte
+	err        error
 }
 
 // contextActive reports whether the current file is being shown with its full
@@ -58,11 +60,16 @@ func (m *Model) toggleContext() tea.Cmd {
 		m.setStatus("full context needs the unified layout (t to switch)")
 		return nil
 	}
+	if data, ok := m.contentCache[contentKey(m.fileIdx, diff.SideRight)]; ok {
+		// The highlight fetch already brought the content; project directly.
+		m.onContextContent(contextContentMsg{fileIdx: m.fileIdx, side: diff.SideRight, forContext: true, data: data})
+		return nil
+	}
 	m.setStatus("fetching %s…", f.Path())
 	fi, path := m.fileIdx, f.Path()
 	return func() tea.Msg {
-		data, err := m.fetchContext(m.ctx, path)
-		return contextContentMsg{fileIdx: fi, data: data, err: err}
+		data, err := m.fetchContext(m.ctx, path, diff.SideRight)
+		return contextContentMsg{fileIdx: fi, side: diff.SideRight, forContext: true, data: data, err: err}
 	}
 }
 
@@ -72,10 +79,20 @@ func (m *Model) toggleContext() tea.Cmd {
 // would be worse than no context at all.
 func (m *Model) onContextContent(msg contextContentMsg) {
 	if msg.err != nil {
-		m.setError(msg.err)
+		// Highlight fetches fail silently (stitched fallback covers them);
+		// an explicit context request deserves the error.
+		if msg.forContext {
+			m.setError(msg.err)
+		}
 		return
 	}
 	if msg.fileIdx < 0 || msg.fileIdx >= len(m.files) {
+		return
+	}
+	// Either purpose feeds the shared content cache (and thereby the
+	// whole-file highlight passes).
+	m.contentCache[contentKey(msg.fileIdx, msg.side)] = msg.data
+	if !msg.forContext {
 		return
 	}
 	rows, err := diff.RenderUnifiedContext(&m.files[msg.fileIdx], msg.data)

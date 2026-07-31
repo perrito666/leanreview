@@ -96,6 +96,19 @@ func convertFile(f *gitdiff.File) FileDiff {
 // It defaults to 4 and may be overridden from configuration before parsing.
 var TabWidth = 4
 
+// NormalizeContent expands tabs in each line of raw file content to the
+// display form hunk text uses (TabWidth tab stops). Fetched whole files must
+// pass through this before being compared with — or rendered next to —
+// parsed diff lines: the parser expands tabs at parse time, so raw content
+// would mismatch on every indented line.
+func NormalizeContent(b []byte) []byte {
+	lines := strings.Split(string(b), "\n")
+	for i, ln := range lines {
+		lines[i] = expandTabs(ln, TabWidth)
+	}
+	return []byte(strings.Join(lines, "\n"))
+}
+
 // expandTabs replaces tabs with spaces using tab-stop columns, so display width
 // is predictable (terminals and lipgloss otherwise expand tabs unpredictably
 // relative to our padding). Column counting starts at the beginning of the line

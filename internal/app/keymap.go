@@ -31,6 +31,7 @@ func DefaultKeymap() Keymap {
 		"pgdown":    "page-down",
 		"t":         "toggle-layout",
 		"T":         "toggle-context",
+		"S":         "toggle-syntax",
 		"i":         "toggle-inline",
 		"w":         "toggle-wrap",
 		"\\":        "sidebar",

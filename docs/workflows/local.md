@@ -43,8 +43,10 @@ hunk lines stay highlighted (and commentable) while the surrounding lines
 fill in, and `]c`/`[c` keep jumping between hunks with the view centered on
 your line. Content is fetched only when first requested (from git — or from
 the forge in PR mode), cached on disk keyed by content identity, and the
-cache is cleaned by age and size at startup. `T` again returns to the
-diff-only view, where a faint rule marks each hunk boundary.
+cache is cleaned by age and size at startup. Inside the full file, each hunk is
+bracketed — a faint rule plus its `@@` header where it begins, a rule
+where it ends — so the reviewed excerpt's extent stays obvious. `T` again
+returns to the diff-only view, where a faint rule marks each hunk boundary.
 
 ## Commenting
 

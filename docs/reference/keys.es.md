@@ -25,6 +25,7 @@ momento.
 | --- | --- |
 | `t` | alternar unificado / dividido |
 | `T` | alternar contexto de archivo completo alrededor del diff (carga perezosa, con caché; `]c`/`[c` siguen saltando entre hunks) |
+| `S` | ciclar el coloreado de sintaxis: cambios en rojo/verde · sintaxis en todo (con tinte) · apagado |
 | `w` | alternar ajuste de línea de líneas largas y previsualizaciones de comentarios |
 | `i` | alternar previsualizaciones de comentarios en línea |
 | `\` | alternar barra lateral de archivos modificados |

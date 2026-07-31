@@ -42,7 +42,7 @@ func contextModel(t *testing.T) (*Model, *int) {
 	content := b.String()
 
 	fetches := 0
-	m.fetchContext = func(context.Context, string) ([]byte, error) {
+	m.fetchContext = func(context.Context, string, diff.Side) ([]byte, error) {
 		fetches++
 		return []byte(content), nil
 	}
@@ -151,7 +151,7 @@ func TestContextUnavailableSources(t *testing.T) {
 
 func TestContextRejectsMismatchedContent(t *testing.T) {
 	m, _ := contextModel(t)
-	m.fetchContext = func(context.Context, string) ([]byte, error) {
+	m.fetchContext = func(context.Context, string, diff.Side) ([]byte, error) {
 		return []byte("totally different file\n"), nil
 	}
 	toggleAndDeliver(t, m)
@@ -160,5 +160,37 @@ func TestContextRejectsMismatchedContent(t *testing.T) {
 	}
 	if m.err == nil {
 		t.Errorf("mismatch should surface an error")
+	}
+}
+
+// TestContextIgnoresFolds: a hunk folded in the diff view must not swallow
+// content in the context view — folding is a diff-view concept, and the
+// context projection carries header rows the fold filter would misread.
+func TestContextIgnoresFolds(t *testing.T) {
+	m, _ := contextModel(t)
+	m.cursor = m.firstContentRow()
+	m.folded[foldKey(m.fileIdx, 0)] = true // fold hunk 0 in diff view
+
+	toggleAndDeliver(t, m)
+	rows := m.rows()
+	sourced := 0
+	for i := range rows {
+		if rows[i].Source != nil && rows[i].Source.HunkIndex == 0 {
+			sourced++
+		}
+	}
+	if sourced == 0 {
+		t.Errorf("folded hunk's rows missing from the context view")
+	}
+	// And the boundary chrome is present.
+	hdrs := 0
+	for i := range rows {
+		if isHeader(&rows[i]) {
+			hdrs++
+		}
+	}
+	f := m.currentFile()
+	if hdrs != len(f.Hunks) {
+		t.Errorf("context headers = %d, want %d", hdrs, len(f.Hunks))
 	}
 }

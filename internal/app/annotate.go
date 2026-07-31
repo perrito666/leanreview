@@ -21,7 +21,14 @@ import (
 // selection and navigation skip them, and one row still equals one screen line
 // for scrolling.
 func (m *Model) rows() []diff.DisplayRow {
-	visible := m.wrapRows(m.foldedRows())
+	base := m.foldedRows()
+	if m.contextActive() {
+		// Folding is a diff-view concept. The context projection now carries
+		// header rows too, and letting the fold filter see them would let a
+		// hunk folded in the diff view silently swallow context content.
+		base = m.rawRows()
+	}
+	visible := m.wrapRows(base)
 	if !m.inlineComments || m.draft == nil {
 		return visible
 	}

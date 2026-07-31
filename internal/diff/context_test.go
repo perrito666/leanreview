@@ -89,10 +89,28 @@ func TestRenderUnifiedContextCoversWholeFile(t *testing.T) {
 		t.Errorf("rows: hunk=%d gap=%d dels=%d — context view must contain all three", hunkRows, gapRows, dels)
 	}
 
-	// No headers and no separators in context view.
+	// Every hunk is bracketed: a rule + its @@ header on entry, a rule on
+	// exit — the reviewed excerpt's extent stays visible inside the file.
+	headers, seps := 0, 0
 	for _, r := range rows {
-		if r.Separator || isHeaderLike(&r) {
-			t.Errorf("context view must not contain header/separator rows")
+		if r.Separator {
+			seps++
+		}
+		if isHeaderLike(&r) {
+			headers++
+		}
+	}
+	if headers != len(f.Hunks) {
+		t.Errorf("headers = %d, want one per hunk (%d)", headers, len(f.Hunks))
+	}
+	if seps != 2*len(f.Hunks) {
+		t.Errorf("boundary rules = %d, want %d (entry+exit per hunk)", seps, 2*len(f.Hunks))
+	}
+	// Structure: the row before each header is a rule (this fixture's hunks
+	// start mid-file), and each hunk's last sourced row is followed by one.
+	for i, r := range rows {
+		if isHeaderLike(&r) && (i == 0 || !rows[i-1].Separator) {
+			t.Errorf("header at %d not preceded by a boundary rule", i)
 		}
 	}
 
@@ -128,4 +146,27 @@ func TestRenderUnifiedContextRejectsWrongContent(t *testing.T) {
 
 func isHeaderLike(r *DisplayRow) bool {
 	return r.Left != nil && r.Left.Kind == LineMetadata && r.Right == nil
+}
+
+// TestRenderUnifiedContextExpandsTabs is the regression for the guard
+// misfiring on tab-indented files: the parser stores hunk text tab-expanded,
+// so raw fetched content must be normalized before comparison — otherwise
+// every indented line reports "different revision".
+func TestRenderUnifiedContextExpandsTabs(t *testing.T) {
+	patch := "diff --git a/f.go b/f.go\n--- a/f.go\n+++ b/f.go\n@@ -1,3 +1,3 @@\n func f() {\n-\tolder()\n+\tnewer()\n }\n"
+	files, err := ParsePatchBytes([]byte(patch))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	// Raw file content with REAL tabs, as git show would return it.
+	content := []byte("func f() {\n\tnewer()\n}\n")
+	rows, err := RenderUnifiedContext(&files[0], content)
+	if err != nil {
+		t.Fatalf("tab-indented content rejected: %v", err)
+	}
+	for _, r := range rows {
+		if r.Left != nil && strings.Contains(r.Left.Text, "\t") {
+			t.Errorf("row text carries a raw tab: %q", r.Left.Text)
+		}
+	}
 }
