@@ -27,6 +27,15 @@ func TestConfigSchemaActionsInSync(t *testing.T) {
 					Enum []string `json:"enum"`
 				} `json:"additionalProperties"`
 			} `json:"keys"`
+			Sequences struct {
+				Items struct {
+					Properties struct {
+						Action struct {
+							Enum []string `json:"enum"`
+						} `json:"action"`
+					} `json:"properties"`
+				} `json:"items"`
+			} `json:"sequences"`
 		} `json:"properties"`
 	}
 	if err := json.Unmarshal(data, &schema); err != nil {
@@ -48,13 +57,31 @@ func TestConfigSchemaActionsInSync(t *testing.T) {
 	if got, want := len(schema.Properties.Keys.AdditionalProperties.Enum), len(app.KnownActions())+1; got != want {
 		t.Errorf("schema enum has %d entries, code has %d actions (+unbind)", got, want)
 	}
+	// The sequences action enum is a second copy of the same inventory.
+	seqEnum := schema.Properties.Sequences.Items.Properties.Action.Enum
+	if got, want := len(seqEnum), len(app.KnownActions())+1; got != want {
+		t.Errorf("sequences enum has %d entries, code has %d actions (+unbind)", got, want)
+	}
+	inSeq := map[string]bool{}
+	for _, a := range seqEnum {
+		inSeq[a] = true
+	}
+	for _, a := range app.KnownActions() {
+		if !inSeq[a] {
+			t.Errorf("action %q missing from the sequences enum", a)
+		}
+	}
 }
 
 // TestBaselineConfigIsCompleteAndValid: the generated baseline must contain
 // the entire default keymap (the issue's ask: remap from a base, not from
 // guesses), reference the schema, and pass the tool's own validator.
 func TestBaselineConfigIsCompleteAndValid(t *testing.T) {
-	out, err := config.BaselineJSON(app.DefaultKeymap())
+	var seqs []config.SequenceBinding
+	for _, sb := range app.DefaultSequenceBindings() {
+		seqs = append(seqs, config.SequenceBinding{Keys: []string{sb.First, sb.Second}, Action: sb.Action})
+	}
+	out, err := config.BaselineJSON(app.DefaultKeymap(), seqs)
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -69,6 +96,9 @@ func TestBaselineConfigIsCompleteAndValid(t *testing.T) {
 	if len(keys) != len(app.DefaultKeymap()) {
 		t.Errorf("baseline keys = %d, want the full default keymap (%d)", len(keys), len(app.DefaultKeymap()))
 	}
+	if seqList := doc["sequences"].([]any); len(seqList) != len(app.DefaultSequenceBindings()) {
+		t.Errorf("baseline sequences = %d, want the full default set (%d)", len(seqList), len(app.DefaultSequenceBindings()))
+	}
 	if problems := config.Validate(out, app.KnownActions()); len(problems) != 0 {
 		t.Errorf("baseline fails the tool's own validator: %v", problems)
 	}
@@ -81,10 +111,15 @@ func TestValidateFindsProblems(t *testing.T) {
 		"theme": "solarized",
 		"list_engine": "hg",
 		"tab_width": 0,
-		"keys": {"j": "downn", "q": ""}
+		"keys": {"j": "downn", "q": ""},
+		"sequences": [
+			{"keys": ["g"], "action": "first-line"},
+			{"keys": ["z", "z"], "action": "frobnicate"},
+			{"keys": ["d", "d"], "action": ""}
+		]
 	}`)
 	problems := config.Validate(bad, app.KnownActions())
-	wantSubstrings := []string{"theem", "solarized", "hg", "tab_width", `keys["j"]`}
+	wantSubstrings := []string{"theem", "solarized", "hg", "tab_width", `keys["j"]`, "sequences[0]", "frobnicate"}
 	for _, w := range wantSubstrings {
 		found := false
 		for _, p := range problems {
@@ -96,10 +131,13 @@ func TestValidateFindsProblems(t *testing.T) {
 			t.Errorf("no problem mentions %q in %v", w, problems)
 		}
 	}
-	// The empty action (unbind) is legal and must not be reported.
+	// The empty action (unbind/remove) is legal and must not be reported.
 	for _, p := range problems {
 		if strings.Contains(p, `keys["q"]`) {
 			t.Errorf("unbinding must not be a problem: %v", p)
+		}
+		if strings.Contains(p, "sequences[2]") {
+			t.Errorf("removing a sequence must not be a problem: %v", p)
 		}
 	}
 	if got := config.Validate([]byte(`{"theme": "mono"}`), app.KnownActions()); len(got) != 0 {

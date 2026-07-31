@@ -21,6 +21,7 @@ var knownFileKeys = func() map[string]bool {
 		Context: &n, Keys: map[string]string{}, ListEngine: &s, ListFilter: &s,
 		ListFilters: map[string]string{}, Wrap: &b8, WrapWidth: &n, Author: &s,
 		Images: &s, ChangeColors: &s, ChangeTint: &b8,
+		Sequences: []SequenceBinding{},
 	}
 	raw, _ := json.Marshal(fc)
 	var m map[string]json.RawMessage
@@ -91,6 +92,18 @@ func Validate(data []byte, knownActions []string) []string {
 	for _, k := range slices.Sorted(maps.Keys(fc.Keys)) {
 		if a := fc.Keys[k]; a != "" && !actions[a] {
 			problems = append(problems, fmt.Sprintf("keys[%q] names unknown action %q (known: %s)", k, a, strings.Join(knownActions, ", ")))
+		}
+	}
+	for i, sb := range fc.Sequences {
+		if len(sb.Keys) != 2 {
+			problems = append(problems, fmt.Sprintf("sequences[%d]: needs exactly 2 keys, has %d", i, len(sb.Keys)))
+			continue
+		}
+		if sb.Keys[0] == "" || sb.Keys[1] == "" {
+			problems = append(problems, fmt.Sprintf("sequences[%d]: keys must not be empty", i))
+		}
+		if sb.Action != "" && !actions[sb.Action] {
+			problems = append(problems, fmt.Sprintf("sequences[%d] (%q %q) names unknown action %q (known: %s)", i, sb.Keys[0], sb.Keys[1], sb.Action, strings.Join(knownActions, ", ")))
 		}
 	}
 	return problems

@@ -1,101 +1,241 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://perrito666.github.io/leanreview/schema/leanreview-config.schema.json",
-  "title": "leanreview configuration",
-  "description": "The leanreview config file ($XDG_CONFIG_HOME/leanreview/config.json). Generate a complete baseline with `leanreview --init-config`; validate with `leanreview --check-config`.",
-  "type": "object",
-  "properties": {
-    "$schema": { "type": "string" },
-    "editor": {
-      "description": "Editor command, parsed as a command line (e.g. \"nvim -f\", \"code --wait\"). Empty falls back to GIT_EDITOR/VISUAL/EDITOR/vi.",
-      "type": "string"
-    },
-    "author": {
-      "description": "Name attributed to your replies in review-exchange conversations. Empty defaults to $USER; LEANREVIEW_AUTHOR overrides.",
-      "type": "string"
-    },
-    "syntax": {
-      "description": "Enable syntax highlighting (subject to NO_COLOR / LEANREVIEW_SYNTAX=0).",
-      "type": "boolean"
-    },
-    "syntax_style": {
-      "description": "Chroma style name, or \"auto\" to match the terminal background (monokai on dark, github on light).",
-      "type": "string"
-    },
-    "change_colors": {
-      "description": "Coloring of +/- lines when syntax highlighting is on: classic red/green (diff) with syntax reserved for context, or syntax colors everywhere.",
-      "type": "string",
-      "enum": ["diff", "syntax"]
-    },
-    "change_tint": {
-      "description": "Back syntax-mode changed lines with a faint red/green background so the diff stays legible at a glance.",
-      "type": "boolean"
-    },
-    "images": {
-      "description": "Comment-image rendering: auto (kitty protocol on kitty/ghostty, chafa when installed, off otherwise), or an explicit backend.",
-      "type": "string",
-      "enum": ["auto", "kitty", "chafa", "off"]
-    },
-    "theme": {
-      "description": "TUI palette.",
-      "type": "string",
-      "enum": ["default", "mono"]
-    },
-    "tab_width": {
-      "description": "Columns a tab expands to.",
-      "type": "integer",
-      "minimum": 1
-    },
-    "context": {
-      "description": "Default unified context lines when -U is not passed.",
-      "type": "integer",
-      "minimum": 0
-    },
-    "wrap": {
-      "description": "Wrap long diff lines and comment previews (w toggles at runtime).",
-      "type": "boolean"
-    },
-    "wrap_width": {
-      "description": "Cap on the unified-layout wrap point (split layouts wrap at the panel width).",
-      "type": "integer",
-      "minimum": 1
-    },
-    "list_engine": {
-      "description": "Default discovery engine for --list.",
-      "type": "string",
-      "enum": ["gh", "glab"]
-    },
-    "list_filter": {
-      "description": "Fallback discovery filter when --list gets none; empty applies the engine's built-in default.",
-      "type": "string"
-    },
-    "list_filters": {
-      "description": "Named discovery filters, selectable as --list :name or --list engine:name.",
-      "type": "object",
-      "additionalProperties": { "type": "string" }
-    },
-    "keys": {
-      "description": "Normal-mode key remaps: key (as reported by the terminal, e.g. \"j\", \"ctrl+d\", \"tab\") to action name. An empty action unbinds the key.",
-      "type": "object",
-      "additionalProperties": {
-        "description": "Action name, or \"\" to unbind the key.",
-        "type": "string",
-        "enum": [
-          "",
-          "cmdline", "collapse-all", "comment", "comments", "delete-comment",
-          "dismiss", "down", "edit", "escape", "expand-all", "files",
-          "first-line", "half-page-down", "half-page-up", "help", "last-line",
-          "line-end", "line-start", "motion-left", "motion-right",
-          "next-change", "next-file", "next-hunk", "next-match", "open",
-          "page-down", "page-up", "pr-info", "prev-change", "prev-file",
-          "prev-hunk", "prev-match", "quit", "reply", "scroll-left",
-          "scroll-right", "search", "select", "select-block", "side-left",
-          "suggest",
-          "side-right", "sidebar", "submit", "toggle-context", "toggle-fold", "toggle-inline", "toggle-syntax",
-          "toggle-layout", "toggle-wrap", "up"
-        ]
-      }
-    }
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://perrito666.github.io/leanreview/schema/leanreview-config.schema.json",
+ "title": "leanreview configuration",
+ "description": "The leanreview config file ($XDG_CONFIG_HOME/leanreview/config.json). Generate a complete baseline with `leanreview --init-config`; validate with `leanreview --check-config`.",
+ "type": "object",
+ "properties": {
+  "$schema": {
+   "type": "string"
   },
-  "additionalProperties": false
+  "editor": {
+   "description": "Editor command, parsed as a command line (e.g. \"nvim -f\", \"code --wait\"). Empty falls back to GIT_EDITOR/VISUAL/EDITOR/vi.",
+   "type": "string"
+  },
+  "author": {
+   "description": "Name attributed to your replies in review-exchange conversations. Empty defaults to $USER; LEANREVIEW_AUTHOR overrides.",
+   "type": "string"
+  },
+  "syntax": {
+   "description": "Enable syntax highlighting (subject to NO_COLOR / LEANREVIEW_SYNTAX=0).",
+   "type": "boolean"
+  },
+  "syntax_style": {
+   "description": "Chroma style name, or \"auto\" to match the terminal background (monokai on dark, github on light).",
+   "type": "string"
+  },
+  "change_colors": {
+   "description": "Coloring of +/- lines when syntax highlighting is on: classic red/green (diff) with syntax reserved for context, or syntax colors everywhere.",
+   "type": "string",
+   "enum": [
+    "diff",
+    "syntax"
+   ]
+  },
+  "change_tint": {
+   "description": "Back syntax-mode changed lines with a faint red/green background so the diff stays legible at a glance.",
+   "type": "boolean"
+  },
+  "images": {
+   "description": "Comment-image rendering: auto (kitty protocol on kitty/ghostty, chafa when installed, off otherwise), or an explicit backend.",
+   "type": "string",
+   "enum": [
+    "auto",
+    "kitty",
+    "chafa",
+    "off"
+   ]
+  },
+  "theme": {
+   "description": "TUI palette.",
+   "type": "string",
+   "enum": [
+    "default",
+    "mono"
+   ]
+  },
+  "tab_width": {
+   "description": "Columns a tab expands to.",
+   "type": "integer",
+   "minimum": 1
+  },
+  "context": {
+   "description": "Default unified context lines when -U is not passed.",
+   "type": "integer",
+   "minimum": 0
+  },
+  "wrap": {
+   "description": "Wrap long diff lines and comment previews (w toggles at runtime).",
+   "type": "boolean"
+  },
+  "wrap_width": {
+   "description": "Cap on the unified-layout wrap point (split layouts wrap at the panel width).",
+   "type": "integer",
+   "minimum": 1
+  },
+  "list_engine": {
+   "description": "Default discovery engine for --list.",
+   "type": "string",
+   "enum": [
+    "gh",
+    "glab"
+   ]
+  },
+  "list_filter": {
+   "description": "Fallback discovery filter when --list gets none; empty applies the engine's built-in default.",
+   "type": "string"
+  },
+  "list_filters": {
+   "description": "Named discovery filters, selectable as --list :name or --list engine:name.",
+   "type": "object",
+   "additionalProperties": {
+    "type": "string"
+   }
+  },
+  "keys": {
+   "description": "Normal-mode key remaps: key (as reported by the terminal, e.g. \"j\", \"ctrl+d\", \"tab\") to action name. An empty action unbinds the key.",
+   "type": "object",
+   "additionalProperties": {
+    "description": "Action name, or \"\" to unbind the key.",
+    "type": "string",
+    "enum": [
+     "",
+     "cmdline",
+     "collapse-all",
+     "comment",
+     "comments",
+     "delete-comment",
+     "dismiss",
+     "down",
+     "edit",
+     "escape",
+     "expand-all",
+     "files",
+     "first-line",
+     "half-page-down",
+     "half-page-up",
+     "help",
+     "last-line",
+     "line-end",
+     "line-start",
+     "motion-left",
+     "motion-right",
+     "next-change",
+     "next-file",
+     "next-hunk",
+     "next-match",
+     "open",
+     "page-down",
+     "page-up",
+     "pr-info",
+     "prev-change",
+     "prev-file",
+     "prev-hunk",
+     "prev-match",
+     "quit",
+     "reply",
+     "scroll-left",
+     "scroll-right",
+     "search",
+     "select",
+     "select-block",
+     "side-left",
+     "suggest",
+     "side-right",
+     "sidebar",
+     "submit",
+     "toggle-context",
+     "toggle-fold",
+     "toggle-inline",
+     "toggle-syntax",
+     "toggle-layout",
+     "toggle-wrap",
+     "up"
+    ]
+   }
+  },
+  "sequences": {
+   "description": "Two-key sequence bindings (gg, ]c, … by default). Objects rather than concatenated map keys, so sequences stay expressible on any keyboard layout and multi-character key names (\"ctrl+d\") remain unambiguous. Each entry overrides or adds one sequence; an empty action removes it. leanreview --check-config also reports overlaps (a sequence prefix shadowing a bound single key).",
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "keys",
+     "action"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "keys": {
+      "description": "The two keys, in press order, as reported by the terminal.",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+       "type": "string",
+       "minLength": 1
+      }
+     },
+     "action": {
+      "description": "Action name, or \"\" to remove the sequence.",
+      "type": "string",
+      "enum": [
+       "",
+       "cmdline",
+       "collapse-all",
+       "comment",
+       "comments",
+       "delete-comment",
+       "dismiss",
+       "down",
+       "edit",
+       "escape",
+       "expand-all",
+       "files",
+       "first-line",
+       "half-page-down",
+       "half-page-up",
+       "help",
+       "last-line",
+       "line-end",
+       "line-start",
+       "motion-left",
+       "motion-right",
+       "next-change",
+       "next-file",
+       "next-hunk",
+       "next-match",
+       "open",
+       "page-down",
+       "page-up",
+       "pr-info",
+       "prev-change",
+       "prev-file",
+       "prev-hunk",
+       "prev-match",
+       "quit",
+       "reply",
+       "scroll-left",
+       "scroll-right",
+       "search",
+       "select",
+       "select-block",
+       "side-left",
+       "suggest",
+       "side-right",
+       "sidebar",
+       "submit",
+       "toggle-context",
+       "toggle-fold",
+       "toggle-inline",
+       "toggle-syntax",
+       "toggle-layout",
+       "toggle-wrap",
+       "up"
+      ]
+     }
+    }
+   }
+  }
+ },
+ "additionalProperties": false
 }

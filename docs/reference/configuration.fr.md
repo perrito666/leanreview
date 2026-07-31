@@ -68,6 +68,9 @@ pour Vim/Neovim.
   n'est pas passé.
 - `keys` — remappe les liaisons du mode normal, `{ "<key>": "<action>" }`.
   Voir [Touches](keys.md#remapping).
+- `sequences` — remappe les séquences à deux touches, une liste d'objets
+  `{ "keys": ["<k1>", "<k2>"], "action": "<action>" }`. Voir
+  [Touches](keys.md#remapping).
 - `list_engine` / `list_filter` / `list_filters` — valeurs par défaut pour
   `--list` : le moteur de découverte (`gh` ou `glab`), le filtre de
   recherche de secours, et une table de filtres nommés sélectionnables sous

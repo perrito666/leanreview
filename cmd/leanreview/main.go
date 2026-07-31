@@ -348,6 +348,7 @@ func run(argv []string) error {
 		Theme:        ui.ThemeByName(cfg.Theme),
 		Highlighter:  ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
 		Keys:         cfg.Keys,
+		Sequences:    appSequences(cfg.Sequences),
 		Wrap:         cfg.Wrap,
 		WrapWidth:    cfg.WrapWidth,
 		PR:           prCtx,
@@ -679,7 +680,11 @@ func runInitConfig() error {
 	if info, err := os.Stat(path); err == nil && !info.IsDir() {
 		return fmt.Errorf("%s already exists — refusing to overwrite (edit it, or delete it first)", path)
 	}
-	out, err := config.BaselineJSON(app.DefaultKeymap())
+	var seqs []config.SequenceBinding
+	for _, sb := range app.DefaultSequenceBindings() {
+		seqs = append(seqs, config.SequenceBinding{Keys: []string{sb.First, sb.Second}, Action: sb.Action})
+	}
+	out, err := config.BaselineJSON(app.DefaultKeymap(), seqs)
 	if err != nil {
 		return err
 	}
@@ -706,6 +711,10 @@ func runCheckConfig() error {
 		return nil
 	}
 	problems := config.Validate(data, app.KnownActions())
+	// Binding-overlap problems live above the config package: only the app
+	// knows the grammar's dispatch order (counts, then prefixes, then keys).
+	cfg := config.Load()
+	problems = append(problems, app.ValidateBindings(cfg.Keys, appSequences(cfg.Sequences))...)
 	if len(problems) == 0 {
 		fmt.Printf("%s is valid\n", path)
 		return nil
@@ -819,6 +828,19 @@ func openLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+}
+
+// appSequences converts config sequence entries to the app's binding form,
+// dropping structurally invalid entries (--check-config names them).
+func appSequences(in []config.SequenceBinding) []app.SeqBinding {
+	var out []app.SeqBinding
+	for _, sb := range in {
+		if len(sb.Keys) != 2 || sb.Keys[0] == "" || sb.Keys[1] == "" {
+			continue
+		}
+		out = append(out, app.SeqBinding{First: sb.Keys[0], Second: sb.Keys[1], Action: sb.Action})
+	}
+	return out
 }
 
 // commitPinnedRe matches a 40-hex path segment — a URL addressing content at

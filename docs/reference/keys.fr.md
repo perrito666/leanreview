@@ -67,6 +67,20 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 Les liaisons du mode normal à touche unique peuvent être remappées via la
 table `keys` dans la [configuration](configuration.md). Une action vide
 détache une touche ; des touches uniques peuvent lier des actions à deux
-touches (`next-hunk`, `delete-comment`, …). Les séquences à deux touches
-elles-mêmes (`gg`, `]c`, …) et les préfixes de compteur numérique sont
-fixes.
+touches (`next-hunk`, `delete-comment`, …).
+
+Les séquences à deux touches (`gg`, `]c`, …) se remappent via la liste
+`sequences` — des objets plutôt que des noms concaténés, pour que les
+séquences restent exprimables sur toute disposition de clavier :
+
+```json
+"sequences": [
+  { "keys": [",", "c"], "action": "next-hunk" },
+  { "keys": ["d", "d"], "action": "" }
+]
+```
+
+Une action vide supprime une séquence. `leanreview --check-config` signale
+les chevauchements : un préfixe de séquence éclipse une liaison à touche
+unique (le préfixe gagne), et les chiffres ne peuvent pas commencer une
+liaison — les préfixes de compteur numérique restent fixes.

@@ -68,6 +68,9 @@ para Vim/Neovim.
   `-U`.
 - `keys` — reasigna los enlaces de modo normal, `{ "<key>": "<action>" }`.
   Ver [Teclas](keys.md#remapping).
+- `sequences` — reasigna las secuencias de dos teclas, una lista de objetos
+  `{ "keys": ["<k1>", "<k2>"], "action": "<action>" }`. Ver
+  [Teclas](keys.md#remapping).
 - `list_engine` / `list_filter` / `list_filters` — valores por defecto
   para `--list`: el motor de descubrimiento (`gh` o `glab`), el filtro de
   búsqueda de respaldo, y un mapa de filtros con nombre seleccionables
