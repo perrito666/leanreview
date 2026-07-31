@@ -1,6 +1,9 @@
 package app
 
-import "sort"
+import (
+	"maps"
+	"slices"
+)
 
 // Keymap maps a key (as reported by Bubble Tea's KeyMsg.String) to a normal-mode
 // action name. Single-key normal-mode dispatch flows through this table so
@@ -87,12 +90,7 @@ var knownActions = func() map[string]bool {
 // the shared contract between the keymap, the CLI config validator, and the
 // published config schema (a sync test keeps the latter honest).
 func KnownActions() []string {
-	names := make([]string, 0, len(knownActions))
-	for a := range knownActions {
-		names = append(names, a)
-	}
-	sort.Strings(names)
-	return names
+	return slices.Sorted(maps.Keys(knownActions))
 }
 
 // apply overlays user overrides (key -> action) onto the keymap. An empty action

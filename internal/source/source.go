@@ -67,8 +67,9 @@ func Resolve(ctx context.Context, opts Options) (ReviewSource, error) {
 		return newGitSource(ctx, dir, git.DiffSpec{Base: opts.Base, Staged: opts.Staged, Context: opts.Context})
 	}
 
-	// A path that exists on disk is a patch file.
-	if fileExists(arg) {
+	// A path that exists on disk is a patch file; directories deliberately
+	// do not count, they fall through to the resolution error.
+	if info, err := os.Stat(arg); err == nil && !info.IsDir() {
 		return newPatchFileSource(arg)
 	}
 
@@ -80,14 +81,6 @@ func Resolve(ctx context.Context, opts Options) (ReviewSource, error) {
 	}
 
 	return nil, fmt.Errorf("could not resolve %q: not a file, \".\", or a pull-request reference", arg)
-}
-
-// fileExists reports whether p is an existing regular file. It is the test
-// that decides whether a bare argument means a patch file or should be tried
-// as a pull-request reference, so directories deliberately do not count.
-func fileExists(p string) bool {
-	info, err := os.Stat(p)
-	return err == nil && !info.IsDir()
 }
 
 // hashString returns a short (16 hex digit) SHA-256 digest, used to fold

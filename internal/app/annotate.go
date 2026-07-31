@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -131,7 +131,7 @@ func (m *Model) annotationRows(r *diff.DisplayRow) []diff.DisplayRow {
 		return nil
 	}
 	// Oldest first; stable so undated items keep their anchor order.
-	sort.SliceStable(items, func(i, j int) bool { return items[i].at < items[j].at })
+	slices.SortStableFunc(items, func(a, b item) int { return strings.Compare(a.at, b.at) })
 
 	// One box: top edge, items separated by an inner divider, bottom edge.
 	rows := []diff.DisplayRow{{

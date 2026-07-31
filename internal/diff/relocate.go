@@ -1,5 +1,7 @@
 package diff
 
+import "slices"
+
 // RelocateResult reports the outcome of trying to map a Location captured
 // against one diff onto a newer diff.
 type RelocateResult uint8
@@ -94,22 +96,12 @@ func contextMatches(a, b ContextAnchor) bool {
 // conflict.
 func tailEqual(a, b []string) bool {
 	n := min(len(a), len(b))
-	for i := 1; i <= n; i++ {
-		if a[len(a)-i] != b[len(b)-i] {
-			return false
-		}
-	}
-	return true
+	return slices.Equal(a[len(a)-n:], b[len(b)-n:])
 }
 
 // headEqual is tailEqual's mirror for After context: the lines nearest the
 // anchor come first, so the overlap is compared from the head.
 func headEqual(a, b []string) bool {
 	n := min(len(a), len(b))
-	for i := 0; i < n; i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	return slices.Equal(a[:n], b[:n])
 }

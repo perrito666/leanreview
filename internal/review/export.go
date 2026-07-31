@@ -1,9 +1,10 @@
 package review
 
 import (
+	"cmp"
 	"fmt"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/perrito666/leanreview/internal/diff"
@@ -46,8 +47,8 @@ func ExportMarkdown(d *DraftReview) string {
 	for _, p := range order {
 		fmt.Fprintf(&b, "## %s\n\n", p)
 		cs := groups[p]
-		sort.SliceStable(cs, func(i, j int) bool {
-			return cs[i].Location.StartLine < cs[j].Location.StartLine
+		slices.SortStableFunc(cs, func(a, b DraftComment) int {
+			return cmp.Compare(a.Location.StartLine, b.Location.StartLine)
 		})
 		for _, c := range cs {
 			fmt.Fprintf(&b, "### %s (%s)", lineRef(c.Location), c.Location.Side)

@@ -3,7 +3,8 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -49,7 +50,7 @@ func Validate(data []byte, knownActions []string) []string {
 			unknown = append(unknown, k)
 		}
 	}
-	sort.Strings(unknown)
+	slices.Sort(unknown)
 	for _, k := range unknown {
 		problems = append(problems, fmt.Sprintf("unknown setting %q (typo? it is silently ignored)", k))
 	}
@@ -87,12 +88,7 @@ func Validate(data []byte, knownActions []string) []string {
 	for _, a := range knownActions {
 		actions[a] = true
 	}
-	var keys []string
-	for k := range fc.Keys {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
+	for _, k := range slices.Sorted(maps.Keys(fc.Keys)) {
 		if a := fc.Keys[k]; a != "" && !actions[a] {
 			problems = append(problems, fmt.Sprintf("keys[%q] names unknown action %q (known: %s)", k, a, strings.Join(knownActions, ", ")))
 		}

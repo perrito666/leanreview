@@ -174,7 +174,7 @@ func (r *ImageRenderer) renderKitty(path string, maxCols, maxRows int) ([]string
 	// Fit the cell grid to the image's aspect; terminal cells are ~2x taller
 	// than wide, hence the 0.5 factor.
 	limit := len(kittyDiacritics)
-	cols := min3(maxCols, limit, 60)
+	cols := min(maxCols, limit, 60)
 	rows := int(float64(cols) * (float64(cfg.Height) / float64(cfg.Width)) * 0.5)
 	if rows < 1 {
 		rows = 1
@@ -238,14 +238,4 @@ func kittyTransmit(id uint32, cols, rows int, png []byte) string {
 		}
 	}
 	return b.String()
-}
-
-func min3(a, b, c int) int {
-	if b < a {
-		a = b
-	}
-	if c < a {
-		a = c
-	}
-	return a
 }

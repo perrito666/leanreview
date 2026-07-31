@@ -114,7 +114,7 @@ func rgbTo256(r, g, b uint8) int {
 		}
 		return 55 + c*40
 	}
-	cubeDist := dist(int(r), cubeVal(cr)) + dist(int(g), cubeVal(cg)) + dist(int(b), cubeVal(cb))
+	cubeDist := sqDiff(int(r), cubeVal(cr)) + sqDiff(int(g), cubeVal(cg)) + sqDiff(int(b), cubeVal(cb))
 
 	gray := (int(r) + int(g) + int(b)) / 3
 	gi := (gray - 3) / 10
@@ -125,14 +125,16 @@ func rgbTo256(r, g, b uint8) int {
 		gi = 23
 	}
 	gv := 8 + gi*10
-	grayDist := dist(int(r), gv) + dist(int(g), gv) + dist(int(b), gv)
+	grayDist := sqDiff(int(r), gv) + sqDiff(int(g), gv) + sqDiff(int(b), gv)
 	if grayDist < cubeDist {
 		return 232 + gi
 	}
 	return cubeIdx
 }
 
-func dist(a, b int) int {
+// sqDiff is the squared channel difference — summed across R/G/B it gives
+// the squared Euclidean distance used to pick the nearest palette color.
+func sqDiff(a, b int) int {
 	d := a - b
 	return d * d
 }

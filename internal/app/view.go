@@ -578,19 +578,12 @@ func firstLine(s string) string {
 	return s
 }
 
-// clip truncates s to at most w display cells (rune-approximate).
+// clip truncates s to at most w display cells, ANSI- and width-aware.
 func clip(s string, w int) string {
 	if w <= 0 {
 		return ""
 	}
-	if lipgloss.Width(s) <= w {
-		return s
-	}
-	r := []rune(s)
-	for len(r) > 0 && lipgloss.Width(string(r)) > w {
-		r = r[:len(r)-1]
-	}
-	return string(r)
+	return ansi.Truncate(s, w, "")
 }
 
 // pad right-pads s with spaces to width w.
