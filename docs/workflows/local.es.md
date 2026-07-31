@@ -84,7 +84,7 @@ adjuntos de comentarios — incluidos los `<img>` en HTML de GitHub — se
 descargan con la autenticación del forge y se guardan en caché; otras URLs
 remotas quedan como etiquetas.
 
-![Foto de ejemplo](../screens/example-photo.jpg)
+![Foto de ejemplo](../screens/example-photo.png)
 
 *Una imagen referenciada desde un comentario de revisión…*
 
