@@ -114,3 +114,21 @@ func (s *PRSource) HeadOID(context.Context) string {
 	}
 	return s.pr.HeadOID
 }
+
+// ContextKey is head-commit + path: PR file content is immutable per head,
+// so a force-push or new commit changes the key rather than any cache state.
+func (s *PRSource) ContextKey(_ context.Context, path string) string {
+	if s.pr == nil || s.pr.HeadOID == "" {
+		return ""
+	}
+	return fmt.Sprintf("pr-%s-%s-%s", s.ref.String(), s.pr.HeadOID, path)
+}
+
+// ContextContent fetches the file at the PR head through the forge.
+func (s *PRSource) ContextContent(ctx context.Context, path string) ([]byte, error) {
+	rev := ""
+	if s.pr != nil {
+		rev = s.pr.HeadOID
+	}
+	return s.forge.FileContent(ctx, s.ref, path, rev)
+}

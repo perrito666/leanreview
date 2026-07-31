@@ -254,3 +254,49 @@ func (g *gitSource) HeadOID(ctx context.Context) string {
 	}
 	return oid
 }
+
+// ContextContenter is implemented by sources that can produce the full
+// new-side content of a file, enabling the TUI's full-file context view.
+// ContextKey is the content's cache identity (cheap to compute; "" means
+// uncacheable — typically mutable local state like the working tree), and
+// ContextContent performs the actual, possibly expensive, fetch.
+type ContextContenter interface {
+	ContextKey(ctx context.Context, path string) string
+	ContextContent(ctx context.Context, path string) ([]byte, error)
+}
+
+// contextRev picks the revision holding the diff's new side for this spec:
+// explicit RevB, HEAD for merge-base comparisons, the index for --staged, and
+// the working tree ("" for ShowFile) otherwise.
+func (g *gitSource) contextRev() string {
+	switch {
+	case g.spec.RevB != "":
+		return g.spec.RevB
+	case g.spec.Base != "":
+		return "HEAD"
+	case g.spec.Staged:
+		return ":"
+	default:
+		return ""
+	}
+}
+
+// ContextKey is the blob id at the new-side revision; mutable states (the
+// working tree and the index) return "" — reading them is cheap and caching
+// them would serve stale bytes.
+func (g *gitSource) ContextKey(ctx context.Context, path string) string {
+	rev := g.contextRev()
+	if rev == "" || rev == ":" {
+		return ""
+	}
+	id, err := g.repo.BlobID(ctx, rev, path)
+	if err != nil {
+		return ""
+	}
+	return "git-blob-" + id
+}
+
+// ContextContent reads the file at the new-side revision.
+func (g *gitSource) ContextContent(ctx context.Context, path string) ([]byte, error) {
+	return g.repo.ShowFile(ctx, g.contextRev(), path)
+}

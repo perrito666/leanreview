@@ -8,6 +8,10 @@ import (
 )
 
 // fakeForge is a minimal in-memory Forge for source tests.
+func (f *fakeForge) FileContent(context.Context, forge.PullRequestRef, string, string) ([]byte, error) {
+	return nil, nil
+}
+
 type fakeForge struct {
 	pr      *forge.PullRequest
 	diff    string

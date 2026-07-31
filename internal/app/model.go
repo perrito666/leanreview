@@ -42,6 +42,10 @@ type Config struct {
 	// nil disables that export form.
 	RawPatch []byte
 
+	// FetchContext returns the full new-side content of a file, enabling the
+	// full-file context view (T). nil disables the toggle for this source.
+	FetchContext func(ctx context.Context, path string) ([]byte, error)
+
 	// Author is the reviewer's name for attribution in review-exchange
 	// conversations (comment replies); empty falls back to "reviewer".
 	Author string
@@ -133,6 +137,13 @@ type Model struct {
 	// inflight carries the location/snippet while the external editor is open.
 	inflight *pendingEdit
 
+	// contextView is the full-file context toggle (T); contextRows holds the
+	// per-file context projections, built lazily from fetched content;
+	// fetchContext is the cmd-injected fetcher (nil: unsupported source).
+	contextView  bool
+	contextRows  map[int][]diff.DisplayRow
+	fetchContext func(ctx context.Context, path string) ([]byte, error)
+
 	// rawPatch and exchangePath support review-exchange conversations: the
 	// literal diff for self-contained exports, and (when the session was
 	// opened from an exchange file) the writeback target every draft save
@@ -189,6 +200,8 @@ func New(cfg Config) *Model {
 		pr:             cfg.PR,
 		rawPatch:       cfg.RawPatch,
 		author:         cfg.Author,
+		contextRows:    map[int][]diff.DisplayRow{},
+		fetchContext:   cfg.FetchContext,
 	}
 	if m.draft == nil {
 		m.draft = review.NewDraftReview("", cfg.Title, cfg.HeadOID)
@@ -216,10 +229,14 @@ func (m *Model) Init() tea.Cmd { return nil }
 func (m *Model) SetExchangeWriteback(path string) { m.exchangePath = path }
 
 // rawRows returns the unfolded display rows for the current file and layout,
-// cached. Folding is applied on top by rows().
+// cached. Folding is applied on top by rows(). With the context view active,
+// the pre-built full-file projection replaces the diff-only one.
 func (m *Model) rawRows() []diff.DisplayRow {
 	if len(m.files) == 0 {
 		return nil
+	}
+	if m.contextActive() {
+		return m.contextRows[m.fileIdx]
 	}
 	key := fmt.Sprintf("%d/%d", m.fileIdx, m.layout)
 	if r, ok := m.rowCache[key]; ok {

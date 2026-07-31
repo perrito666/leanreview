@@ -155,8 +155,30 @@ func (m *Model) diffLines() []string {
 }
 
 // numWidth returns the gutter width needed for line numbers in the current file.
+// In the context view the whole file is visible, so the width comes from the
+// projection's last row (numbers are monotone) rather than the hunks.
 func (m *Model) numWidth() int {
 	max := 0
+	if m.contextActive() {
+		rows := m.contextRows[m.fileIdx]
+		for i := len(rows) - 1; i >= 0; i-- {
+			r := &rows[i]
+			if r.Right != nil && r.Right.LineNumber != nil && *r.Right.LineNumber > max {
+				max = *r.Right.LineNumber
+			}
+			if r.Left != nil && r.Left.LineNumber != nil && *r.Left.LineNumber > max {
+				max = *r.Left.LineNumber
+			}
+			if max > 0 {
+				break
+			}
+		}
+		w := len(strconv.Itoa(max))
+		if w < 3 {
+			w = 3
+		}
+		return w
+	}
 	f := m.currentFile()
 	if f != nil {
 		for hi := range f.Hunks {
