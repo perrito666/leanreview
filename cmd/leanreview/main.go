@@ -378,8 +378,12 @@ func run(argv []string) error {
 // only a number was given. Returns the generic source plus the concrete
 // *PRSource (nil in local/patch mode) for the TUI to use in PR mode.
 func resolveSource(ctx context.Context, opts options) (source.ReviewSource, *source.PRSource, error) {
-	if len(opts.args) == 1 && !fileExists(opts.args[0]) {
-		if ref, ok := forge.ParseRef(opts.args[0]); ok {
+	if len(opts.args) == 1 {
+		// A real file on disk is always a patch, even if its name would also
+		// parse as a PR reference; directories do not count as files.
+		info, statErr := os.Stat(opts.args[0])
+		isFile := statErr == nil && !info.IsDir()
+		if ref, ok := forge.ParseRef(opts.args[0]); ok && !isFile {
 			ref, err := source.InferPRRef(ctx, "", ref)
 			if err != nil {
 				return nil, nil, err
@@ -400,15 +404,6 @@ func resolveSource(ctx context.Context, opts options) (source.ReviewSource, *sou
 		Stdin:   os.Stdin,
 	})
 	return src, nil, err
-}
-
-// fileExists reports whether p is an existing regular file (not a directory).
-// It disambiguates the single-argument case in resolveSource: a real file on
-// disk is always treated as a patch, even if its name would also parse as a
-// PR reference.
-func fileExists(p string) bool {
-	info, err := os.Stat(p)
-	return err == nil && !info.IsDir()
 }
 
 // forgeFor picks the adapter matching the reference's host: GitLab hosts get
@@ -681,7 +676,7 @@ func runInitConfig() error {
 	if path == "" {
 		return fmt.Errorf("cannot resolve a config location (no home directory)")
 	}
-	if fileExists(path) {
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
 		return fmt.Errorf("%s already exists — refusing to overwrite (edit it, or delete it first)", path)
 	}
 	out, err := config.BaselineJSON(app.DefaultKeymap())
