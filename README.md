@@ -1,6 +1,7 @@
 # leanreview
 
 [![CI](https://github.com/perrito666/leanreview/actions/workflows/ci.yml/badge.svg)](https://github.com/perrito666/leanreview/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-en%20·%20es%20·%20fr-blue)](https://perrito666.github.io/leanreview/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A terminal code-review client. It reviews a **patch/diff file**, a **local git
@@ -12,6 +13,10 @@ back to an AI as prompt feedback) or **submit them as a real review**.
 It is a review client, not a git client: the installed `git`, `gh`, and `glab`
 handle repository and forge semantics; leanreview owns navigation, rendering,
 review state, and comments.
+
+Full documentation — every workflow, concepts, and reference, in English,
+Spanish, and French — lives at
+**[perrito666.github.io/leanreview](https://perrito666.github.io/leanreview/)**.
 
 ![leanreview reviewing a pull request](docs/screens/main.svg)
 
@@ -344,8 +349,3 @@ Released binaries report their version via `leanreview --version`.
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-Milestone history: M1 local/patch review core → M3 GitHub PR mode →
-ergonomics (search, folding, sidebar, highlighting, config, keymaps) → M5
-GitLab. Forgejo/Gitea remain an open adapter slot behind the same `Forge`
-seam.

@@ -1,0 +1,90 @@
+# Revue sans forge
+
+C'est le flux de travail fondamental de leanreview : aucun hôte, aucun
+compte, aucun réseau — juste un diff et vos notes. Tout ce que les modes
+forge ajoutent (fils de discussion, soumission) vient s'ajouter par-dessus,
+donc tout ce qui suit s'applique aussi à ces modes.
+
+## Ouvrir un diff
+
+N'importe laquelle de ces commandes vous place dans la même TUI de revue :
+
+```bash
+leanreview change.diff          # a patch file
+git diff | leanreview -         # stdin
+leanreview .                    # working tree vs HEAD (also: no argument)
+leanreview --staged             # index vs HEAD
+leanreview --base main          # main...HEAD (merge-base comparison)
+leanreview HEAD~3 HEAD          # explicit revision range
+```
+
+`-U`/`--context` contrôle le nombre de lignes de contexte unifié (3 par
+défaut, configurable).
+
+## Navigation
+
+`j`/`k` déplacent d'une ligne, `J`/`K` sautent entre les modifications,
+`]c`/`[c` entre les hunks, et `Tab`/`Shift-Tab` (ou `]f`/`[f`) entre les
+fichiers. `t` bascule la disposition unifiée ↔ scindée, `\` bascule la barre
+latérale des fichiers modifiés, `za` replie un hunk, `/` recherche dans le
+texte du diff.
+
+La barre de titre affiche toujours le titre de la revue sur sa première
+ligne, et le fichier courant, la position et la disposition sur la seconde.
+
+![Split layout](../screens/split.svg)
+
+*Disposition scindée : les suppressions stylisées sur le panneau de gauche,
+les ajouts sur celui de droite, et un commentaire en brouillon encadré
+au-dessus du panneau de droite.*
+
+## Commenter
+
+Appuyez sur `c` sur une ligne — ou `v` pour sélectionner une plage (`V`
+capture tout le bloc modifié), puis `c`. Votre `$EDITOR` s'ouvre avec un
+modèle Markdown ; rédigez la note, enregistrez, quittez. Le commentaire
+devient un **brouillon** : la ligne reçoit un `●` dans la gouttière de
+gauche et la note est prévisualisée en ligne dans un encadré bordé
+juste en dessous (`i` masque/affiche les aperçus). `e` le modifie, `dd` le
+supprime.
+
+En disposition scindée, `h`/`l` choisissent de quel côté d'une modification
+appariée vous commentez — la barre d'état affiche `[LEFT]`/`[RIGHT]`.
+
+Une sélection doit correspondre à une plage continue sur un seul côté ; les
+sélections traversant les deux côtés sont rejetées avant l'ouverture de
+l'éditeur.
+
+## Relire ses notes
+
+`C` liste chaque brouillon ; `Enter` saute vers l'un d'eux, `e` le modifie,
+`d` le supprime.
+
+![Comment list](../screens/comments.svg)
+
+## Exporter
+
+`:export notes.md` — ou, de façon non interactive, `leanreview --export
+notes.md change.diff` — écrit du Markdown groupé par fichier, avec l'extrait
+commenté cité au-dessus de chaque note :
+
+````markdown
+## internal/api/handler.go
+
+### L72 (RIGHT)
+```go
+result, err := calculate(input)
+```
+> This still ignores the error from calculate().
+````
+
+Cette sortie est conçue pour être collée directement dans un prompt d'IA en
+guise de retour de revue, ou dans un e-mail de revue en texte brut.
+
+## Persistance des brouillons
+
+Les brouillons s'enregistrent automatiquement (`:w` force un enregistrement ;
+quitter enregistre aussi) et se rechargent la prochaine fois que vous ouvrez
+la **même source** — chaque source possède une clé d'identité stable (voir
+[Concepts](../concepts.md)). `leanreview --discard <target>` supprime le
+brouillon enregistré pour une source.
