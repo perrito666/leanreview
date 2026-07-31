@@ -25,17 +25,20 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"iter"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -62,7 +65,7 @@ var version = "dev"
 // exit point with a consistent "leanreview:" prefix on stderr.
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "leanreview:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "leanreview:", err)
 		os.Exit(1)
 	}
 }
@@ -95,11 +98,11 @@ func run(argv []string) error {
 	}
 
 	opts, err := parseArgs(argv)
-	if err == errHelp {
+	if errors.Is(err, errHelp) {
 		fmt.Print(usage)
 		return nil
 	}
-	if err == errVersion {
+	if errors.Is(err, errVersion) {
 		fmt.Printf("leanreview %s\n", version)
 		return nil
 	}
@@ -111,7 +114,7 @@ func run(argv []string) error {
 	if cfg.Warning != "" {
 		// Before the TUI takes the terminal, so it survives on the original
 		// screen after exit — otherwise a config typo is silently defaults.
-		fmt.Fprintln(os.Stderr, "leanreview: "+cfg.Warning)
+		_, _ = fmt.Fprintln(os.Stderr, "leanreview: "+cfg.Warning)
 	}
 	logFile := setupLogging(cfg.LogPath)
 	if logFile != nil {
@@ -526,55 +529,57 @@ func runList(ctx context.Context, cfg config.Config, opts options) (string, erro
 	return entries[idx].URL, nil
 }
 
+// missingVforF formats generic error for missing value for flag where expected
+func missingVforF(flag cmdFlag) error {
+	return fmt.Errorf("a value is required when %q flag is provided", flagsToNames[flag])
+}
+
 // parseArgs performs a small hand-rolled parse so flags and positionals can be
 // interleaved (the stdlib flag package stops at the first positional).
 func parseArgs(argv []string) (options, error) {
 	var o options
 	o.contextN = 3
-	for i := 0; i < len(argv); i++ {
-		a := argv[i]
-		switch {
-		case a == "--base":
-			v, err := next(argv, &i, "--base")
-			if err != nil {
-				return o, err
+	for arg, err := range iterArgs(argv) {
+		if err != nil {
+			return o, err
+		}
+		switch arg.Name {
+		case flagBase:
+			if !arg.HasValue {
+				return o, missingVforF(flagBase)
 			}
-			o.base = v
-		case a == "--staged":
+			o.base = arg.Value
+		case flagStaged:
 			o.staged = true
-		case a == "-U" || a == "--context":
-			v, err := next(argv, &i, a)
-			if err != nil {
-				return o, err
+		case flagContext:
+			if !arg.HasValue {
+				return o, missingVforF(flagContext)
 			}
-			n, err := atoi(v)
+			n, err := strconv.ParseUint(arg.Value, 10, 64)
 			if err != nil {
-				return o, fmt.Errorf("%s: %w", a, err)
+				return o, fmt.Errorf("%s: %w", arg.Value, err)
 			}
-			o.contextN = n
+			o.contextN = int(n)
 			o.contextSet = true
-		case a == "--export":
-			v, err := next(argv, &i, "--export")
-			if err != nil {
-				return o, err
+		case flagExport:
+			if !arg.HasValue {
+				return o, missingVforF(flagExport)
 			}
-			o.exportPath = v
-		case a == "--discard":
+			o.exportPath = arg.Value
+		case flagDiscard:
 			o.discard = true
-		case a == "--list":
+		case flagList:
 			o.list = true
 		case a == "--init-config":
 			o.initConfig = true
 		case a == "--check-config":
 			o.checkConfig = true
-		case a == "-h" || a == "--help":
+		case flagHelp:
 			return o, errHelp
-		case a == "-v" || a == "--version":
+		case flagVersion:
 			return o, errVersion
-		case len(a) > 1 && a[0] == '-' && a != "-":
-			return o, fmt.Errorf("unknown flag: %s", a)
 		default:
-			o.args = append(o.args, a)
+			o.args = append(o.args, arg.Value)
 		}
 	}
 	return o, nil
@@ -619,6 +624,44 @@ Flags:
 In the TUI, press ? for the key reference.
 `
 
+type cmdFlag int
+
+const (
+	flagNoFlag cmdFlag = iota
+	flagUnknown
+	flagBase
+	flagStaged
+	flagContext
+	flagExport
+	flagDiscard
+	flagList
+	flagHelp
+	flagVersion
+)
+
+var namesToFlags = map[string]cmdFlag{
+	"base":    flagBase,
+	"staged":  flagStaged,
+	"context": flagContext,
+	"U":       flagContext,
+	"export":  flagExport,
+	"discard": flagDiscard,
+	"list":    flagList,
+	"help":    flagHelp,
+	"h":       flagHelp,
+	"version": flagVersion,
+	"v":       flagVersion,
+}
+
+var flagsToNames = map[cmdFlag]string{
+	flagBase:    "--base",
+	flagStaged:  "--staged",
+	flagContext: "--context/-U",
+	flagExport:  "--export",
+	flagDiscard: "--discard",
+	flagList:    "--list",
+	flagHelp:    "--help/-h",
+	flagVersion: "--version/-v",
 // runInitConfig writes the baseline config — every setting at its default,
 // the full default keymap spelled out, and a $schema reference for editor
 // validation — refusing to touch an existing file: a generator must never be
@@ -679,21 +722,70 @@ func next(argv []string, i *int, flag string) (string, error) {
 	return argv[*i], nil
 }
 
-// atoi parses a non-negative decimal integer, rejecting anything strconv.Atoi
-// would tolerate that makes no sense for a context-line count ("+3", "-1",
-// whitespace). Digits-only keeps the -U error message simple and uniform.
-func atoi(s string) (int, error) {
-	if s == "" {
-		return 0, fmt.Errorf("not a number: %q", s)
+type argument struct {
+	Name     cmdFlag
+	Value    string
+	HasValue bool
+}
+
+// strFlagToCmdFlag returns the actual flag stripping dashes
+func strFlagToCmdFlag(name string) cmdFlag {
+	cleanFlag := strings.TrimLeft(name, "-")
+	if len(cleanFlag) == 0 {
+		return flagNoFlag
 	}
-	n := 0
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return 0, fmt.Errorf("not a number: %q", s)
+	flag, ok := namesToFlags[cleanFlag]
+	if !ok {
+		return flagUnknown
+	}
+	return flag
+}
+
+// iterArgs iterates argv and returns flags and their values if any or fails
+// if an unknown flag was passed
+func iterArgs(
+	argv []string,
+) iter.Seq2[argument, error] {
+	return func(yield func(argument, error) bool) {
+		skip := false
+		for iA, a := range argv {
+			if skip {
+				skip = false
+				continue
+			}
+			var flag cmdFlag
+			var value string
+			isFlag := strings.HasPrefix(a, "-")
+			if isFlag {
+				flag = strFlagToCmdFlag(a)
+			}
+			if flag == flagUnknown {
+				if !yield(argument{
+					Name:     flag,
+					Value:    value,
+					HasValue: false,
+				}, fmt.Errorf("unknown flag %q", flag)) {
+					return
+				}
+				continue
+			}
+			hasValue := isFlag && len(argv) > iA+1 && !strings.HasPrefix(argv[iA+1], "-")
+			if hasValue {
+				value = argv[iA+1]
+				skip = true
+			}
+
+			if !yield(argument{
+				Name:     flag,
+				Value:    value,
+				HasValue: hasValue,
+			}, nil) {
+				return
+			}
+			continue
 		}
-		n = n*10 + int(r-'0')
+		return
 	}
-	return n, nil
 }
 
 // setupLogging redirects the standard logger to an append-only file at path,
