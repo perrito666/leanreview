@@ -79,9 +79,12 @@ leanreview mytopic.review.json
 In the TUI they will see your comments boxed inline under the diff lines,
 attributed to you, with any replies shown in the same box. Mention the verbs
 that matter: `x` dismisses a comment (rejects it), `r` replies to it, `e`
-edits its body, `c` adds their own comment, `dd` deletes outright, `q` quits
-— **the file is rewritten automatically on every change**, so when they are
-done, it is done. Do not poll or wait; resume when the user says so.
+edits its body, `c` adds their own comment, `dd` deletes outright, and
+`Enter` opens the conversation reader where individual replies — yours
+included — can be edited or deleted. `q` quits — **the file is rewritten
+automatically on every change**, so when they are done, it is done. Do not
+poll or wait; resume when the user says so. Expect anything in the file to
+have changed, including your own replies.
 
 ## Step 4 — read the verdict and act
 

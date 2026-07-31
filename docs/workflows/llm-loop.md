@@ -39,6 +39,10 @@ attributed (`@assistant`). Then:
 - `e` — edit a comment's body to refine or correct it.
 - `c` — add your own comments, exactly as in any review.
 - `dd` — delete outright (leaves no trace in the conversation).
+- `Enter` — open the **conversation reader** for the comment under the
+  cursor: select the comment or any individual reply (`j`/`k`) to edit
+  (`e`) or delete (`d`) it — the whole conversation is editable, not just
+  your side of it.
 
 Every change **rewrites the file in place** — quit whenever you are done;
 there is no export step.

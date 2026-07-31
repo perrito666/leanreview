@@ -53,7 +53,7 @@ func (m *Model) startReplyUnderCursor() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg { return editorFinishedMsg{err} })
 }
 
-// startDraftReply opens the editor for a conversation reply to the draft
+// startDraftReply opens the editor for a new conversation reply to the draft
 // comment with the given local id. The reply travels with the comment
 // through the exchange file rather than being a comment of its own, so the
 // other side reads it in context.
@@ -62,6 +62,13 @@ func (m *Model) startDraftReply(localID string) tea.Cmd {
 	if c == nil {
 		return nil
 	}
+	return m.openReplyEditor(c, &pendingEdit{replyToLocal: localID}, "")
+}
+
+// openReplyEditor launches the editor for a conversation reply — pe carries
+// whether the finish appends a new reply or updates an existing one, initial
+// seeds the buffer (the current body when editing).
+func (m *Model) openReplyEditor(c *review.DraftComment, pe *pendingEdit, initial string) tea.Cmd {
 	who := c.Author
 	if who == "" {
 		who = "you"
@@ -72,12 +79,13 @@ func (m *Model) startDraftReply(localID string) tea.Cmd {
 		Side:    c.Location.Side.String(),
 		ReplyTo: fmt.Sprintf("comment by @%s: %s", who, firstLine(c.Body)),
 	}
-	sess, err := editor.NewSession(editor.BuildTemplate(tctx, ""), "reply-"+localID)
+	sess, err := editor.NewSession(editor.BuildTemplate(tctx, initial), "reply-"+c.LocalID)
 	if err != nil {
 		m.setError(err)
 		return nil
 	}
-	m.inflight = &pendingEdit{replyToLocal: localID, session: sess}
+	pe.session = sess
+	m.inflight = pe
 	m.mode = ModeExternalEditor
 	cc := m.editor.Cmd(m.ctx, sess.Path)
 	return tea.ExecProcess(cc, func(err error) tea.Msg { return editorFinishedMsg{err} })

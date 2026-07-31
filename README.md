@@ -249,7 +249,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `/`, `n`, `N` | search diff text, next / previous match |
 | `f` | file picker |
 | `C` | comment list |
-| `Enter` | open thread reader (on a `◆` line), else comment list |
+| `Enter` | open conversation (on a `●` line) / thread (on a `◆` line), else comment list |
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
 | `e` | edit draft comment under cursor |

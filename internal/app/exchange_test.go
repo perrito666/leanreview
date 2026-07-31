@@ -127,3 +127,84 @@ func loadPatchFixture(t *testing.T) string {
 	}
 	return string(data)
 }
+
+// convoModel builds a model with one authored comment carrying two replies
+// and the conversation reader open on it.
+func convoModel(t *testing.T) (*Model, string) {
+	t.Helper()
+	m := testModel(t)
+	m.author = "hduran"
+	m.cursor = mustFindRow(t, m, diff.SideRight, 72)
+	loc, snip, _ := m.buildLocation()
+	id := m.draft.Add(loc, "root note", snip)
+	c := m.draft.Get(id)
+	c.Author = "assistant"
+	c.Replies = []review.ReviewReply{
+		{Author: "hduran", Body: "first reply"},
+		{Author: "assistant", Body: "second reply"},
+	}
+	m = key(m, "enter")
+	if m.mode != ModeConvo {
+		t.Fatalf("enter on a commented line should open the conversation, mode=%v", m.mode)
+	}
+	return m, id
+}
+
+// TestConversationReaderCRUD: every item of a conversation is addressable —
+// replies can be selected, deleted, and edited, not just the root comment.
+func TestConversationReaderCRUD(t *testing.T) {
+	m, id := convoModel(t)
+	out := m.View()
+	for _, want := range []string{"@assistant", "root note", "↳ first reply", "↳ second reply"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("conversation view missing %q:\n%s", want, out)
+		}
+	}
+
+	// Select reply 2 and delete it.
+	m = key(m, "j")
+	m = key(m, "j")
+	m = key(m, "d")
+	c := m.draft.Get(id)
+	if len(c.Replies) != 1 || c.Replies[0].Body != "first reply" {
+		t.Fatalf("reply deletion wrong: %+v", c.Replies)
+	}
+
+	// Edit reply 1 via the editor-finished path.
+	idx := 0
+	sess, err := editor.NewSession("<!-- h -->\n\npolished reply\n", "r")
+	if err != nil {
+		t.Fatalf("session: %v", err)
+	}
+	m.inflight = &pendingEdit{replyToLocal: id, editReplyAt: &idx, session: sess}
+	m.mode = ModeExternalEditor
+	m.onEditorFinished(editorFinishedMsg{})
+	c = m.draft.Get(id)
+	if c.Replies[0].Body != "polished reply" || c.Replies[0].Author != "hduran" {
+		t.Errorf("reply edit should replace body and keep author: %+v", c.Replies[0])
+	}
+
+	// Deleting the root removes the conversation and closes the reader.
+	m.mode = ModeConvo
+	m.convoSel = 0
+	m = key(m, "d")
+	if m.draft.Get(id) != nil || m.mode != ModeNormal {
+		t.Errorf("root deletion should remove the comment and close the reader")
+	}
+}
+
+// TestConversationDismissAndReply: x toggles the root state from the reader;
+// r hands off to the reply editor.
+func TestConversationDismissAndReply(t *testing.T) {
+	m, id := convoModel(t)
+	m = key(m, "x")
+	if m.draft.Get(id).State != review.DraftDismissed {
+		t.Errorf("x in the reader should dismiss the comment")
+	}
+	if cmd := m.handleConvoKey("r"); cmd == nil {
+		t.Errorf("r in the reader should open the reply editor")
+	}
+	if m.mode != ModeExternalEditor {
+		t.Errorf("mode = %v, want external editor", m.mode)
+	}
+}

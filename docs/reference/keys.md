@@ -30,7 +30,7 @@ Press `?` inside the TUI for this reference at any time.
 | `/`, `n`, `N` | search diff text, next / previous match |
 | `f` | file picker |
 | `C` | comment list |
-| `Enter` | open thread reader (on a `◆` line), else comment list |
+| `Enter` | open conversation (`●` line: edit/delete replies) / thread (`◆` line), else comment list |
 
 ## Review
 

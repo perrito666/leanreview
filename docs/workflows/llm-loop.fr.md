@@ -44,6 +44,10 @@ diff qu'ils commentent, attribués (`@assistant`). Ensuite :
   quelle revue.
 - `dd` — supprimer purement et simplement (ne laisse aucune trace dans la
   conversation).
+- `Enter` — ouvre le **lecteur de conversation** du commentaire sous le
+  curseur : sélectionnez le commentaire ou n'importe quelle réponse
+  (`j`/`k`) pour la modifier (`e`) ou la supprimer (`d`) — toute la
+  conversation est modifiable, pas seulement votre côté.
 
 Chaque modification **réécrit le fichier sur place** — quittez dès que vous
 avez terminé ; il n'y a pas d'étape d'export.

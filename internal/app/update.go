@@ -83,6 +83,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case ModePR:
 		m.handlePRKey(key)
 		return m, nil
+	case ModeConvo:
+		return m, m.handleConvoKey(key)
 	}
 
 	cmd, ready := m.pending.Feed(key, m.keymap)
@@ -206,8 +208,12 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.clearSelection()
 		m.clearSearch()
 	case "open":
+		// Priority: host threads (PR mode), then the draft conversation on
+		// this line, then the comment list.
 		if m.prActive() && len(m.threadsAt(m.cursor)) > 0 {
 			m.openThreadReader()
+		} else if len(m.commentIDsAt(m.cursor)) > 0 {
+			m.openConversation()
 		} else {
 			m.openComments()
 		}
@@ -402,6 +408,16 @@ func (m *Model) onEditorFinished(msg editorFinishedMsg) tea.Cmd {
 		c := m.draft.Get(pe.replyToLocal)
 		if c == nil {
 			m.setStatus("comment disappeared before the reply landed")
+			return nil
+		}
+		if pe.editReplyAt != nil {
+			// Editing an existing reply: replace the body, keep the author
+			// and timestamp — polishing a message is not re-sending it.
+			if i := *pe.editReplyAt; i >= 0 && i < len(c.Replies) {
+				c.Replies[i].Body = body
+				m.saveDraft()
+				m.setStatus("reply updated")
+			}
 			return nil
 		}
 		author := m.author

@@ -31,7 +31,7 @@ momento.
 | `/`, `n`, `N` | buscar texto en el diff, coincidencia siguiente / anterior |
 | `f` | selector de archivos |
 | `C` | lista de comentarios |
-| `Enter` | abrir lector de hilo (en una línea `◆`), si no, lista de comentarios |
+| `Enter` | abrir conversación (línea `●`: editar/borrar respuestas) / hilo (línea `◆`), si no, lista de comentarios |
 
 ## Revisión
 

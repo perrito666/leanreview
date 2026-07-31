@@ -30,7 +30,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | `/`, `n`, `N` | rechercher dans le texte du diff, correspondance suivante / précédente |
 | `f` | sélecteur de fichiers |
 | `C` | liste des commentaires |
-| `Enter` | ouvrir le lecteur de fil (sur une ligne `◆`), sinon la liste des commentaires |
+| `Enter` | ouvrir la conversation (ligne `●` : modifier/supprimer les réponses) / le fil (ligne `◆`), sinon la liste des commentaires |
 
 ## Revue
 

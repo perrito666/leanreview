@@ -118,6 +118,10 @@ type Model struct {
 	threadIndex map[string][]int
 	// threadView holds the thread indices shown in the thread reader.
 	threadView []int
+	// convoID/convoSel drive the draft-conversation reader: the comment shown
+	// and the selected item (0 = the comment, 1.. = its replies).
+	convoID  string
+	convoSel int
 	// prScroll is the vertical scroll offset of the PR details overlay.
 	prScroll int
 
@@ -149,8 +153,10 @@ type pendingEdit struct {
 	editing string // local id when editing an existing draft; "" when new
 	// replyToLocal is the draft comment a conversation reply attaches to
 	// (review-exchange flow); distinct from replyTo, which targets a host
-	// thread comment in PR mode.
+	// thread comment in PR mode. editReplyAt, when set, is the index of an
+	// existing reply being edited rather than a new one being appended.
 	replyToLocal string
+	editReplyAt  *int
 	session      *editor.Session
 }
 

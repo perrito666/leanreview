@@ -26,7 +26,7 @@ func HelpText() string {
    n / N         next / previous match
    f             file picker
    C             comment list
-   Enter         open thread reader (on a line with a thread)
+   Enter         open the conversation / thread on a commented line
 
  Review
    v             start line selection

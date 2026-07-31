@@ -42,6 +42,10 @@ diff que comentan, atribuidos (`@assistant`). Luego:
 - `e` — edita el cuerpo de un comentario para refinarlo o corregirlo.
 - `c` — añade tus propios comentarios, igual que en cualquier revisión.
 - `dd` — elimina definitivamente (no deja rastro en la conversación).
+- `Enter` — abre el **lector de conversación** del comentario bajo el
+  cursor: selecciona el comentario o cualquier respuesta individual
+  (`j`/`k`) para editarla (`e`) o borrarla (`d`) — toda la conversación es
+  editable, no solo tu lado.
 
 Cada cambio **reescribe el archivo en su lugar** — sal cuando termines; no
 hay paso de exportación.
