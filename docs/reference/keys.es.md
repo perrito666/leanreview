@@ -41,6 +41,7 @@ momento.
 | --- | --- |
 | `v` / `V` | seleccionar líneas / bloque modificado |
 | `c` | comentar en línea o selección (abre `$EDITOR`) |
+| `R` | sugerir un cambio — el editor se abre con el código seleccionado dentro de un bloque ```` ```suggestion ````; los forges lo muestran aplicable |
 | `e` | editar comentario en borrador bajo el cursor |
 | `x` | descartar / restaurar comentario bajo el cursor (se conserva, nunca se envía) |
 | `r` | responder al comentario bajo el cursor ([conversaciones de intercambio](exchange-format.md)) o a su hilo (modo PR) |

@@ -62,9 +62,13 @@ func convertFile(f *gitdiff.File) FileDiff {
 		for _, ln := range frag.Lines {
 			pos++
 			p := pos
+			raw := strings.TrimRight(ln.Line, "\n")
 			dl := DiffLine{
-				Text:          expandTabs(strings.TrimRight(ln.Line, "\n"), TabWidth),
+				Text:          expandTabs(raw, TabWidth),
 				PatchPosition: &p,
+			}
+			if dl.Text != raw {
+				dl.Raw = raw
 			}
 			switch ln.Op {
 			case gitdiff.OpContext:

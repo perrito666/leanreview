@@ -59,6 +59,13 @@ left gutter and the note is previewed inline in a bordered box right under it
 In split layout, `h`/`l` choose which side of a paired change you are
 commenting on — the status bar shows `[LEFT]`/`[RIGHT]`.
 
+`R` instead **suggests a change**, GitHub-style: the editor opens with the
+selected lines pre-filled inside a ```` ```suggestion ```` fence — edit the
+block into your proposed replacement. Suggestions render distinctly in the
+thread box (a label plus green code lines) and submit as natively applyable
+suggestions on GitHub (GitLab's ranged fence form is produced automatically
+for multi-line selections).
+
 A selection must map onto one continuous range on one side; cross-side
 selections are rejected before the editor opens.
 

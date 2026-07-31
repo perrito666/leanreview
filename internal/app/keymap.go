@@ -55,6 +55,7 @@ func DefaultKeymap() Keymap {
 		"s":         "submit",
 		"p":         "pr-info",
 		"x":         "dismiss",
+		"R":         "suggest",
 		"tab":       "next-file",
 		"shift+tab": "prev-file",
 	}

@@ -34,6 +34,7 @@ func HelpText() string {
    v             start line selection
    V             select current changed block
    c             comment on line / selection
+   R             suggest a change (editor opens with the selected code)
    e             edit draft comment under cursor
    x             dismiss / restore comment under cursor
    r             reply to the comment / thread under cursor

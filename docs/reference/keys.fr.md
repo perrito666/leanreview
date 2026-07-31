@@ -40,6 +40,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | --- | --- |
 | `v` / `V` | sélectionner des lignes / le bloc modifié |
 | `c` | commenter la ligne ou la sélection (ouvre `$EDITOR`) |
+| `R` | suggérer un changement — l'éditeur s'ouvre avec le code sélectionné dans un bloc ```` ```suggestion ```` ; les forges le rendent applicable |
 | `e` | modifier le commentaire en brouillon sous le curseur |
 | `x` | rejeter / restaurer le commentaire sous le curseur (conservé, jamais soumis) |
 | `r` | répondre au commentaire sous le curseur ([conversations d'échange](exchange-format.md)) ou à son fil (mode PR) |

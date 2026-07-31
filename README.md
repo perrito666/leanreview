@@ -259,6 +259,7 @@ leanreview [flags] [target]        (the "review" verb is also accepted)
 | `Enter` | open conversation (on a `●` line) / thread (on a `◆` line), else comment list |
 | `v` / `V` | select lines / changed block |
 | `c` | comment on line or selection (opens `$EDITOR`) |
+| `R` | suggest a change: editor opens with the selected code in a ```suggestion fence |
 | `e` | edit draft comment under cursor |
 | `x` | dismiss / restore comment under cursor (kept, never submitted) |
 | `dd` | delete comment under cursor |

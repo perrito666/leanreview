@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	"github.com/perrito666/leanreview/internal/forge"
 )
@@ -55,7 +56,7 @@ func (c *Client) CreateReview(ctx context.Context, ref forge.PullRequestRef, eve
 		} else {
 			pos.NewLine = rc.Line
 		}
-		body, err := json.Marshal(discussionPayload{Body: rc.Body, Position: pos})
+		body, err := json.Marshal(discussionPayload{Body: adaptSuggestion(rc), Position: pos})
 		if err != nil {
 			return nil, fmt.Errorf("encode discussion: %w", err)
 		}
@@ -89,4 +90,21 @@ func (c *Client) CreateReview(ctx context.Context, ref forge.PullRequestRef, eve
 	}
 
 	return &forge.SubmittedReview{URL: mr.WebURL}, nil
+}
+
+// suggestionFenceRe matches an unranged suggestion fence opener.
+var suggestionFenceRe = regexp.MustCompile("(?m)^```suggestion[ \t]*$")
+
+// adaptSuggestion translates GitHub-style ```suggestion fences into GitLab's
+// ranged form for multi-line comments. GitHub applies a suggestion to the
+// whole commented range implicitly; GitLab's fence is relative to the single
+// positioned line (the range's END here), so a comment spanning n+1 lines
+// becomes ```suggestion:-n+0 — without this, only the last line would be
+// replaced. Single-line comments and already-ranged fences pass through.
+func adaptSuggestion(rc forge.ReviewComment) string {
+	if rc.StartLine == 0 || rc.StartLine >= rc.Line {
+		return rc.Body
+	}
+	span := rc.Line - rc.StartLine
+	return suggestionFenceRe.ReplaceAllString(rc.Body, fmt.Sprintf("```suggestion:-%d+0", span))
 }
