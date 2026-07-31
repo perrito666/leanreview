@@ -106,7 +106,9 @@ func (r *ImageRenderer) Render(path string, maxCols, maxRows int) ([]string, boo
 // renderChafa shells out for symbol art. chafa's output rows are plain ANSI
 // text, so they clip, scroll, and repaint like any other row.
 func renderChafa(path string, cols, rows int) []string {
-	out, err := exec.Command("chafa", "--format", "symbols", "--size", fmt.Sprintf("%dx%d", cols, rows), path).Output()
+	// chafa detects color support from the tty; run through a pipe (as here,
+	// always) it would emit colorless spaces — invisible art. Force truecolor.
+	out, err := exec.Command("chafa", "--format", "symbols", "--colors", "full", "--size", fmt.Sprintf("%dx%d", cols, rows), path).Output()
 	if err != nil {
 		return nil
 	}

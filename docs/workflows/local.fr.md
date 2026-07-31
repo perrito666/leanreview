@@ -87,6 +87,16 @@ jointes des commentaires — y compris les balises HTML `<img>` de GitHub —
 sont téléchargées via l'authentification de la forge et mises en cache ;
 les autres URL distantes restent des étiquettes.
 
+![Photo d'exemple](../screens/example-photo.png)
+
+*Une image référencée depuis un commentaire de revue…*
+
+![La photo rendue dans la boîte du fil](../screens/comment-image.svg)
+
+*…et la boîte du fil la rendant en art de cellules via chafa. Sur kitty ou
+ghostty, l'image réelle est dessinée à la place, via le protocole graphique
+kitty.*
+
 ## Relire ses notes
 
 `C` liste chaque brouillon ; `Enter` saute vers l'un d'eux, `e` le modifie,

@@ -27,6 +27,10 @@ auteur, branches, URL, et la description rendue en Markdown stylisé.
 
 ![PR details overlay](../screens/pr-overlay.svg)
 
+Sous la description, le panneau liste la **conversation** de la PR — les
+commentaires généraux rattachés à la demande plutôt qu'à une ligne — du
+plus ancien au plus récent, avec auteurs et horodatages.
+
 ## Fils de discussion et réponses
 
 Les fils de discussion de revue existants apparaissent comme des marqueurs

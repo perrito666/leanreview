@@ -27,6 +27,10 @@ autor, ramas, URL, y la descripción renderizada como Markdown con estilo.
 
 ![Superposición de detalles del PR](../screens/pr-overlay.svg)
 
+Debajo de la descripción, la superposición lista la **conversación** del
+PR — los comentarios generales anclados a la solicitud y no a una línea —
+del más antiguo al más reciente, con autores y fechas.
+
 ## Hilos y respuestas
 
 Los hilos de revisión existentes aparecen como marcadores `◆` en la

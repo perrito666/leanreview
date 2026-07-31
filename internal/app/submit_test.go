@@ -44,6 +44,9 @@ func (f *recordingForge) FileContent(context.Context, forge.PullRequestRef, stri
 func (f *recordingForge) Attachment(context.Context, forge.PullRequestRef, string) ([]byte, error) {
 	return nil, errFake
 }
+func (f *recordingForge) GeneralComments(context.Context, forge.PullRequestRef) ([]forge.Comment, error) {
+	return nil, nil
+}
 func (f *recordingForge) Reply(_ context.Context, _ forge.PullRequestRef, id int64, body string) (*forge.Comment, error) {
 	if f.failReplyAt > 0 && len(f.replies)+1 == f.failReplyAt {
 		return nil, errFake

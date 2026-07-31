@@ -18,6 +18,9 @@ type PRContext struct {
 	Ref     forge.PullRequestRef
 	PR      *forge.PullRequest
 	Threads []forge.Thread
+	// General is the PR's conversation (non-inline) discussion, oldest
+	// first, shown in the PR details overlay below the description.
+	General []forge.Comment
 }
 
 // buildThreadIndex maps a location key to the indices of threads anchored there,

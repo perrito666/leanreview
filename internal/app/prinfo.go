@@ -81,6 +81,22 @@ func (m *Model) prInfoView() string {
 		lines = append(lines, ui.RenderMarkdown(pr.Body, w, m.theme)...)
 	}
 
+	// The PR's conversation-level discussion, oldest first — the part of a
+	// review that anchors to the request rather than to a line, previously
+	// invisible in the TUI.
+	if len(m.pr.General) > 0 {
+		lines = append(lines, "", m.theme.Faint.Render(strings.Repeat("─", w)),
+			m.theme.Metadata.Render(fmt.Sprintf("Conversation (%d)", len(m.pr.General))))
+		for _, c := range m.pr.General {
+			when := ""
+			if !c.CreatedAt.IsZero() {
+				when = "  " + c.CreatedAt.Format("2006-01-02 15:04")
+			}
+			lines = append(lines, "", m.theme.Key.Render("@"+c.Author)+m.theme.Faint.Render(when))
+			lines = append(lines, ui.RenderMarkdown(c.Body, w, m.theme)...)
+		}
+	}
+
 	// Clamp the scroll offset so the last page stays full.
 	h := m.contentHeight()
 	max := len(lines) - h

@@ -318,11 +318,16 @@ func run(argv []string) error {
 		if err != nil {
 			log.Printf("fetch threads: %v", err)
 		}
+		general, gerr := prSrc.GeneralComments(ctx)
+		if gerr != nil {
+			log.Printf("fetch general comments: %v", gerr)
+		}
 		prCtx = &app.PRContext{
 			Forge:   prSrc.Forge(),
 			Ref:     prSrc.Ref(),
 			PR:      prSrc.PullRequest(),
 			Threads: threads,
+			General: general,
 		}
 	}
 

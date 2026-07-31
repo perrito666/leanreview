@@ -3,6 +3,7 @@ package app
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/perrito666/leanreview/internal/forge"
 	"github.com/perrito666/leanreview/internal/ui"
@@ -125,5 +126,25 @@ func TestPRInfoFallsBackToRefURL(t *testing.T) {
 	m.openPRInfo()
 	if out := m.View(); !strings.Contains(out, "https://github.com/o/r/pull/7") {
 		t.Errorf("overlay should derive a URL from the ref:\n%s", out)
+	}
+}
+
+// TestPRInfoShowsConversation: general (non-inline) PR comments — previously
+// invisible in the TUI — appear below the description, oldest first.
+func TestPRInfoShowsConversation(t *testing.T) {
+	m := prInfoModel(t, &forge.PullRequest{Title: "with talk", Body: "desc"})
+	m.pr.General = []forge.Comment{
+		{Author: "alice", Body: "first general point", CreatedAt: time.Date(2026, 7, 1, 10, 0, 0, 0, time.UTC)},
+		{Author: "bob", Body: "second, with ![shot](https://x/i.png)", CreatedAt: time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)},
+	}
+	m.openPRInfo()
+	out := m.View()
+	for _, want := range []string{"Conversation (2)", "@alice", "first general point", "@bob"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("overlay missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Index(out, "@alice") > strings.Index(out, "@bob") {
+		t.Errorf("conversation not oldest-first")
 	}
 }

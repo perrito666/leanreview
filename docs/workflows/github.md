@@ -26,6 +26,10 @@ URL, and the description rendered as styled Markdown. `j`/`k` scroll,
 
 ![PR details overlay](../screens/pr-overlay.svg)
 
+Below the description, the overlay lists the PR's **conversation** — the
+general comments that anchor to the request rather than to a line — oldest
+first, with authors and timestamps.
+
 ## Threads and replies
 
 Existing review threads appear as `◆` markers in the gutter, with the root
