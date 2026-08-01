@@ -34,6 +34,16 @@ leanreview --init-config     # écrit le fichier ci-dessus avec toutes les
                              # référence $schema
 ```
 
+Pour une configuration qui existe déjà, complétez-la au lieu de la
+régénérer :
+
+```bash
+leanreview --fill-config     # ajoute chaque réglage, liaison et séquence
+                             # manquants à leur valeur par défaut ; les
+                             # valeurs existantes et les clés inconnues ne
+                             # sont jamais touchées
+```
+
 Le map `keys` généré liste **toutes** les associations par défaut : remapper
 devient une édition, pas une devinette. Le générateur refuse d'écraser un
 fichier existant.

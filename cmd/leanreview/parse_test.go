@@ -54,6 +54,8 @@ func TestParseArgs(t *testing.T) {
 			want: options{contextN: 3, initConfig: true}},
 		{name: "check-config", argv: []string{"--check-config"},
 			want: options{contextN: 3, checkConfig: true}},
+		{name: "fill-config", argv: []string{"--fill-config"},
+			want: options{contextN: 3, fillConfig: true}},
 
 		// Interleaving: flags may come after positionals.
 		{name: "target then flag", argv: []string{"x.diff", "--staged"},

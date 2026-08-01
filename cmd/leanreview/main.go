@@ -83,6 +83,7 @@ type options struct {
 	discard     bool
 	list        bool
 	initConfig  bool
+	fillConfig  bool
 	checkConfig bool
 	args        []string
 }
@@ -132,6 +133,9 @@ func run(argv []string) error {
 	// file, then exit — neither needs a review source.
 	if opts.initConfig {
 		return runInitConfig()
+	}
+	if opts.fillConfig {
+		return runFillConfig()
 	}
 	if opts.checkConfig {
 		return runCheckConfig()
@@ -563,6 +567,8 @@ func parseArgs(argv []string) (options, error) {
 			o.list = true
 		case flagInitConfig:
 			o.initConfig = true
+		case flagFillConfig:
+			o.fillConfig = true
 		case flagCheckConfig:
 			o.checkConfig = true
 		case flagHelp:
@@ -608,6 +614,8 @@ Flags:
                      supplied, list_filter applies, falling back to "review
                      requested from me"
   --init-config      write a baseline config (defaults + full keymap) and exit
+  --fill-config      add every missing setting/binding to the existing config
+                     at its default value (existing values untouched) and exit
   --check-config     validate the config file, report problems, and exit
   -h, --help         show this help
   -v, --version      print the version and exit
@@ -629,6 +637,7 @@ const (
 	flagHelp
 	flagVersion
 	flagInitConfig
+	flagFillConfig
 	flagCheckConfig
 )
 
@@ -645,6 +654,7 @@ var namesToFlags = map[string]cmdFlag{
 	"version":      flagVersion,
 	"v":            flagVersion,
 	"init-config":  flagInitConfig,
+	"fill-config":  flagFillConfig,
 	"check-config": flagCheckConfig,
 }
 
@@ -658,6 +668,7 @@ var flagsToNames = map[cmdFlag]string{
 	flagHelp:        "--help/-h",
 	flagVersion:     "--version/-v",
 	flagInitConfig:  "--init-config",
+	flagFillConfig:  "--fill-config",
 	flagCheckConfig: "--check-config",
 }
 
@@ -682,11 +693,7 @@ func runInitConfig() error {
 	if info, err := os.Stat(path); err == nil && !info.IsDir() {
 		return fmt.Errorf("%s already exists — refusing to overwrite (edit it, or delete it first)", path)
 	}
-	var seqs []config.SequenceBinding
-	for _, sb := range app.DefaultSequenceBindings() {
-		seqs = append(seqs, config.SequenceBinding{Keys: []string{sb.First, sb.Second}, Action: sb.Action})
-	}
-	out, err := config.BaselineJSON(app.DefaultKeymap(), seqs)
+	out, err := config.BaselineJSON(app.DefaultKeymap(), defaultConfigSequences())
 	if err != nil {
 		return err
 	}
@@ -697,6 +704,47 @@ func runInitConfig() error {
 		return err
 	}
 	fmt.Printf("wrote baseline config to %s\n", path)
+	return nil
+}
+
+// defaultConfigSequences converts the app's default two-key sequences to the
+// config file's representation, for the generator and filler.
+func defaultConfigSequences() []config.SequenceBinding {
+	var seqs []config.SequenceBinding
+	for _, sb := range app.DefaultSequenceBindings() {
+		seqs = append(seqs, config.SequenceBinding{Keys: []string{sb.First, sb.Second}, Action: sb.Action})
+	}
+	return seqs
+}
+
+// runFillConfig completes the existing config with the defaults it omits —
+// the counterpart to --init-config for a config that already exists and must
+// not be regenerated from scratch. Missing file: filling nothing is exactly
+// what --init-config does, so it delegates.
+func runFillConfig() error {
+	path := config.Path()
+	if path == "" {
+		return fmt.Errorf("cannot resolve a config location (no home directory)")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return runInitConfig()
+	}
+	out, added, err := config.FillJSON(data, app.DefaultKeymap(), defaultConfigSequences())
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	if len(added) == 0 {
+		fmt.Printf("%s is already complete\n", path)
+		return nil
+	}
+	if err := os.WriteFile(path, out, 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("filled %d missing entr(y/ies) in %s:\n", len(added), path)
+	for _, a := range added {
+		fmt.Println("  + " + a)
+	}
 	return nil
 }
 

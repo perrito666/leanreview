@@ -181,3 +181,89 @@ func TestAttachmentHelpers(t *testing.T) {
 		t.Errorf("PNG header rejected")
 	}
 }
+
+// TestFillConfig: --fill-config completes a partial config — missing
+// settings, missing default bindings and sequences — while never touching
+// existing values or dropping unknown keys, and is idempotent.
+func TestFillConfig(t *testing.T) {
+	partial := []byte(`{
+		"tab_width": 8,
+		"keys": {"j": "up", "Z": "quit"},
+		"sequences": [{"keys": [",", "c"], "action": "next-hunk"}],
+		"my_custom_note": "keep me"
+	}`)
+	out, added, err := config.FillJSON(partial, app.DefaultKeymap(), nil)
+	if err != nil {
+		t.Fatalf("fill: %v", err)
+	}
+	if len(added) == 0 {
+		t.Fatalf("nothing added to an obviously partial config")
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(out, &doc); err != nil {
+		t.Fatalf("filled config is not valid JSON: %v\n%s", err, out)
+	}
+	// Existing values untouched.
+	if doc["tab_width"].(float64) != 8 {
+		t.Errorf("tab_width overwritten: %v", doc["tab_width"])
+	}
+	keys := doc["keys"].(map[string]any)
+	if keys["j"] != "up" || keys["Z"] != "quit" {
+		t.Errorf("user bindings overwritten: %v", keys)
+	}
+	// Missing defaults spelled out.
+	if keys["k"] != "up" {
+		t.Errorf("missing default binding not filled: %v", keys["k"])
+	}
+	if doc["$schema"] != config.SchemaURL {
+		t.Errorf("$schema not added: %v", doc["$schema"])
+	}
+	if doc["wrap"] != true {
+		t.Errorf("missing setting not filled: %v", doc["wrap"])
+	}
+	// Unknown keys preserved.
+	if doc["my_custom_note"] != "keep me" {
+		t.Errorf("unknown key lost")
+	}
+	// Idempotent: a second fill adds nothing.
+	if _, again, err := config.FillJSON(out, app.DefaultKeymap(), nil); err != nil || len(again) != 0 {
+		t.Errorf("second fill not clean: %v %v", again, err)
+	}
+	// And the result passes the validator (modulo the unknown key, which is
+	// the user's to keep).
+	problems := config.Validate(out, app.KnownActions())
+	for _, p := range problems {
+		if !strings.Contains(p, "my_custom_note") {
+			t.Errorf("filled config has a problem: %v", p)
+		}
+	}
+}
+
+// TestFillConfigSequences: default sequences join the user's list by key
+// pair, after the user's entries.
+func TestFillConfigSequences(t *testing.T) {
+	partial := []byte(`{"sequences": [{"keys": ["g", "g"], "action": "last-line"}]}`)
+	seqs := []config.SequenceBinding{
+		{Keys: []string{"g", "g"}, Action: "first-line"},
+		{Keys: []string{"]", "c"}, Action: "next-hunk"},
+	}
+	out, _, err := config.FillJSON(partial, app.DefaultKeymap(), seqs)
+	if err != nil {
+		t.Fatalf("fill: %v", err)
+	}
+	var doc struct {
+		Sequences []config.SequenceBinding `json:"sequences"`
+	}
+	if err := json.Unmarshal(out, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Sequences) != 2 {
+		t.Fatalf("sequences = %+v", doc.Sequences)
+	}
+	if doc.Sequences[0].Action != "last-line" {
+		t.Errorf("user sequence overwritten: %+v", doc.Sequences[0])
+	}
+	if doc.Sequences[1].Keys[0] != "]" || doc.Sequences[1].Action != "next-hunk" {
+		t.Errorf("missing default sequence not appended: %+v", doc.Sequences[1])
+	}
+}

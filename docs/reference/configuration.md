@@ -34,7 +34,13 @@ leanreview --init-config     # writes the file above with every default,
 
 The generated `keys` map lists **every** default binding, so remapping is an
 edit, not a guessing game. The generator refuses to overwrite an existing
-file.
+file — for a config that already exists, fill it instead:
+
+```bash
+leanreview --fill-config     # adds every missing setting, binding, and
+                             # sequence at its default; existing values and
+                             # unknown keys are never touched
+```
 
 Validate at any time:
 
