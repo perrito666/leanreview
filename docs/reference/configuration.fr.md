@@ -62,7 +62,9 @@ pour Vim/Neovim.
   votre terminal (`monokai` sur fond sombre, `github` sur fond clair) ; tout
   [nom de style Chroma](https://xyproto.github.io/splash/docs/) peut être
   défini explicitement.
-- `theme` — palette de la TUI : `default` ou `mono`.
+- `theme` — palette de la TUI : une palette intégrée (`default`,
+  `default-light`, `default-dark`, `mono`) ou le nom d'un
+  [fichier de thème](#themes).
 - `tab_width` — nombre de colonnes vers lesquelles une tabulation s'étend.
 - `context` — nombre de lignes de contexte unifié par défaut quand `-U`
   n'est pas passé.
@@ -126,3 +128,33 @@ pour Vim/Neovim.
   un fichier JSON par source, écritures atomiques.
 - Journaux : `$XDG_STATE_HOME/leanreview/leanreview.log` — jamais la sortie
   standard, dont la TUI est propriétaire.
+
+## Thèmes
+
+`default` s'adapte au fond du terminal ; `default-light` et
+`default-dark` figent ce choix. Au-delà des palettes intégrées, déposez
+des fichiers JSON de thème dans un dossier `themes/` à côté de la
+configuration. Un thème est référencé par son **nom de métadonnées** (pas
+par le nom du fichier), ne restyle que les rôles qu'il nomme (le reste
+garde la palette par défaut) et ne peut pas revendiquer un nom intégré :
+
+```json
+{
+  "$schema": "https://perrito666.github.io/leanreview/schema/leanreview-theme.schema.json",
+  "name": "dusk",
+  "description": "verts sourds, accents magenta",
+  "styles": {
+    "addition":      { "fg": "108" },
+    "deletion":      { "fg": "#d75f5f", "bold": true },
+    "title":         { "fg": "15", "bg": "53" },
+    "addition_tint": { "bg": "236" }
+  }
+}
+```
+
+Rôles : `addition`, `deletion`, `context`, `metadata`, `gutter`, `cursor`,
+`select`, `search`, `marker`, `title`, `status`, `error`, `key`, `faint`,
+`comment`, `addition_tint`, `deletion_tint`. Les couleurs sont des indices
+de la palette ANSI ou de l'hex. `leanreview --check-config` valide le
+dossier : fichiers cassés, noms dupliqués ou réservés et rôles inconnus
+sont tous signalés.

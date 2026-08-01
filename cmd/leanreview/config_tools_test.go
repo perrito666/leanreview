@@ -119,7 +119,7 @@ func TestValidateFindsProblems(t *testing.T) {
 		]
 	}`)
 	problems := config.Validate(bad, app.KnownActions())
-	wantSubstrings := []string{"theem", "solarized", "hg", "tab_width", `keys["j"]`, "sequences[0]", "frobnicate"}
+	wantSubstrings := []string{"theem", "hg", "tab_width", `keys["j"]`, "sequences[0]", "frobnicate"}
 	for _, w := range wantSubstrings {
 		found := false
 		for _, p := range problems {
@@ -131,13 +131,18 @@ func TestValidateFindsProblems(t *testing.T) {
 			t.Errorf("no problem mentions %q in %v", w, problems)
 		}
 	}
-	// The empty action (unbind/remove) is legal and must not be reported.
+	// The empty action (unbind/remove) is legal and must not be reported;
+	// non-builtin theme names are too — they reference theme files, checked
+	// against the themes directory by --check-config, not here.
 	for _, p := range problems {
 		if strings.Contains(p, `keys["q"]`) {
 			t.Errorf("unbinding must not be a problem: %v", p)
 		}
 		if strings.Contains(p, "sequences[2]") {
 			t.Errorf("removing a sequence must not be a problem: %v", p)
+		}
+		if strings.Contains(p, "solarized") {
+			t.Errorf("a named-theme reference must not be a structural problem: %v", p)
 		}
 	}
 	if got := config.Validate([]byte(`{"theme": "mono"}`), app.KnownActions()); len(got) != 0 {

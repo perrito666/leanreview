@@ -345,7 +345,7 @@ func run(argv []string) error {
 		Draft:        draft,
 		Store:        store,
 		Editor:       ed,
-		Theme:        ui.ThemeByName(cfg.Theme),
+		Theme:        resolveTheme(cfg.Theme),
 		Highlighter:  ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
 		Keys:         cfg.Keys,
 		Sequences:    appSequences(cfg.Sequences),
@@ -513,7 +513,7 @@ func runList(ctx context.Context, cfg config.Config, opts options) (string, erro
 		return "", nil
 	}
 
-	idx, err := app.PickRequest(entries, ui.ThemeByName(cfg.Theme))
+	idx, err := app.PickRequest(entries, resolveTheme(cfg.Theme))
 	if err != nil || idx < 0 {
 		return "", err
 	}
@@ -716,6 +716,12 @@ func runCheckConfig() error {
 	// Binding-overlap problems live above the config package: only the app
 	// knows the grammar's dispatch order (counts, then prefixes, then keys).
 	cfg := config.Load()
+	problems = append(problems, config.ValidateThemes(ui.BuiltinThemeNames(), ui.ThemeRoles())...)
+	if _, ok := ui.BuiltinTheme(cfg.Theme); !ok {
+		if _, found := config.FindTheme(cfg.Theme); !found {
+			problems = append(problems, fmt.Sprintf("theme %q is neither built-in (%s) nor found in %s", cfg.Theme, strings.Join(ui.BuiltinThemeNames(), ", "), config.ThemesDir()))
+		}
+	}
 	problems = append(problems, app.ValidateKeymapChoice(cfg.Keymap, appUserKeymaps(cfg.Keymaps))...)
 	problems = append(problems, app.ValidateBindings(cfg.Keys, appSequences(cfg.Sequences))...)
 	if len(problems) == 0 {
@@ -831,6 +837,32 @@ func openLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+}
+
+// resolveTheme maps the configured theme name to a palette: built-ins
+// (default, default-light, default-dark, mono) directly, anything else
+// through the themes directory — a file's overrides layered on the default
+// palette, so a four-line theme is a valid theme. Failures fall back to the
+// default with a stderr note (before the TUI owns the terminal);
+// --check-config names the same problems queryably.
+func resolveTheme(name string) ui.Theme {
+	if t, ok := ui.BuiltinTheme(name); ok {
+		return t
+	}
+	tf, found := config.FindTheme(name)
+	if !found {
+		fmt.Fprintf(os.Stderr, "leanreview: theme %q not found (using default; run --check-config)\n", name)
+		return ui.DefaultTheme()
+	}
+	overrides := make(map[string]ui.StyleOverride, len(tf.Styles))
+	for role, st := range tf.Styles {
+		overrides[role] = ui.StyleOverride{FG: st.FG, BG: st.BG, Bold: st.Bold, Underline: st.Underline, Reverse: st.Reverse}
+	}
+	t, err := ui.DefaultTheme().WithOverrides(overrides)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "leanreview: theme %q: %v (roles ignored where unknown)\n", name, err)
+	}
+	return t
 }
 
 // appUserKeymaps converts config keymap definitions to the app's form.

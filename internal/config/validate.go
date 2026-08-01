@@ -64,9 +64,8 @@ func Validate(data []byte, knownActions []string) []string {
 		return problems
 	}
 
-	if fc.Theme != nil && *fc.Theme != "" && *fc.Theme != "default" && *fc.Theme != "mono" {
-		problems = append(problems, fmt.Sprintf("theme %q is not one of: default, mono", *fc.Theme))
-	}
+	// Theme names beyond the built-ins are legal — they reference theme
+	// files, which --check-config verifies against the themes directory.
 	if fc.ChangeColors != nil && *fc.ChangeColors != "" && *fc.ChangeColors != "diff" && *fc.ChangeColors != "syntax" {
 		problems = append(problems, fmt.Sprintf("change_colors %q is not one of: diff, syntax", *fc.ChangeColors))
 	}
