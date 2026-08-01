@@ -66,6 +66,10 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.handleSearchKey(key)
 		return m, nil
 	}
+	if m.attachActive {
+		m.handleAttachKey(key)
+		return m, nil
+	}
 
 	// Global quit.
 	if key == "ctrl+c" {
@@ -223,6 +227,13 @@ func (m *Model) execute(cmd command) tea.Cmd {
 		m.openPRInfo()
 	case "general":
 		m.openGeneral()
+	case "attach-image":
+		ids := m.commentIDsAt(m.cursor)
+		target := ""
+		if len(ids) > 0 {
+			target = ids[len(ids)-1]
+		}
+		m.startAttachImage(target)
 	case "delete-comment":
 		m.deleteCommentUnderCursor()
 	case "dismiss":

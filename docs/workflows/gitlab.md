@@ -32,3 +32,12 @@ submission onto GitLab's model:
 
 Comments post in order, and a mid-way failure reports how many were already
 published — those are cleared from your drafts so a retry cannot repost them.
+
+## Attaching images
+
+`I` on a draft comment (or a staged general draft in the `P` screen) opens
+a path prompt: the file must exist and decode as an image, and a wrong path
+can be corrected in place. The image renders locally right away; on
+submission it is uploaded through GitLab's project uploads API and the
+comment's reference is rewritten to the returned `/uploads/…` path — the
+same form GitLab writes for images pasted in its own UI.

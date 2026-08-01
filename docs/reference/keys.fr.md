@@ -44,6 +44,7 @@ Appuyez sur `?` dans la TUI pour afficher cette référence à tout moment.
 | `e` | modifier le commentaire en brouillon sous le curseur |
 | `x` | rejeter / restaurer le commentaire sous le curseur (conservé, jamais soumis) |
 | `r` | répondre au commentaire sous le curseur ([conversations d'échange](exchange-format.md)) ou à son fil (mode PR) |
+| `I` | joindre une image au brouillon sous le curseur : une invite de chemin qui valide le fichier et se corrige en cas d'erreur ; l'image est rendue localement aussitôt et téléversée à l'envoi (GitLab — l'API de GitHub n'a pas d'endpoint de téléversement) |
 | `dd` | supprimer le commentaire sous le curseur |
 
 ## Mode pull request

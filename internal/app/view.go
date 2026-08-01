@@ -135,6 +135,13 @@ func (m *Model) statusBar() string {
 	if m.searchActive {
 		return m.theme.Status.Width(m.width).Render(clip(m.searchInput, m.width))
 	}
+	if m.attachActive {
+		prompt := "attach image path: " + m.attachInput
+		if m.attachErr != "" {
+			prompt += "   ✗ " + m.attachErr
+		}
+		return m.theme.Status.Width(m.width).Render(clip(prompt, m.width))
+	}
 	if m.err != nil {
 		return m.theme.Error.Width(m.width).Render(clip("error: "+m.err.Error(), m.width))
 	}

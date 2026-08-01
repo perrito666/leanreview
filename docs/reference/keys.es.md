@@ -45,6 +45,7 @@ momento.
 | `e` | editar comentario en borrador bajo el cursor |
 | `x` | descartar / restaurar comentario bajo el cursor (se conserva, nunca se envía) |
 | `r` | responder al comentario bajo el cursor ([conversaciones de intercambio](exchange-format.md)) o a su hilo (modo PR) |
+| `I` | adjuntar una imagen al borrador bajo el cursor: un prompt de ruta que valida el archivo y permite corregir en caso de error; la imagen se renderiza localmente al momento y se sube al enviar (GitLab — la API de GitHub no tiene endpoint de subida) |
 | `dd` | eliminar comentario bajo el cursor |
 
 ## Modo pull-request

@@ -35,3 +35,13 @@ GitLab n'a pas de point d'accès de revue atomique avec commentaires, donc
 Les commentaires sont publiés dans l'ordre, et un échec en cours de route
 rapporte combien ont déjà été publiés — ceux-ci sont retirés de vos
 brouillons afin qu'une nouvelle tentative ne puisse pas les republier.
+
+## Joindre des images
+
+`I` sur un commentaire brouillon (ou un brouillon général dans l'écran
+`P`) ouvre une invite de chemin : le fichier doit exister et se décoder
+comme image, et un chemin erroné se corrige sur place. L'image est rendue
+localement immédiatement ; à l'envoi elle est téléversée via l'API
+d'uploads du projet GitLab et la référence du commentaire est réécrite
+vers le chemin `/uploads/…` retourné — la forme même que GitLab écrit pour
+les images collées dans sa propre interface.

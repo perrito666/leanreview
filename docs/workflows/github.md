@@ -49,6 +49,13 @@ On the submission screen, `g` writes the **review summary** — the general
 comment attached to the review itself (the review body on GitHub, the
 leading note on GitLab).
 
+!!! note "Image attachments"
+    `I` attaches a local image to a draft, and it renders in the TUI right
+    away — but GitHub's REST API has no attachment-upload endpoint, so
+    submission on GitHub refuses drafts carrying local images: remove them
+    or reference an already-hosted URL. On GitLab they upload
+    automatically ([see the GitLab workflow](gitlab.md#attaching-images)).
+
 ## Threads and replies
 
 Existing review threads appear as `◆` markers in the gutter, with the root

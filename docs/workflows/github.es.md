@@ -52,6 +52,13 @@ En la pantalla de envío, `g` escribe el **resumen de la revisión** — el
 comentario general adjunto a la revisión misma (el cuerpo de la review en
 GitHub, la nota inicial en GitLab).
 
+!!! note "Imágenes adjuntas"
+    `I` adjunta una imagen local a un borrador, y se renderiza en la TUI de
+    inmediato — pero la API REST de GitHub no tiene endpoint de subida de
+    adjuntos, así que el envío en GitHub rechaza borradores con imágenes
+    locales: elimínalas o referencia una URL ya alojada. En GitLab se suben
+    automáticamente ([ver el flujo de GitLab](gitlab.md#adjuntar-imagenes)).
+
 ## Hilos y respuestas
 
 Los hilos de revisión existentes aparecen como marcadores `◆` en la

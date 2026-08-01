@@ -93,6 +93,10 @@ func (m *Model) handleGeneralKey(key string) tea.Cmd {
 			return m.startGeneralEdit(items[m.generalSel].draftID)
 		}
 		m.setStatus("only staged drafts can be edited")
+	case "I":
+		if m.generalSel >= 0 && m.generalSel < len(items) {
+			m.startAttachImage(items[m.generalSel].draftID)
+		}
 	case "d":
 		if m.generalSel >= 0 && m.generalSel < len(items) && items[m.generalSel].draftID != "" {
 			m.draft.RemoveGeneral(items[m.generalSel].draftID)

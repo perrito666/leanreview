@@ -36,3 +36,13 @@ GitLab no tiene un endpoint de revisión atómica con comentarios, así que
 Los comentarios se publican en orden, y un fallo a mitad de camino informa
 cuántos ya se publicaron — esos se eliminan de tus borradores para que un
 reintento no pueda volver a publicarlos.
+
+## Adjuntar imágenes
+
+`I` sobre un comentario borrador (o un borrador general en la pantalla
+`P`) abre un prompt de ruta: el archivo debe existir y decodificar como
+imagen, y una ruta errónea se corrige en el sitio. La imagen se renderiza
+localmente de inmediato; al enviar se sube mediante la API de uploads del
+proyecto de GitLab y la referencia del comentario se reescribe a la ruta
+`/uploads/…` devuelta — la misma forma que GitLab escribe para imágenes
+pegadas en su propia interfaz.

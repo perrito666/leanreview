@@ -38,6 +38,7 @@ func HelpText() string {
    e             edit draft comment under cursor
    x             dismiss / restore comment under cursor
    r             reply to the comment / thread under cursor
+   I             attach an image to the draft under cursor (path prompt)
    dd            delete comment under cursor
 
  Pull-request mode

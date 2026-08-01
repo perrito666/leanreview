@@ -143,6 +143,12 @@ type Model struct {
 	keymap     Keymap
 	sequences  Sequences
 	generalSel int
+	// attach prompt state: a plain path input targeting a draft (by local
+	// id), with the last validation error shown in place.
+	attachActive bool
+	attachInput  string
+	attachErr    string
+	attachTarget string
 
 	// listCursor is the selection index for the files / comments overlays.
 	listCursor int

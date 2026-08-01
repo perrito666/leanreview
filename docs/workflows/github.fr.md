@@ -52,6 +52,14 @@ Sur l'écran d'envoi, `g` rédige le **résumé de la revue** — le commentaire
 général attaché à la revue elle-même (le corps de la review sur GitHub, la
 note d'ouverture sur GitLab).
 
+!!! note "Images jointes"
+    `I` joint une image locale à un brouillon, et elle est rendue dans la
+    TUI immédiatement — mais l'API REST de GitHub n'a pas d'endpoint de
+    téléversement de pièces jointes : l'envoi sur GitHub refuse donc les
+    brouillons portant des images locales — supprimez-les ou référencez une
+    URL déjà hébergée. Sur GitLab elles sont téléversées automatiquement
+    ([voir le flux GitLab](gitlab.md#joindre-des-images)).
+
 ## Fils de discussion et réponses
 
 Les fils de discussion de revue existants apparaissent comme des marqueurs
