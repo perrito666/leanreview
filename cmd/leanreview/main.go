@@ -579,8 +579,10 @@ func parseArgs(argv []string) (options, error) {
 // errHelp and errVersion are sentinels from parseArgs: they signal "print and
 // exit 0" rather than a failure, so run intercepts them before generic error
 // handling would turn them into a nonzero exit.
-var errHelp = fmt.Errorf("help requested")
-var errVersion = fmt.Errorf("version requested")
+var (
+	errHelp    = fmt.Errorf("help requested")
+	errVersion = fmt.Errorf("version requested")
+)
 
 const usage = `leanreview — terminal code-review client
 

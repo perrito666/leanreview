@@ -47,8 +47,12 @@
    ]
   },
   "theme": {
-   "description": "TUI palette: a built-in (default, default-light, default-dark, mono — default adapts to the terminal background, the -light/-dark variants pin it) or the name of a theme file in the themes/ folder next to this config (see the leanreview-theme schema).",
-   "type": "string"
+   "description": "TUI palette.",
+   "type": "string",
+   "enum": [
+    "default",
+    "mono"
+   ]
   },
   "tab_width": {
    "description": "Columns a tab expands to.",
