@@ -44,6 +44,7 @@ Press `?` inside the TUI for this reference at any time.
 | `e` | edit draft comment under cursor |
 | `x` | dismiss / restore comment under cursor (kept, never submitted) |
 | `r` | reply to the comment under cursor ([exchange conversations](exchange-format.md)) or its thread (PR mode) |
+| `I` | attach an image to the draft under cursor: a path prompt that validates the file and re-prompts on error; the image renders locally at once and uploads on submit (GitLab — GitHub's API has no upload endpoint) |
 | `dd` | delete comment under cursor |
 
 ## Pull-request mode

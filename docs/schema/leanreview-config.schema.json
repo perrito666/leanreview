@@ -96,6 +96,7 @@
     "type": "string",
     "enum": [
      "",
+     "attach-image",
      "cmdline",
      "collapse-all",
      "comment",
@@ -177,6 +178,7 @@
       "type": "string",
       "enum": [
        "",
+       "attach-image",
        "cmdline",
        "collapse-all",
        "comment",

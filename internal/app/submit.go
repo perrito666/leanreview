@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -195,6 +197,40 @@ func (m *Model) doSubmit() tea.Cmd {
 		generals = append(generals, struct{ body, id string }{g.Body, g.LocalID})
 	}
 
+	// Local image attachments: collect every local reference across the
+	// outgoing bodies. They must be uploaded before anything posts — and on
+	// a forge with no upload API (GitHub), submission stops here, before any
+	// network call, with the reason spelled out.
+	uploadSet := map[string]bool{}
+	for _, c := range newComments {
+		for _, p := range localImageRefs(c.Body) {
+			uploadSet[p] = true
+		}
+	}
+	for _, r := range replies {
+		for _, p := range localImageRefs(r.body) {
+			uploadSet[p] = true
+		}
+	}
+	for _, g := range generals {
+		for _, p := range localImageRefs(g.body) {
+			uploadSet[p] = true
+		}
+	}
+	for _, p := range localImageRefs(summary) {
+		uploadSet[p] = true
+	}
+	uploader, canUpload := f.(forge.AttachmentUploader)
+	if len(uploadSet) > 0 && !canUpload {
+		m.setError(fmt.Errorf("this forge cannot receive image uploads through its API (GitHub exposes none) — remove the attached image(s) or reference a hosted URL instead"))
+		return nil
+	}
+	var uploads []string
+	for p := range uploadSet {
+		uploads = append(uploads, p)
+	}
+	slices.Sort(uploads)
+
 	if len(newComments) == 0 && len(replies) == 0 && len(generals) == 0 && event == forge.EventComment && summary == "" {
 		m.setStatus("nothing to submit")
 		return nil
@@ -206,6 +242,35 @@ func (m *Model) doSubmit() tea.Cmd {
 
 	return func() tea.Msg {
 		var msg submitResultMsg
+		// Upload attachments first: nothing has posted yet, so a failed
+		// upload aborts cleanly with every draft intact.
+		if len(uploads) > 0 {
+			rewrite := make(map[string]string, len(uploads))
+			for _, p := range uploads {
+				url, err := uploader.UploadAttachment(ctx, ref, p)
+				if err != nil {
+					msg.err = fmt.Errorf("upload %s: %w (nothing was posted)", p, err)
+					return msg
+				}
+				rewrite[p] = url
+			}
+			sub := func(body string) string {
+				for p, url := range rewrite {
+					body = strings.ReplaceAll(body, "("+p+")", "("+url+")")
+				}
+				return body
+			}
+			for i := range newComments {
+				newComments[i].Body = sub(newComments[i].Body)
+			}
+			for i := range replies {
+				replies[i].body = sub(replies[i].body)
+			}
+			for i := range generals {
+				generals[i].body = sub(generals[i].body)
+			}
+			summary = sub(summary)
+		}
 		// Create the review (also valid with zero comments for APPROVE/COMMENT).
 		if len(newComments) > 0 || event != forge.EventComment || summary != "" {
 			res, err := f.CreateReview(ctx, ref, event, summary, newComments)

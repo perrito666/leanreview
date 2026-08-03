@@ -60,6 +60,7 @@ func DefaultKeymap() Keymap {
 		"s":         "submit",
 		"p":         "pr-info",
 		"P":         "general",
+		"I":         "attach-image",
 		"x":         "dismiss",
 		"R":         "suggest",
 		"tab":       "next-file",

@@ -115,6 +115,33 @@ internal/config     defaults <- config file <- environment
   background survives; keep that discipline. S cycles
   red/green-changes → syntax-everywhere → off; content arrives through the
   same fetch/cache seam as the context view.
+- **Bindings are data.** Single keys (Keymap), two-key sequences
+  (Sequences — object form in config, so non-US layouts can express them),
+  and named presets all resolve in app.resolveKeymap: preset/user base,
+  then top-level overrides. Structural validation lives in config;
+  dispatch-order overlap checks (dead bindings) live in app.ValidateBindings
+  because only the app knows the grammar order (counts → prefixes → keys).
+  Presets are supersets of the defaults, never clones — terminals cannot
+  report most editor chords.
+- **General comments are flat.** Both forges model the PR conversation as a
+  flat list, so "reply" means a new comment carrying a Markdown quote
+  (GeneralDraft.QuoteOf is context, not threading). General drafts post
+  individually on submit with record-as-you-go bookkeeping, like replies.
+  The review summary (draft.Summary) is the submission's own general
+  comment, edited from the confirmation screen.
+- **Themes resolve by metadata name.** Theme files in themes/ next to the
+  config are referenced by their "name" field, never the filename; built-in
+  names (default, default-light, default-dark, mono) are reserved; files
+  overlay only the roles they name on the default palette. Broken themes
+  degrade to default with a stderr note — never block a review.
+- **Config fill is never destructive.** --fill-config adds missing
+  defaults; it must not touch existing values or drop unknown keys, even
+  ones the validator flags.
+- **Attachment upload is an optional capability.**
+  forge.AttachmentUploader exists because GitHub's REST API has no upload
+  surface while GitLab's does; submission stops before any network call
+  when local image refs exist and the forge cannot upload. Uploads happen
+  before the review posts, so a failure aborts with every draft intact.
 - **ANSI-aware geometry.** Any string measuring/clipping must use
   `lipgloss.Width` / the `clip`/`pad` helpers, never `len()`. Input handling
   counts runes, never bytes.

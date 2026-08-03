@@ -191,6 +191,17 @@ func FetchAttachmentURL(ctx context.Context, url string) ([]byte, error) {
 }
 
 // ReviewComment is a single line comment expressed in host API terms.
+// AttachmentUploader is implemented by forges whose API can receive file
+// uploads for use in comment Markdown (GitLab's project uploads endpoint).
+// GitHub's REST API has no such surface — uploads exist only in the web UI —
+// so the capability is an optional interface rather than a Forge method half
+// the implementations would stub with an error. The returned reference is
+// what comment Markdown should embed (GitLab: a project-relative /uploads
+// path the server resolves inside MR notes).
+type AttachmentUploader interface {
+	UploadAttachment(ctx context.Context, ref PullRequestRef, path string) (string, error)
+}
+
 type ReviewComment struct {
 	Path      string
 	Body      string

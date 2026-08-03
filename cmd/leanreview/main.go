@@ -695,11 +695,7 @@ func runInitConfig() error {
 	if info, err := os.Stat(path); err == nil && !info.IsDir() {
 		return fmt.Errorf("%s already exists — refusing to overwrite (edit it, or delete it first)", path)
 	}
-	var seqs []config.SequenceBinding
-	for _, sb := range app.DefaultSequenceBindings() {
-		seqs = append(seqs, config.SequenceBinding{Keys: []string{sb.First, sb.Second}, Action: sb.Action})
-	}
-	out, err := config.BaselineJSON(app.DefaultKeymap(), seqs)
+	out, err := config.BaselineJSON(app.DefaultKeymap(), defaultConfigSequences())
 	if err != nil {
 		return err
 	}
