@@ -585,8 +585,10 @@ func parseArgs(argv []string) (options, error) {
 // errHelp and errVersion are sentinels from parseArgs: they signal "print and
 // exit 0" rather than a failure, so run intercepts them before generic error
 // handling would turn them into a nonzero exit.
-var errHelp = fmt.Errorf("help requested")
-var errVersion = fmt.Errorf("version requested")
+var (
+	errHelp    = fmt.Errorf("help requested")
+	errVersion = fmt.Errorf("version requested")
+)
 
 const usage = `leanreview — terminal code-review client
 
@@ -693,7 +695,11 @@ func runInitConfig() error {
 	if info, err := os.Stat(path); err == nil && !info.IsDir() {
 		return fmt.Errorf("%s already exists — refusing to overwrite (edit it, or delete it first)", path)
 	}
-	out, err := config.BaselineJSON(app.DefaultKeymap(), defaultConfigSequences())
+	var seqs []config.SequenceBinding
+	for _, sb := range app.DefaultSequenceBindings() {
+		seqs = append(seqs, config.SequenceBinding{Keys: []string{sb.First, sb.Second}, Action: sb.Action})
+	}
+	out, err := config.BaselineJSON(app.DefaultKeymap(), seqs)
 	if err != nil {
 		return err
 	}
