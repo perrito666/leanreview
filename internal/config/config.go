@@ -30,6 +30,11 @@ type Config struct {
 	Keys map[string]string
 	// Sequences overrides two-key sequence bindings.
 	Sequences []SequenceBinding
+	// Keymap names the base binding set: a built-in preset or a Keymaps entry.
+	Keymap string
+	// Keymaps are user-defined named keymaps, layered on the defaults when
+	// selected via Keymap.
+	Keymaps map[string]KeymapDef
 	// ListEngine is the default discovery engine for --list ("gh" or "glab").
 	ListEngine string
 	// ListFilter is the fallback discovery filter for --list when no filter is
@@ -69,23 +74,25 @@ type Config struct {
 // fileConfig mirrors the on-disk JSON, using pointers so absent keys are
 // distinguishable from zero values.
 type fileConfig struct {
-	Editor       *string           `json:"editor"`
-	Syntax       *bool             `json:"syntax"`
-	SyntaxStyle  *string           `json:"syntax_style"`
-	Theme        *string           `json:"theme"`
-	TabWidth     *int              `json:"tab_width"`
-	Context      *int              `json:"context"`
-	Keys         map[string]string `json:"keys"`
-	Sequences    []SequenceBinding `json:"sequences"`
-	ListEngine   *string           `json:"list_engine"`
-	ListFilter   *string           `json:"list_filter"`
-	ListFilters  map[string]string `json:"list_filters"`
-	Wrap         *bool             `json:"wrap"`
-	WrapWidth    *int              `json:"wrap_width"`
-	Author       *string           `json:"author"`
-	Images       *string           `json:"images"`
-	ChangeColors *string           `json:"change_colors"`
-	ChangeTint   *bool             `json:"change_tint"`
+	Editor       *string              `json:"editor"`
+	Syntax       *bool                `json:"syntax"`
+	SyntaxStyle  *string              `json:"syntax_style"`
+	Theme        *string              `json:"theme"`
+	TabWidth     *int                 `json:"tab_width"`
+	Context      *int                 `json:"context"`
+	Keys         map[string]string    `json:"keys"`
+	Sequences    []SequenceBinding    `json:"sequences"`
+	Keymap       *string              `json:"keymap"`
+	Keymaps      map[string]KeymapDef `json:"keymaps"`
+	ListEngine   *string              `json:"list_engine"`
+	ListFilter   *string              `json:"list_filter"`
+	ListFilters  map[string]string    `json:"list_filters"`
+	Wrap         *bool                `json:"wrap"`
+	WrapWidth    *int                 `json:"wrap_width"`
+	Author       *string              `json:"author"`
+	Images       *string              `json:"images"`
+	ChangeColors *string              `json:"change_colors"`
+	ChangeTint   *bool                `json:"change_tint"`
 }
 
 // SequenceBinding is one two-key sequence entry in the config file. It is an
@@ -97,6 +104,13 @@ type SequenceBinding struct {
 	Keys []string `json:"keys"`
 	// Action is the action to run, or "" to remove the sequence.
 	Action string `json:"action"`
+}
+
+// KeymapDef is one user-defined named keymap: key and sequence overrides
+// layered on the defaults when the keymap setting selects it.
+type KeymapDef struct {
+	Keys      map[string]string `json:"keys"`
+	Sequences []SequenceBinding `json:"sequences"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -143,6 +157,12 @@ func Load() Config {
 		}
 		if fc.Sequences != nil {
 			c.Sequences = fc.Sequences
+		}
+		if fc.Keymap != nil {
+			c.Keymap = *fc.Keymap
+		}
+		if fc.Keymaps != nil {
+			c.Keymaps = fc.Keymaps
 		}
 		if fc.ListEngine != nil && *fc.ListEngine != "" {
 			c.ListEngine = *fc.ListEngine

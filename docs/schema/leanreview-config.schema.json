@@ -235,6 +235,164 @@
      }
     }
    }
+  },
+  "keymap": {
+   "description": "Base binding set: a built-in preset (default, vim, vscode, sublime, intellij) or the name of an entry in \"keymaps\". Top-level \"keys\" and \"sequences\" still override on top. Built-in presets layer familiar chords over the defaults; terminals cannot report every editor chord, so presets are supersets, not clones.",
+   "type": "string"
+  },
+  "keymaps": {
+   "description": "User-defined named keymaps, each layered on the defaults when selected via \"keymap\". Built-in preset names are reserved.",
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "keys": {
+      "description": "Normal-mode key remaps: key (as reported by the terminal, e.g. \"j\", \"ctrl+d\", \"tab\") to action name. An empty action unbinds the key.",
+      "type": "object",
+      "additionalProperties": {
+       "description": "Action name, or \"\" to unbind the key.",
+       "type": "string",
+       "enum": [
+        "",
+        "cmdline",
+        "collapse-all",
+        "comment",
+        "comments",
+        "delete-comment",
+        "dismiss",
+        "down",
+        "edit",
+        "escape",
+        "expand-all",
+        "files",
+        "first-line",
+        "half-page-down",
+        "half-page-up",
+        "help",
+        "last-line",
+        "line-end",
+        "line-start",
+        "motion-left",
+        "motion-right",
+        "next-change",
+        "next-file",
+        "next-hunk",
+        "next-match",
+        "open",
+        "page-down",
+        "page-up",
+        "pr-info",
+        "prev-change",
+        "prev-file",
+        "prev-hunk",
+        "prev-match",
+        "quit",
+        "reply",
+        "scroll-left",
+        "scroll-right",
+        "search",
+        "select",
+        "select-block",
+        "side-left",
+        "suggest",
+        "side-right",
+        "sidebar",
+        "submit",
+        "toggle-context",
+        "toggle-fold",
+        "toggle-inline",
+        "toggle-syntax",
+        "toggle-layout",
+        "toggle-wrap",
+        "up"
+       ]
+      }
+     },
+     "sequences": {
+      "description": "Two-key sequence bindings (gg, ]c, … by default). Objects rather than concatenated map keys, so sequences stay expressible on any keyboard layout and multi-character key names (\"ctrl+d\") remain unambiguous. Each entry overrides or adds one sequence; an empty action removes it. leanreview --check-config also reports overlaps (a sequence prefix shadowing a bound single key).",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "keys",
+        "action"
+       ],
+       "additionalProperties": false,
+       "properties": {
+        "keys": {
+         "description": "The two keys, in press order, as reported by the terminal.",
+         "type": "array",
+         "minItems": 2,
+         "maxItems": 2,
+         "items": {
+          "type": "string",
+          "minLength": 1
+         }
+        },
+        "action": {
+         "description": "Action name, or \"\" to remove the sequence.",
+         "type": "string",
+         "enum": [
+          "",
+          "cmdline",
+          "collapse-all",
+          "comment",
+          "comments",
+          "delete-comment",
+          "dismiss",
+          "down",
+          "edit",
+          "escape",
+          "expand-all",
+          "files",
+          "first-line",
+          "half-page-down",
+          "half-page-up",
+          "help",
+          "last-line",
+          "line-end",
+          "line-start",
+          "motion-left",
+          "motion-right",
+          "next-change",
+          "next-file",
+          "next-hunk",
+          "next-match",
+          "open",
+          "page-down",
+          "page-up",
+          "pr-info",
+          "prev-change",
+          "prev-file",
+          "prev-hunk",
+          "prev-match",
+          "quit",
+          "reply",
+          "scroll-left",
+          "scroll-right",
+          "search",
+          "select",
+          "select-block",
+          "side-left",
+          "suggest",
+          "side-right",
+          "sidebar",
+          "submit",
+          "toggle-context",
+          "toggle-fold",
+          "toggle-inline",
+          "toggle-syntax",
+          "toggle-layout",
+          "toggle-wrap",
+          "up"
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "additionalProperties": false

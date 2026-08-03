@@ -21,7 +21,8 @@ var knownFileKeys = func() map[string]bool {
 		Context: &n, Keys: map[string]string{}, ListEngine: &s, ListFilter: &s,
 		ListFilters: map[string]string{}, Wrap: &b8, WrapWidth: &n, Author: &s,
 		Images: &s, ChangeColors: &s, ChangeTint: &b8,
-		Sequences: []SequenceBinding{},
+		Sequences: []SequenceBinding{}, Keymap: &s,
+		Keymaps: map[string]KeymapDef{},
 	}
 	raw, _ := json.Marshal(fc)
 	var m map[string]json.RawMessage
@@ -94,17 +95,29 @@ func Validate(data []byte, knownActions []string) []string {
 			problems = append(problems, fmt.Sprintf("keys[%q] names unknown action %q (known: %s)", k, a, strings.Join(knownActions, ", ")))
 		}
 	}
-	for i, sb := range fc.Sequences {
-		if len(sb.Keys) != 2 {
-			problems = append(problems, fmt.Sprintf("sequences[%d]: needs exactly 2 keys, has %d", i, len(sb.Keys)))
-			continue
+	checkSequences := func(where string, seqs []SequenceBinding) {
+		for i, sb := range seqs {
+			if len(sb.Keys) != 2 {
+				problems = append(problems, fmt.Sprintf("%s[%d]: needs exactly 2 keys, has %d", where, i, len(sb.Keys)))
+				continue
+			}
+			if sb.Keys[0] == "" || sb.Keys[1] == "" {
+				problems = append(problems, fmt.Sprintf("%s[%d]: keys must not be empty", where, i))
+			}
+			if sb.Action != "" && !actions[sb.Action] {
+				problems = append(problems, fmt.Sprintf("%s[%d] (%q %q) names unknown action %q (known: %s)", where, i, sb.Keys[0], sb.Keys[1], sb.Action, strings.Join(knownActions, ", ")))
+			}
 		}
-		if sb.Keys[0] == "" || sb.Keys[1] == "" {
-			problems = append(problems, fmt.Sprintf("sequences[%d]: keys must not be empty", i))
+	}
+	checkSequences("sequences", fc.Sequences)
+	for _, name := range slices.Sorted(maps.Keys(fc.Keymaps)) {
+		def := fc.Keymaps[name]
+		for _, k := range slices.Sorted(maps.Keys(def.Keys)) {
+			if a := def.Keys[k]; a != "" && !actions[a] {
+				problems = append(problems, fmt.Sprintf("keymaps[%q].keys[%q] names unknown action %q (known: %s)", name, k, a, strings.Join(knownActions, ", ")))
+			}
 		}
-		if sb.Action != "" && !actions[sb.Action] {
-			problems = append(problems, fmt.Sprintf("sequences[%d] (%q %q) names unknown action %q (known: %s)", i, sb.Keys[0], sb.Keys[1], sb.Action, strings.Join(knownActions, ", ")))
-		}
+		checkSequences(fmt.Sprintf("keymaps[%q].sequences", name), def.Sequences)
 	}
 	return problems
 }

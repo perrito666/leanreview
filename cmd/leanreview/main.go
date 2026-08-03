@@ -349,6 +349,8 @@ func run(argv []string) error {
 		Highlighter:  ui.NewHighlighter(cfg.Syntax, cfg.SyntaxStyle),
 		Keys:         cfg.Keys,
 		Sequences:    appSequences(cfg.Sequences),
+		KeymapName:   cfg.Keymap,
+		UserKeymaps:  appUserKeymaps(cfg.Keymaps),
 		Wrap:         cfg.Wrap,
 		WrapWidth:    cfg.WrapWidth,
 		PR:           prCtx,
@@ -714,6 +716,7 @@ func runCheckConfig() error {
 	// Binding-overlap problems live above the config package: only the app
 	// knows the grammar's dispatch order (counts, then prefixes, then keys).
 	cfg := config.Load()
+	problems = append(problems, app.ValidateKeymapChoice(cfg.Keymap, appUserKeymaps(cfg.Keymaps))...)
 	problems = append(problems, app.ValidateBindings(cfg.Keys, appSequences(cfg.Sequences))...)
 	if len(problems) == 0 {
 		fmt.Printf("%s is valid\n", path)
@@ -828,6 +831,18 @@ func openLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+}
+
+// appUserKeymaps converts config keymap definitions to the app's form.
+func appUserKeymaps(in map[string]config.KeymapDef) map[string]app.NamedKeymap {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]app.NamedKeymap, len(in))
+	for name, def := range in {
+		out[name] = app.NamedKeymap{Keys: def.Keys, Sequences: appSequences(def.Sequences)}
+	}
+	return out
 }
 
 // appSequences converts config sequence entries to the app's binding form,
