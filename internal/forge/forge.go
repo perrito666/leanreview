@@ -142,6 +142,10 @@ type Forge interface {
 	Diff(ctx context.Context, ref PullRequestRef) ([]byte, error)
 	Threads(ctx context.Context, ref PullRequestRef) ([]Thread, error)
 	CreateReview(ctx context.Context, ref PullRequestRef, event ReviewEvent, summary string, comments []ReviewComment) (*SubmittedReview, error)
+	// AddGeneralComment posts a conversation-level comment — one that
+	// anchors to the request itself, not to a line (a GitHub issue comment,
+	// a GitLab MR note).
+	AddGeneralComment(ctx context.Context, ref PullRequestRef, body string) (*Comment, error)
 	Reply(ctx context.Context, ref PullRequestRef, commentID int64, body string) (*Comment, error)
 	// FileContent returns the raw content of path at rev (a commit id,
 	// typically the PR head) — the full-file context view's data source.

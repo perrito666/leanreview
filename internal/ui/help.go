@@ -42,6 +42,7 @@ func HelpText() string {
 
  Pull-request mode
    p             PR details (title, description, link)
+   P             general conversation (browse, reply, add; drafts post on submit)
    s             submit review (confirmation screen)
    :comment      submit as a general comment
    :approve      submit approving

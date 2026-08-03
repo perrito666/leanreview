@@ -18,8 +18,10 @@ type recordingForge struct {
 	createdSummary  string
 	createdComments []forge.ReviewComment
 	replies         []string
+	generals        []string
 	failReview      bool
 	failReplyAt     int // 1-based reply call that fails; 0 = never
+	failGeneral     bool
 }
 
 func (f *recordingForge) PullRequest(context.Context, forge.PullRequestRef) (*forge.PullRequest, error) {
@@ -46,6 +48,13 @@ func (f *recordingForge) Attachment(context.Context, forge.PullRequestRef, strin
 }
 func (f *recordingForge) GeneralComments(context.Context, forge.PullRequestRef) ([]forge.Comment, error) {
 	return nil, nil
+}
+func (f *recordingForge) AddGeneralComment(_ context.Context, _ forge.PullRequestRef, body string) (*forge.Comment, error) {
+	if f.failGeneral {
+		return nil, errFake
+	}
+	f.generals = append(f.generals, body)
+	return &forge.Comment{ID: 77, Body: body}, nil
 }
 func (f *recordingForge) Reply(_ context.Context, _ forge.PullRequestRef, id int64, body string) (*forge.Comment, error) {
 	if f.failReplyAt > 0 && len(f.replies)+1 == f.failReplyAt {

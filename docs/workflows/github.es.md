@@ -38,6 +38,20 @@ renderizan directamente en la superposición.
 *Un comentario general de conversación con una foto, dibujada en la
 superposición en ghostty mediante el protocolo gráfico de kitty.*
 
+## La conversación general
+
+`P` abre la conversación como pantalla propia: `j`/`k` seleccionan un
+comentario, `r`/`Enter` responde, `a` añade un comentario general nuevo.
+Las conversaciones de ambos forges son planas, así que una respuesta es un
+comentario nuevo pre-rellenado con una cita Markdown de lo que responde.
+Todo lo que escribas queda como borrador — marcado *(draft — posts on
+submit)*, editable con `e` y eliminable con `d` — y se publica al enviar
+la revisión.
+
+En la pantalla de envío, `g` escribe el **resumen de la revisión** — el
+comentario general adjunto a la revisión misma (el cuerpo de la review en
+GitHub, la nota inicial en GitLab).
+
 ## Hilos y respuestas
 
 Los hilos de revisión existentes aparecen como marcadores `◆` en la

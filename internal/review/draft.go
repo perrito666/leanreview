@@ -76,8 +76,20 @@ type DraftReview struct {
 	Title     string            `json:"title"`
 	HeadOID   string            `json:"head_oid"`
 	Comments  []DraftComment    `json:"comments"`
+	General   []GeneralDraft    `json:"general,omitempty"`
 	Summary   string            `json:"summary"`
 	Event     forge.ReviewEvent `json:"event"`
+}
+
+// GeneralDraft is a staged conversation-level comment: it anchors to the
+// pull request itself, not to a line. QuoteOf records the host comment it
+// was written in reply to — context only, since both forges' conversations
+// are flat and a "reply" is a new comment carrying a quote.
+type GeneralDraft struct {
+	LocalID string `json:"local_id"`
+	Body    string `json:"body"`
+	At      string `json:"at,omitempty"`
+	QuoteOf *int64 `json:"quote_of,omitempty"`
 }
 
 // NewDraftReview creates an empty draft for a source.
@@ -120,6 +132,34 @@ func (d *DraftReview) Remove(localID string) bool {
 	for i := range d.Comments {
 		if d.Comments[i].LocalID == localID {
 			d.Comments = append(d.Comments[:i], d.Comments[i+1:]...)
+			return true
+		}
+	}
+	return d.RemoveGeneral(localID)
+}
+
+// AddGeneral stages a conversation-level comment and returns its local id.
+func (d *DraftReview) AddGeneral(body string, quoteOf *int64) string {
+	g := GeneralDraft{LocalID: newLocalID(), Body: body, At: time.Now().UTC().Format(time.RFC3339), QuoteOf: quoteOf}
+	d.General = append(d.General, g)
+	return g.LocalID
+}
+
+// GetGeneral returns the staged general draft with the given id, or nil.
+func (d *DraftReview) GetGeneral(localID string) *GeneralDraft {
+	for i := range d.General {
+		if d.General[i].LocalID == localID {
+			return &d.General[i]
+		}
+	}
+	return nil
+}
+
+// RemoveGeneral deletes a staged general draft by id.
+func (d *DraftReview) RemoveGeneral(localID string) bool {
+	for i := range d.General {
+		if d.General[i].LocalID == localID {
+			d.General = append(d.General[:i], d.General[i+1:]...)
 			return true
 		}
 	}

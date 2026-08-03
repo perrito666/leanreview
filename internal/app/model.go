@@ -142,6 +142,7 @@ type Model struct {
 	pending    pendingCommand
 	keymap     Keymap
 	sequences  Sequences
+	generalSel int
 
 	// listCursor is the selection index for the files / comments overlays.
 	listCursor int
@@ -217,7 +218,14 @@ type pendingEdit struct {
 	// existing reply being edited rather than a new one being appended.
 	replyToLocal string
 	editReplyAt  *int
-	session      *editor.Session
+	// general marks a new conversation-level comment (generalQuote holds the
+	// host comment being quoted); editingGeneral edits a staged one;
+	// editSummary edits the review body from the confirmation screen.
+	general        bool
+	generalQuote   *int64
+	editingGeneral string
+	editSummary    bool
+	session        *editor.Session
 }
 
 // New builds the initial model, filling in whatever cfg leaves unset: an

@@ -22,6 +22,21 @@ type mrNoteJSON struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// AddGeneralComment posts a conversation-level note on the merge request.
+func (c *Client) AddGeneralComment(ctx context.Context, ref forge.PullRequestRef, body string) (*forge.Comment, error) {
+	path := fmt.Sprintf("projects/%s/merge_requests/%d/notes", projectPath(ref), ref.Number)
+	payload, _ := json.Marshal(map[string]string{"body": body})
+	out, err := c.run(ctx, payload, apiArgs(ref, path, "--method", "POST", "--input", "-")...)
+	if err != nil {
+		return nil, err
+	}
+	var n mrNoteJSON
+	if err := json.Unmarshal(out, &n); err != nil {
+		return nil, fmt.Errorf("decode note: %w", err)
+	}
+	return &forge.Comment{ID: n.ID, Author: n.Author.Username, Body: n.Body, CreatedAt: n.CreatedAt}, nil
+}
+
 // GeneralComments lists the MR's human conversation notes, oldest first.
 func (c *Client) GeneralComments(ctx context.Context, ref forge.PullRequestRef) ([]forge.Comment, error) {
 	path := fmt.Sprintf("projects/%s/merge_requests/%d/notes?sort=asc&order_by=created_at", projectPath(ref), ref.Number)

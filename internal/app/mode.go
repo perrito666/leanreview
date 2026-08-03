@@ -29,6 +29,9 @@ const (
 	// ModeConvo shows a focused reader for a draft comment's conversation,
 	// where individual replies can be edited and deleted.
 	ModeConvo
+	// ModeGeneral is the PR's general (conversation-level) comment screen:
+	// browse, reply (as quoted new comments), add, and manage drafts.
+	ModeGeneral
 	// ModeExternalEditor is a placeholder state while the editor is open.
 	ModeExternalEditor
 )
@@ -53,6 +56,8 @@ func (m Mode) String() string {
 		return "PR"
 	case ModeConvo:
 		return "CONVERSATION"
+	case ModeGeneral:
+		return "GENERAL"
 	case ModeExternalEditor:
 		return "EDITOR"
 	default:
