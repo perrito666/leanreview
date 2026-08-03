@@ -34,6 +34,15 @@ leanreview --init-config     # escribe el archivo de arriba con todos los
                              # completo y una referencia $schema
 ```
 
+Para una configuración que ya existe, complétala en lugar de regenerarla:
+
+```bash
+leanreview --fill-config     # añade cada ajuste, enlace y secuencia que
+                             # falte con su valor por defecto; los valores
+                             # existentes y las claves desconocidas no se
+                             # tocan nunca
+```
+
 El mapa `keys` generado lista **todas** las asignaciones por defecto, así
 que reasignar es editar, no adivinar. El generador se niega a sobrescribir
 un archivo existente.
