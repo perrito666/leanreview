@@ -68,5 +68,20 @@ momento.
 Los enlaces de una sola tecla en modo normal pueden reasignarse mediante
 el mapa `keys` en la [configuración](configuration.md). Una acción vacía
 desvincula una tecla; las teclas individuales pueden vincularse a acciones
-de dos teclas (`next-hunk`, `delete-comment`, …). Las secuencias de dos
-teclas en sí (`gg`, `]c`, …) y los prefijos numéricos de conteo son fijos.
+de dos teclas (`next-hunk`, `delete-comment`, …).
+
+Las secuencias de dos teclas (`gg`, `]c`, …) se reasignan mediante la lista
+`sequences` — objetos en lugar de nombres concatenados, para que las
+secuencias sigan siendo expresables en cualquier distribución de teclado:
+
+```json
+"sequences": [
+  { "keys": [",", "c"], "action": "next-hunk" },
+  { "keys": ["d", "d"], "action": "" }
+]
+```
+
+Una acción vacía elimina una secuencia. `leanreview --check-config` informa
+de solapamientos: un prefijo de secuencia eclipsa un enlace de tecla única
+(el prefijo gana), y los dígitos no pueden iniciar un enlace — los prefijos
+numéricos de conteo siguen siendo fijos.

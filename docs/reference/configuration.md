@@ -63,6 +63,9 @@ for Vim/Neovim setup.
 - `context` — default unified context lines when `-U` is not passed.
 - `keys` — remap normal-mode bindings, `{ "<key>": "<action>" }`. See
   [Keys](keys.md#remapping).
+- `sequences` — remap two-key sequences, a list of
+  `{ "keys": ["<k1>", "<k2>"], "action": "<action>" }` objects. See
+  [Keys](keys.md#remapping).
 - `list_engine` / `list_filter` / `list_filters` — defaults for `--list`:
   the discovery engine (`gh` or `glab`), the fallback search filter, and a
   map of named filters selectable as `--list :name` / `--list engine:name`.

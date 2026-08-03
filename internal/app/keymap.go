@@ -1,15 +1,17 @@
 package app
 
 import (
+	"fmt"
 	"maps"
 	"slices"
+	"strings"
 )
 
 // Keymap maps a key (as reported by Bubble Tea's KeyMsg.String) to a normal-mode
-// action name. Single-key normal-mode dispatch flows through this table so
-// bindings can be remapped via configuration. Two-key sequences (gg, ]c, …),
-// numeric count prefixes, and overlay/input keys are handled by the grammar and
-// are not remappable.
+// action name. Single-key normal-mode dispatch flows through this table, and
+// two-key sequences through Sequences — both remappable via configuration.
+// Numeric count prefixes and overlay/input keys are handled by the grammar
+// and each overlay's own handler, and are not remappable.
 type Keymap map[string]string
 
 // DefaultKeymap returns the built-in bindings as a fresh map on every call,
@@ -77,7 +79,7 @@ var knownActions = func() map[string]bool {
 	for _, a := range DefaultKeymap() {
 		m[a] = true
 	}
-	for _, a := range twoKey {
+	for _, a := range DefaultSequences() {
 		m[a] = true
 	}
 	for _, a := range extraActions {
@@ -85,6 +87,89 @@ var knownActions = func() map[string]bool {
 	}
 	return m
 }()
+
+// SeqBinding is one two-key sequence override from configuration: the two
+// keys in press order plus the action, or "" to remove the sequence.
+type SeqBinding struct {
+	First  string
+	Second string
+	Action string
+}
+
+// apply overlays configured sequence overrides: an empty action removes the
+// sequence, unknown actions are ignored (Validate reports them; a typo must
+// not take the whole binding table down at startup).
+func (s Sequences) apply(overrides []SeqBinding) {
+	for _, o := range overrides {
+		k := seqKey{o.First, o.Second}
+		if o.Action == "" {
+			delete(s, k)
+			continue
+		}
+		if knownActions[o.Action] {
+			s[k] = o.Action
+		}
+	}
+}
+
+// DefaultSequenceBindings returns the built-in two-key sequences in a stable
+// order — the config generator spells them out so remapping starts from the
+// real current bindings.
+func DefaultSequenceBindings() []SeqBinding {
+	var out []SeqBinding
+	for k, a := range DefaultSequences() {
+		out = append(out, SeqBinding{First: k.first, Second: k.second, Action: a})
+	}
+	slices.SortFunc(out, func(a, b SeqBinding) int {
+		if c := strings.Compare(a.First, b.First); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Second, b.Second)
+	})
+	return out
+}
+
+// ValidateBindings reports overlap problems the structural config validator
+// cannot see: the grammar consumes digits (counts) and sequence prefixes
+// before single-key dispatch, so bindings shadowed by that order are dead —
+// exactly the kind of config mistake that otherwise surfaces as "my key does
+// nothing". The effective tables (defaults + overrides) are what is checked,
+// so removing the default sequence also clears the conflict.
+func ValidateBindings(keys map[string]string, seqOverrides []SeqBinding) []string {
+	var problems []string
+	km := DefaultKeymap()
+	km.apply(keys)
+	for _, k := range slices.Sorted(maps.Keys(keys)) {
+		if keys[k] != "" && len(k) == 1 && k[0] >= '1' && k[0] <= '9' {
+			problems = append(problems, fmt.Sprintf("keys[%q]: digits are count prefixes (e.g. 12j) and cannot be bound", k))
+		}
+	}
+
+	seqs := DefaultSequences()
+	seen := map[seqKey]bool{}
+	for _, o := range seqOverrides {
+		k := seqKey{o.First, o.Second}
+		if seen[k] {
+			problems = append(problems, fmt.Sprintf("sequences: %q %q is defined more than once", o.First, o.Second))
+		}
+		seen[k] = true
+		if len(o.First) == 1 && o.First[0] >= '0' && o.First[0] <= '9' && o.Action != "" {
+			problems = append(problems, fmt.Sprintf("sequences: %q %q starts with a digit, which the count grammar consumes first", o.First, o.Second))
+		}
+	}
+	seqs.apply(seqOverrides)
+
+	prefixes := map[string]bool{}
+	for k := range seqs {
+		prefixes[k.first] = true
+	}
+	for _, p := range slices.Sorted(maps.Keys(prefixes)) {
+		if a := km[p]; a != "" {
+			problems = append(problems, fmt.Sprintf("key %q is bound to %q but also starts a two-key sequence — the sequence prefix wins and the single binding is dead (unbind one)", p, a))
+		}
+	}
+	return problems
+}
 
 // KnownActions returns the sorted set of action names a key may bind to —
 // the shared contract between the keymap, the CLI config validator, and the

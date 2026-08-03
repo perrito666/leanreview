@@ -31,6 +31,9 @@ type Config struct {
 
 	// Keys overrides individual normal-mode key bindings (key -> action).
 	Keys map[string]string
+	// Sequences overrides two-key sequence bindings; an empty action removes
+	// the sequence.
+	Sequences []SeqBinding
 
 	// Wrap enables line/comment wrapping at start (default true when built via
 	// the CLI); WrapWidth caps the unified wrap point (0 means the default).
@@ -132,6 +135,7 @@ type Model struct {
 	activeSide diff.Side
 	pending    pendingCommand
 	keymap     Keymap
+	sequences  Sequences
 
 	// listCursor is the selection index for the files / comments overlays.
 	listCursor int
@@ -268,6 +272,8 @@ func New(cfg Config) *Model {
 	}
 	m.keymap = DefaultKeymap()
 	m.keymap.apply(cfg.Keys)
+	m.sequences = DefaultSequences()
+	m.sequences.apply(cfg.Sequences)
 	m.buildThreadIndex()
 	m.cursor = m.firstContentRow()
 	return m

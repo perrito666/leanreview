@@ -30,15 +30,16 @@ type baseline struct {
 	ListFilter   string            `json:"list_filter"`
 	ListFilters  map[string]string `json:"list_filters"`
 	Keys         map[string]string `json:"keys"`
+	Sequences    []SequenceBinding `json:"sequences"`
 }
 
 // BaselineJSON renders the built-in defaults as a complete config document:
 // every setting present with its default value and — the point of having a
 // generator at all — the full default keymap spelled out, so remapping starts
 // from the actual current bindings instead of guessing key and action names.
-// keys is injected by the caller (the app package owns the keymap; config
-// cannot depend on it).
-func BaselineJSON(keys map[string]string) ([]byte, error) {
+// keys and seqs are injected by the caller (the app package owns the keymap;
+// config cannot depend on it).
+func BaselineJSON(keys map[string]string, seqs []SequenceBinding) ([]byte, error) {
 	b := baseline{
 		Schema:       SchemaURL,
 		SyntaxStyle:  "auto",
@@ -54,6 +55,7 @@ func BaselineJSON(keys map[string]string) ([]byte, error) {
 		ListEngine:   "gh",
 		ListFilters:  map[string]string{},
 		Keys:         keys,
+		Sequences:    seqs,
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

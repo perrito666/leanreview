@@ -95,7 +95,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.handleConvoKey(key)
 	}
 
-	cmd, ready := m.pending.Feed(key, m.keymap)
+	cmd, ready := m.pending.Feed(key, m.keymap, m.sequences)
 	if !ready {
 		return m, nil
 	}

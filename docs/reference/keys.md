@@ -66,5 +66,19 @@ Press `?` inside the TUI for this reference at any time.
 
 Single-key normal-mode bindings can be remapped via the `keys` map in the
 [configuration](configuration.md). An empty action unbinds a key; single keys
-may bind two-key actions (`next-hunk`, `delete-comment`, …). The two-key
-sequences themselves (`gg`, `]c`, …) and numeric count prefixes are fixed.
+may bind two-key actions (`next-hunk`, `delete-comment`, …).
+
+Two-key sequences (`gg`, `]c`, …) are remapped via the `sequences` list —
+objects rather than concatenated names, so sequences stay expressible on any
+keyboard layout:
+
+```json
+"sequences": [
+  { "keys": [",", "c"], "action": "next-hunk" },
+  { "keys": ["d", "d"], "action": "" }
+]
+```
+
+An empty action removes a sequence. `leanreview --check-config` reports
+overlaps: a sequence prefix shadows a single-key binding (the prefix wins),
+and digits cannot start a binding — numeric count prefixes stay fixed.

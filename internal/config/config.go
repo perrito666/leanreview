@@ -28,6 +28,8 @@ type Config struct {
 	Context int
 	// Keys overrides individual normal-mode key bindings (key -> action).
 	Keys map[string]string
+	// Sequences overrides two-key sequence bindings.
+	Sequences []SequenceBinding
 	// ListEngine is the default discovery engine for --list ("gh" or "glab").
 	ListEngine string
 	// ListFilter is the fallback discovery filter for --list when no filter is
@@ -74,6 +76,7 @@ type fileConfig struct {
 	TabWidth     *int              `json:"tab_width"`
 	Context      *int              `json:"context"`
 	Keys         map[string]string `json:"keys"`
+	Sequences    []SequenceBinding `json:"sequences"`
 	ListEngine   *string           `json:"list_engine"`
 	ListFilter   *string           `json:"list_filter"`
 	ListFilters  map[string]string `json:"list_filters"`
@@ -83,6 +86,17 @@ type fileConfig struct {
 	Images       *string           `json:"images"`
 	ChangeColors *string           `json:"change_colors"`
 	ChangeTint   *bool             `json:"change_tint"`
+}
+
+// SequenceBinding is one two-key sequence entry in the config file. It is an
+// object rather than a concatenated map key ("]c") because sequence keys can
+// be awkward to type on non-US layouts and multi-character key names
+// ("ctrl+d") would make a concatenated form ambiguous.
+type SequenceBinding struct {
+	// Keys are the two keys in press order.
+	Keys []string `json:"keys"`
+	// Action is the action to run, or "" to remove the sequence.
+	Action string `json:"action"`
 }
 
 // Load builds a Config from defaults, then the config file, then the environment.
@@ -126,6 +140,9 @@ func Load() Config {
 		}
 		if fc.Keys != nil {
 			c.Keys = fc.Keys
+		}
+		if fc.Sequences != nil {
+			c.Sequences = fc.Sequences
 		}
 		if fc.ListEngine != nil && *fc.ListEngine != "" {
 			c.ListEngine = *fc.ListEngine
