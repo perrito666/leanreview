@@ -41,26 +41,55 @@ type Theme struct {
 	DeletionTint lipgloss.Style
 }
 
-// ThemeByName returns a named theme. "mono" forces the monochrome palette;
-// anything else (including "" and "default") returns the standard palette,
-// which itself collapses to monochrome under NO_COLOR.
-func ThemeByName(name string) Theme {
-	if name == "mono" {
-		return monoTheme()
-	}
-	return DefaultTheme()
+// colorPick resolves a light/dark color pair: adaptively (terminal
+// background decides at render time), or pinned to one variant — the
+// difference between the "default" theme and "default-light"/"default-dark".
+type colorPick func(light, dark string) lipgloss.TerminalColor
+
+func adaptivePick(l, d string) lipgloss.TerminalColor {
+	return lipgloss.AdaptiveColor{Light: l, Dark: d}
+}
+func lightPick(l, _ string) lipgloss.TerminalColor { return lipgloss.Color(l) }
+func darkPick(_, d string) lipgloss.TerminalColor  { return lipgloss.Color(d) }
+
+// BuiltinThemeNames are the reserved theme names: user theme files may not
+// claim them.
+func BuiltinThemeNames() []string {
+	return []string{"default", "default-dark", "default-light", "mono"}
 }
 
-// DefaultTheme returns the standard palette, or a monochrome variant when
-// NO_COLOR is set.
+// BuiltinTheme returns a built-in theme by name ("" means default) and
+// whether the name was recognised.
+func BuiltinTheme(name string) (Theme, bool) {
+	switch name {
+	case "", "default":
+		return DefaultTheme(), true
+	case "default-light":
+		return paletteTheme(lightPick), true
+	case "default-dark":
+		return paletteTheme(darkPick), true
+	case "mono":
+		return monoTheme(), true
+	}
+	return Theme{}, false
+}
+
+// DefaultTheme returns the standard palette (terminal background picks the
+// light or dark colors), or a monochrome variant when NO_COLOR is set.
 func DefaultTheme() Theme {
 	if os.Getenv("NO_COLOR") != "" {
 		return monoTheme()
 	}
+	return paletteTheme(adaptivePick)
+}
+
+// paletteTheme is the standard palette with the light/dark choice injected,
+// so default, default-light, and default-dark share one table.
+func paletteTheme(c colorPick) Theme {
 	return Theme{
 		// A true 256-color green: the ANSI palette slot 2 renders olive/mustard
 		// in many terminal schemes.
-		Addition:     lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "28", Dark: "114"}),
+		Addition:     lipgloss.NewStyle().Foreground(c("28", "114")),
 		Deletion:     lipgloss.NewStyle().Foreground(lipgloss.Color("1")),
 		Context:      lipgloss.NewStyle().Foreground(lipgloss.Color("7")),
 		Metadata:     lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
@@ -74,9 +103,9 @@ func DefaultTheme() Theme {
 		Error:        lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true),
 		Key:          lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true),
 		Faint:        lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
-		Comment:      lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "240", Dark: "252"}),
-		AdditionTint: lipgloss.NewStyle().Background(lipgloss.AdaptiveColor{Light: "194", Dark: "22"}),
-		DeletionTint: lipgloss.NewStyle().Background(lipgloss.AdaptiveColor{Light: "224", Dark: "52"}),
+		Comment:      lipgloss.NewStyle().Foreground(c("240", "252")),
+		AdditionTint: lipgloss.NewStyle().Background(c("194", "22")),
+		DeletionTint: lipgloss.NewStyle().Background(c("224", "52")),
 	}
 }
 

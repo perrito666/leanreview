@@ -58,7 +58,8 @@ for Vim/Neovim setup.
   `github` on light); any
   [Chroma style name](https://xyproto.github.io/splash/docs/) can be set
   explicitly.
-- `theme` — TUI palette: `default` or `mono`.
+- `theme` — TUI palette: a built-in (`default`, `default-light`,
+  `default-dark`, `mono`) or the name of a [theme file](#themes).
 - `tab_width` — columns a tab expands to.
 - `context` — default unified context lines when `-U` is not passed.
 - `keymap` — base binding set: a built-in preset (`default`, `vim`,
@@ -113,3 +114,32 @@ for Vim/Neovim setup.
   JSON file per source, atomic writes.
 - Logs: `$XDG_STATE_HOME/leanreview/leanreview.log` — never stdout, which
   the TUI owns.
+
+## Themes
+
+`default` adapts to the terminal background; `default-light` and
+`default-dark` pin that choice. Beyond the built-ins, drop JSON theme files
+into a `themes/` folder next to the config. A theme is referenced by its
+**metadata name** (not its filename), restyles only the roles it names
+(everything else keeps the default palette), and may not claim a built-in
+name:
+
+```json
+{
+  "$schema": "https://perrito666.github.io/leanreview/schema/leanreview-theme.schema.json",
+  "name": "dusk",
+  "description": "muted greens, magenta accents",
+  "styles": {
+    "addition":      { "fg": "108" },
+    "deletion":      { "fg": "#d75f5f", "bold": true },
+    "title":         { "fg": "15", "bg": "53" },
+    "addition_tint": { "bg": "236" }
+  }
+}
+```
+
+Roles: `addition`, `deletion`, `context`, `metadata`, `gutter`, `cursor`,
+`select`, `search`, `marker`, `title`, `status`, `error`, `key`, `faint`,
+`comment`, `addition_tint`, `deletion_tint`. Colors are ANSI palette
+indices or hex. `leanreview --check-config` validates the folder: broken
+files, duplicate or reserved names, and unknown roles are all reported.

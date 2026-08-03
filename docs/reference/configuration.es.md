@@ -62,7 +62,8 @@ para Vim/Neovim.
   terminal (`monokai` en oscuro, `github` en claro); se puede establecer
   explícitamente cualquier
   [nombre de estilo de Chroma](https://xyproto.github.io/splash/docs/).
-- `theme` — paleta de la TUI: `default` o `mono`.
+- `theme` — paleta de la TUI: una integrada (`default`, `default-light`,
+  `default-dark`, `mono`) o el nombre de un [archivo de tema](#temas).
 - `tab_width` — columnas a las que se expande un tab.
 - `context` — líneas de contexto unificado por defecto cuando no se pasa
   `-U`.
@@ -125,3 +126,32 @@ para Vim/Neovim.
   un archivo JSON por fuente, escrituras atómicas.
 - Logs: `$XDG_STATE_HOME/leanreview/leanreview.log` — nunca stdout, que
   pertenece a la TUI.
+
+## Temas
+
+`default` se adapta al fondo del terminal; `default-light` y
+`default-dark` fijan esa elección. Más allá de los integrados, deja
+archivos JSON de tema en una carpeta `themes/` junto a la configuración.
+Un tema se referencia por su **nombre de metadatos** (no por el nombre del
+archivo), reestiliza solo los roles que nombra (el resto conserva la
+paleta por defecto) y no puede reclamar un nombre integrado:
+
+```json
+{
+  "$schema": "https://perrito666.github.io/leanreview/schema/leanreview-theme.schema.json",
+  "name": "dusk",
+  "description": "verdes apagados, acentos magenta",
+  "styles": {
+    "addition":      { "fg": "108" },
+    "deletion":      { "fg": "#d75f5f", "bold": true },
+    "title":         { "fg": "15", "bg": "53" },
+    "addition_tint": { "bg": "236" }
+  }
+}
+```
+
+Roles: `addition`, `deletion`, `context`, `metadata`, `gutter`, `cursor`,
+`select`, `search`, `marker`, `title`, `status`, `error`, `key`, `faint`,
+`comment`, `addition_tint`, `deletion_tint`. Los colores son índices de la
+paleta ANSI o hex. `leanreview --check-config` valida la carpeta: archivos
+rotos, nombres duplicados o reservados y roles desconocidos se informan.

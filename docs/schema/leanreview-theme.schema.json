@@ -1,0 +1,434 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "https://perrito666.github.io/leanreview/schema/leanreview-theme.schema.json",
+ "title": "leanreview theme",
+ "description": "A leanreview theme file: metadata plus per-role style overrides layered on the default palette. Files live in a themes/ folder next to the config; the \"name\" (not the filename) is how the config's theme setting references it. Built-in names (default, default-light, default-dark, mono) are reserved.",
+ "type": "object",
+ "required": [
+  "name",
+  "styles"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "$schema": {
+   "type": "string"
+  },
+  "name": {
+   "type": "string",
+   "minLength": 1,
+   "not": {
+    "enum": [
+     "default",
+     "default-light",
+     "default-dark",
+     "mono"
+    ]
+   },
+   "description": "The name the config references. Built-in theme names are reserved."
+  },
+  "description": {
+   "type": "string"
+  },
+  "author": {
+   "type": "string"
+  },
+  "styles": {
+   "type": "object",
+   "additionalProperties": false,
+   "description": "Role overrides; roles you omit keep the default palette.",
+   "properties": {
+    "addition": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "deletion": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "context": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "metadata": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "gutter": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "cursor": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "select": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "search": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "marker": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "title": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "status": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "error": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "key": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "faint": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "comment": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "addition_tint": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    },
+    "deletion_tint": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "fg": {
+       "type": "string",
+       "description": "Foreground: an ANSI palette index (\"114\") or hex (\"#87d787\")."
+      },
+      "bg": {
+       "type": "string",
+       "description": "Background, same formats as fg."
+      },
+      "bold": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      },
+      "reverse": {
+       "type": "boolean"
+      }
+     }
+    }
+   }
+  }
+ }
+}
