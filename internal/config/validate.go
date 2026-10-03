@@ -22,7 +22,7 @@ var knownFileKeys = func() map[string]bool {
 		ListFilters: map[string]string{}, Wrap: &b8, WrapWidth: &n, Author: &s,
 		Images: &s, ChangeColors: &s, ChangeTint: &b8,
 		Sequences: []SequenceBinding{}, Keymap: &s,
-		Keymaps: map[string]KeymapDef{},
+		Keymaps: map[string]KeymapDef{}, GitLabHosts: []string{},
 	}
 	raw, _ := json.Marshal(fc)
 	var m map[string]json.RawMessage
@@ -74,6 +74,11 @@ func Validate(data []byte, knownActions []string) []string {
 	}
 	if fc.ListEngine != nil && *fc.ListEngine != "" && *fc.ListEngine != "gh" && *fc.ListEngine != "glab" {
 		problems = append(problems, fmt.Sprintf("list_engine %q is not one of: gh, glab", *fc.ListEngine))
+	}
+	for i, h := range fc.GitLabHosts {
+		if strings.TrimSpace(h) == "" || strings.ContainsAny(h, "/:") {
+			problems = append(problems, fmt.Sprintf("gitlab_hosts[%d] %q must be a bare host name (no scheme, port, or path)", i, h))
+		}
 	}
 	if fc.TabWidth != nil && *fc.TabWidth <= 0 {
 		problems = append(problems, fmt.Sprintf("tab_width %d must be positive", *fc.TabWidth))

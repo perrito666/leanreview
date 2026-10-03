@@ -84,6 +84,9 @@ for Vim/Neovim setup.
 - `list_engine` / `list_filter` / `list_filters` — defaults for `--list`:
   the discovery engine (`gh` or `glab`), the fallback search filter, and a
   map of named filters selectable as `--list :name` / `--list engine:name`.
+- `gitlab_hosts` — self-hosted GitLab hosts whose names do not contain
+  `gitlab`, e.g. `["git.example.com"]`. PR/MR references on these hosts use
+  `glab`; without this, any host not named `gitlab…` is treated as GitHub.
 - `change_colors` — how `+`/`-` lines are colored when syntax highlighting
   is on: `diff` (default: classic red/green, syntax reserved for context
   lines) or `syntax` (syntax colors everywhere).
@@ -112,6 +115,7 @@ for Vim/Neovim setup.
 | `NO_COLOR` | disable all color (mono theme) |
 | `LEANREVIEW_AUTHOR` | reply attribution name (overrides `author`) |
 | `LEANREVIEW_IMAGES` | image rendering backend (overrides `images`) |
+| `LEANREVIEW_GITLAB_HOSTS` | comma-separated GitLab hosts (overrides `gitlab_hosts`) |
 | `LEANREVIEW_LOG` | log file path |
 
 ## State on disk

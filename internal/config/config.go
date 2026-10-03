@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Config is the resolved runtime configuration.
@@ -43,6 +44,9 @@ type Config struct {
 	// ListFilters are named discovery filters, selectable as --list :name or
 	// --list engine:name. Filter text is engine-specific syntax.
 	ListFilters map[string]string
+	// GitLabHosts are self-hosted GitLab hosts whose names do not contain
+	// "gitlab", so host detection would otherwise route them to gh.
+	GitLabHosts []string
 	// Wrap enables wrapping of long diff lines and comment previews.
 	Wrap bool
 	// WrapWidth caps the wrap point in the unified layout (split layouts wrap
@@ -87,6 +91,7 @@ type fileConfig struct {
 	ListEngine   *string              `json:"list_engine"`
 	ListFilter   *string              `json:"list_filter"`
 	ListFilters  map[string]string    `json:"list_filters"`
+	GitLabHosts  []string             `json:"gitlab_hosts"`
 	Wrap         *bool                `json:"wrap"`
 	WrapWidth    *int                 `json:"wrap_width"`
 	Author       *string              `json:"author"`
@@ -173,6 +178,9 @@ func Load() Config {
 		if fc.ListFilters != nil {
 			c.ListFilters = fc.ListFilters
 		}
+		if fc.GitLabHosts != nil {
+			c.GitLabHosts = fc.GitLabHosts
+		}
 		if fc.Wrap != nil {
 			c.Wrap = *fc.Wrap
 		}
@@ -205,6 +213,14 @@ func Load() Config {
 	}
 	if v := os.Getenv("LEANREVIEW_IMAGES"); v != "" {
 		c.Images = v
+	}
+	if v := os.Getenv("LEANREVIEW_GITLAB_HOSTS"); v != "" {
+		c.GitLabHosts = nil
+		for _, h := range strings.Split(v, ",") {
+			if h = strings.TrimSpace(h); h != "" {
+				c.GitLabHosts = append(c.GitLabHosts, h)
+			}
+		}
 	}
 	// LEANREVIEW_LOG is already honoured by logPath(); no second read needed.
 

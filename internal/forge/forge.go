@@ -36,14 +36,29 @@ func (k Kind) String() string {
 	return "gh"
 }
 
-// KindForHost guesses the forge kind from a host name. gitlab.com and any host
-// containing "gitlab" (the common self-hosted convention) map to GitLab;
-// everything else — including GitHub Enterprise hosts and an empty host —
-// defaults to GitHub. Hosts that do not follow the convention can be supported
-// later via configuration.
+// gitLabHosts are extra hosts to treat as GitLab, set once at startup from the
+// gitlab_hosts config before any lookup.
+var gitLabHosts map[string]bool
+
+// SetGitLabHosts registers self-hosted GitLab instances whose names do not
+// contain "gitlab". Hosts are matched case-insensitively; empty entries are
+// ignored, and nil clears the set.
+func SetGitLabHosts(hosts []string) {
+	gitLabHosts = map[string]bool{}
+	for _, h := range hosts {
+		if h = strings.ToLower(strings.TrimSpace(h)); h != "" {
+			gitLabHosts[h] = true
+		}
+	}
+}
+
+// KindForHost guesses the forge kind from a host name. gitlab.com, any host
+// containing "gitlab" (the common self-hosted convention), and any host
+// registered with SetGitLabHosts map to GitLab; everything else — including
+// GitHub Enterprise hosts and an empty host — defaults to GitHub.
 func KindForHost(host string) Kind {
 	h := strings.ToLower(host)
-	if h == "gitlab.com" || strings.Contains(h, "gitlab") {
+	if h == "gitlab.com" || strings.Contains(h, "gitlab") || gitLabHosts[h] {
 		return KindGitLab
 	}
 	return KindGitHub

@@ -97,6 +97,10 @@ pour Vim/Neovim.
   `--list` : le moteur de découverte (`gh` ou `glab`), le filtre de
   recherche de secours, et une table de filtres nommés sélectionnables sous
   la forme `--list :name` / `--list engine:name`.
+- `gitlab_hosts` — hôtes GitLab auto-hébergés dont le nom ne contient pas
+  `gitlab`, par ex. `["git.example.com"]`. Les références PR/MR sur ces
+  hôtes utilisent `glab` ; sans cela, tout hôte qui ne s'appelle pas
+  `gitlab…` est traité comme GitHub.
 - `change_colors` — coloration des lignes `+`/`-` quand la coloration
   syntaxique est active : `diff` (par défaut : rouge/vert classique,
   syntaxe réservée aux lignes de contexte) ou `syntax` (syntaxe partout).
@@ -130,6 +134,7 @@ pour Vim/Neovim.
 | `NO_COLOR` | désactive toute couleur (thème mono) |
 | `LEANREVIEW_AUTHOR` | nom d'attribution des réponses (remplace `author`) |
 | `LEANREVIEW_IMAGES` | backend de rendu des images (remplace `images`) |
+| `LEANREVIEW_GITLAB_HOSTS` | hôtes GitLab séparés par des virgules (remplace `gitlab_hosts`) |
 | `LEANREVIEW_LOG` | chemin du fichier journal |
 
 ## État sur le disque

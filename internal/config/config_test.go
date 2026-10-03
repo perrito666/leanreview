@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -25,6 +26,7 @@ func withConfig(t *testing.T, json string) {
 	t.Setenv("LEANREVIEW_EDITOR", "")
 	t.Setenv("LEANREVIEW_SYNTAX", "")
 	t.Setenv("NO_COLOR", "")
+	t.Setenv("LEANREVIEW_GITLAB_HOSTS", "")
 }
 
 func TestDefaults(t *testing.T) {
@@ -91,6 +93,31 @@ func TestListConfig(t *testing.T) {
 	c = Load()
 	if c.ListFilters["bugs"] != "is:open label:bug" || c.ListFilters["docs"] != "label:documentation" {
 		t.Errorf("named filters not parsed: %+v", c.ListFilters)
+	}
+}
+
+func TestGitLabHostsConfig(t *testing.T) {
+	withConfig(t, "")
+	if c := Load(); len(c.GitLabHosts) != 0 {
+		t.Errorf("gitlab_hosts default = %v, want empty", c.GitLabHosts)
+	}
+	withConfig(t, `{"gitlab_hosts":["lab.example.com","git.corp.net"]}`)
+	if c := Load(); !slices.Equal(c.GitLabHosts, []string{"lab.example.com", "git.corp.net"}) {
+		t.Errorf("gitlab_hosts not applied: %v", c.GitLabHosts)
+	}
+	t.Setenv("LEANREVIEW_GITLAB_HOSTS", "env.example.com, other.example.com,")
+	if c := Load(); !slices.Equal(c.GitLabHosts, []string{"env.example.com", "other.example.com"}) {
+		t.Errorf("LEANREVIEW_GITLAB_HOSTS should override the file, got %v", c.GitLabHosts)
+	}
+}
+
+func TestValidateGitLabHosts(t *testing.T) {
+	if got := Validate([]byte(`{"gitlab_hosts":["lab.example.com"]}`), nil); len(got) != 0 {
+		t.Errorf("valid gitlab_hosts reported problems: %v", got)
+	}
+	got := Validate([]byte(`{"gitlab_hosts":["","https://lab.example.com","lab.example.com/group"]}`), nil)
+	if len(got) != 3 {
+		t.Errorf("want 3 problems for bad gitlab_hosts entries, got %v", got)
 	}
 }
 

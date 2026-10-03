@@ -62,6 +62,39 @@ func TestKindForHost(t *testing.T) {
 	}
 }
 
+func TestKindForHostConfiguredGitLabHosts(t *testing.T) {
+	t.Cleanup(func() { SetGitLabHosts(nil) })
+	if KindForHost("lab.example.com") != KindGitHub {
+		t.Fatalf("unregistered host should default to GitHub")
+	}
+	SetGitLabHosts([]string{" Lab.Example.com ", ""})
+	cases := []struct {
+		host string
+		want Kind
+	}{
+		{"lab.example.com", KindGitLab},
+		{"LAB.EXAMPLE.COM", KindGitLab},
+		{"other.example.com", KindGitHub},
+		{"gitlab.com", KindGitLab},
+	}
+	for _, c := range cases {
+		if got := KindForHost(c.host); got != c.want {
+			t.Errorf("KindForHost(%q) = %v, want %v", c.host, got, c.want)
+		}
+	}
+	ref := PullRequestRef{Host: "lab.example.com", Owner: "g/s", Repo: "r", Number: 2}
+	if got := ref.String(); got != "lab.example.com/g/s/r!2" {
+		t.Errorf("String() = %q", got)
+	}
+	if got := ref.WebURL(); got != "https://lab.example.com/g/s/r/-/merge_requests/2" {
+		t.Errorf("WebURL() = %q", got)
+	}
+	SetGitLabHosts(nil)
+	if KindForHost("lab.example.com") != KindGitHub {
+		t.Errorf("SetGitLabHosts(nil) should clear the registered hosts")
+	}
+}
+
 func TestRefString(t *testing.T) {
 	gh := PullRequestRef{Host: "github.com", Owner: "o", Repo: "r", Number: 1}
 	if got := gh.String(); got != "github.com/o/r#1" {

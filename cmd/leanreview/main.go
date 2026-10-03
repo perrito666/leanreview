@@ -113,6 +113,7 @@ func run(argv []string) error {
 	}
 
 	cfg := config.Load()
+	forge.SetGitLabHosts(cfg.GitLabHosts)
 	if cfg.Warning != "" {
 		// Before the TUI takes the terminal, so it survives on the original
 		// screen after exit — otherwise a config typo is silently defaults.

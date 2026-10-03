@@ -88,6 +88,14 @@
     "type": "string"
    }
   },
+  "gitlab_hosts": {
+   "description": "Self-hosted GitLab hosts whose names do not contain \"gitlab\"; PR/MR references on these hosts use glab.",
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[^/:\\s]+$"
+   }
+  },
   "keys": {
    "description": "Normal-mode key remaps: key (as reported by the terminal, e.g. \"j\", \"ctrl+d\", \"tab\") to action name. An empty action unbinds the key.",
    "type": "object",

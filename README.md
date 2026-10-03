@@ -317,6 +317,8 @@ environment → command-line flags. The config file lives at
 - `list_engine` / `list_filter` / `list_filters` — defaults for `--list`: the
   discovery engine (`gh` or `glab`), the fallback search filter, and a map of
   named filters selectable as `--list :name` / `--list engine:name`.
+- `gitlab_hosts` — self-hosted GitLab hosts whose names do not contain
+  `gitlab`; PR/MR references on these hosts use `glab`.
 - `wrap` / `wrap_width` — wrapping of long diff lines and comment previews
   (default on, `w` toggles). Code wraps hard at the column edge, comments at
   word boundaries; in unified layout the wrap point is
@@ -324,7 +326,8 @@ environment → command-line flags. The config file lives at
   width. With wrapping off, long lines clip and `h`/`l` scroll them.
 
 Environment: `LEANREVIEW_EDITOR`, `LEANREVIEW_SYNTAX=0` (disable
-highlighting), `NO_COLOR` (disable all color), `LEANREVIEW_LOG` (log path).
+highlighting), `NO_COLOR` (disable all color), `LEANREVIEW_GITLAB_HOSTS`
+(comma-separated, overrides `gitlab_hosts`), `LEANREVIEW_LOG` (log path).
 
 ### State on disk
 

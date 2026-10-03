@@ -31,6 +31,7 @@ type baseline struct {
 	ListEngine   string               `json:"list_engine"`
 	ListFilter   string               `json:"list_filter"`
 	ListFilters  map[string]string    `json:"list_filters"`
+	GitLabHosts  []string             `json:"gitlab_hosts"`
 	Keys         map[string]string    `json:"keys"`
 	Sequences    []SequenceBinding    `json:"sequences"`
 }
@@ -58,6 +59,7 @@ func BaselineJSON(keys map[string]string, seqs []SequenceBinding) ([]byte, error
 		Keymaps:      map[string]KeymapDef{},
 		ListEngine:   "gh",
 		ListFilters:  map[string]string{},
+		GitLabHosts:  []string{},
 		Keys:         keys,
 		Sequences:    seqs,
 	}
